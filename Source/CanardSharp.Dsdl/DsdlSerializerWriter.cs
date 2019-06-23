@@ -316,10 +316,12 @@ namespace CanardSharp.Dsdl
                 {
                     if (resolvedProp == null)
                         continue;
+                    if (unionMemberFound)
+                        throw new InvalidOperationException($"Cannot find single union value for type '{containerContract.UnderlyingType.FullName}'.");
+                    unionMemberFound = true;
                     //WriteUnionHeader(writer);
                     var rp = resolvedProp.Value;
                     SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type);
-                    break;
                 }
                 else
                 {

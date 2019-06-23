@@ -142,7 +142,7 @@ namespace CanardSharp.Dsdl
 
         static ArrayPool<byte> _arrayPool = ArrayPool<byte>.Create();
 
-        static void Write(BitStreamWriter destination, Action<byte[]> bytesFiller, byte bitLength)
+        static void Write(BitStreamWriter destination, Action<byte[]> bytesFiller, int bitLength)
         {
             var buffer = _arrayPool.Rent(8);
             try
@@ -156,27 +156,27 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        public static void Write(BitStreamWriter destination, bool value, byte bitLength) =>
+        public static void Write(BitStreamWriter destination, bool value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, sbyte value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, sbyte value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, byte value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, byte value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, short value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, short value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, ushort value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, ushort value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, int value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, int value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, uint value, byte bitLength) =>
+        //public void Write(BitStreamWriter destination, uint value, int bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public static void Write(BitStreamWriter destination, long value, byte bitLength) =>
+        public static void Write(BitStreamWriter destination, long value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public static void Write(BitStreamWriter destination, ulong value, byte bitLength) =>
+        public static void Write(BitStreamWriter destination, ulong value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
         //public void Write(BitStreamWriter destination, float value, byte bitLength) =>
         //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public static void Write(BitStreamWriter destination, double value, byte bitLength) =>
+        public static void Write(BitStreamWriter destination, double value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
 
         /**
@@ -202,7 +202,7 @@ namespace CanardSharp.Dsdl
         static void Write(BitStreamWriter destination,
                         byte[] source,
                         int sourceOffset,
-                        byte bitLength)
+                        int bitLength)
         {
             if (destination == null)
                 throw new ArgumentNullException(nameof(destination));

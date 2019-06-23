@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -108,6 +109,30 @@ namespace CanardSharp.Dsdl.TypesInterop.Utilities
             }
 
             return match;
+        }
+
+        public static TSource ForgivingCaseSensitiveFind<TSource>(this IEnumerable<TSource> source, Func<TSource, string> valueSelector, string testValue)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+            if (valueSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valueSelector));
+            }
+
+            IEnumerable<TSource> caseInsensitiveResults = source.Where(s => string.Equals(valueSelector(s), testValue, StringComparison.OrdinalIgnoreCase));
+            if (caseInsensitiveResults.Count() <= 1)
+            {
+                return caseInsensitiveResults.SingleOrDefault();
+            }
+            else
+            {
+                // multiple results returned. now filter using case sensitivity
+                IEnumerable<TSource> caseSensitiveResults = source.Where(s => string.Equals(valueSelector(s), testValue, StringComparison.Ordinal));
+                return caseSensitiveResults.SingleOrDefault();
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ namespace CanardSharp.Dsdl.TypesInterop.Utilities
     {
         static readonly ConcurrentDictionary<Type, EnumInfo> ValuesAndNamesPerEnum = new ConcurrentDictionary<Type, EnumInfo>();
         private const string EnumSeparatorString = ", ";
+        private const char EnumSeparatorChar = ',';
 
         static EnumInfo InitializeValuesAndNames(Type enumType)
         {
@@ -164,6 +165,157 @@ namespace CanardSharp.Dsdl.TypesInterop.Utilities
             }
 
             return returnString;
+        }
+
+        public static object ParseEnum(Type enumType, string value, bool disallowNumber)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            if (!enumType.IsEnum)
+            {
+                throw new ArgumentException("Type provided must be an Enum.", nameof(enumType));
+            }
+
+            EnumInfo entry = ValuesAndNamesPerEnum.GetOrAdd(enumType, InitializeValuesAndNames);
+            string[] enumNames = entry.Names;
+            string[] resolvedNames = entry.ResolvedNames;
+            ulong[] enumValues = entry.Values;
+
+            // first check if the entire text (including commas) matches a resolved name
+            int? matchingIndex = FindIndexByName(resolvedNames, value, 0, value.Length, StringComparison.Ordinal);
+            if (matchingIndex != null)
+            {
+                return Enum.ToObject(enumType, enumValues[matchingIndex.Value]);
+            }
+
+            int firstNonWhitespaceIndex = -1;
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (!char.IsWhiteSpace(value[i]))
+                {
+                    firstNonWhitespaceIndex = i;
+                    break;
+                }
+            }
+            if (firstNonWhitespaceIndex == -1)
+            {
+                throw new ArgumentException("Must specify valid information for parsing in the string.");
+            }
+
+            // check whether string is a number and parse as a number value
+            char firstNonWhitespaceChar = value[firstNonWhitespaceIndex];
+            if (char.IsDigit(firstNonWhitespaceChar) || firstNonWhitespaceChar == '-' || firstNonWhitespaceChar == '+')
+            {
+                Type underlyingType = Enum.GetUnderlyingType(enumType);
+
+                value = value.Trim();
+                object temp = null;
+
+                try
+                {
+                    temp = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
+                }
+                catch (FormatException)
+                {
+                    // We need to Parse this as a String instead. There are cases
+                    // when you tlbimp enums that can have values of the form "3D".
+                    // Don't fix this code.
+                }
+
+                if (temp != null)
+                {
+                    if (disallowNumber)
+                    {
+                        throw new FormatException("Integer string '{0}' is not allowed.".FormatWith(CultureInfo.InvariantCulture, value));
+                    }
+
+                    return Enum.ToObject(enumType, temp);
+                }
+            }
+
+            ulong result = 0;
+
+            int valueIndex = firstNonWhitespaceIndex;
+            while (valueIndex <= value.Length) // '=' is to handle invalid case of an ending comma
+            {
+                // Find the next separator, if there is one, otherwise the end of the string.
+                int endIndex = value.IndexOf(EnumSeparatorChar, valueIndex);
+                if (endIndex == -1)
+                {
+                    endIndex = value.Length;
+                }
+
+                // Shift the starting and ending indices to eliminate whitespace
+                int endIndexNoWhitespace = endIndex;
+                while (valueIndex < endIndex && char.IsWhiteSpace(value[valueIndex]))
+                {
+                    valueIndex++;
+                }
+
+                while (endIndexNoWhitespace > valueIndex && char.IsWhiteSpace(value[endIndexNoWhitespace - 1]))
+                {
+                    endIndexNoWhitespace--;
+                }
+                int valueSubstringLength = endIndexNoWhitespace - valueIndex;
+
+                // match with case sensitivity
+                matchingIndex = MatchName(value, enumNames, resolvedNames, valueIndex, valueSubstringLength, StringComparison.Ordinal);
+
+                // if no match found, attempt case insensitive search
+                if (matchingIndex == null)
+                {
+                    matchingIndex = MatchName(value, enumNames, resolvedNames, valueIndex, valueSubstringLength, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (matchingIndex == null)
+                {
+                    // still can't find a match
+                    // before we throw an error, check whether the entire string has a case insensitive match against resolve names
+                    matchingIndex = FindIndexByName(resolvedNames, value, 0, value.Length, StringComparison.OrdinalIgnoreCase);
+                    if (matchingIndex != null)
+                    {
+                        return Enum.ToObject(enumType, enumValues[matchingIndex.Value]);
+                    }
+
+                    // no match so error
+                    throw new ArgumentException("Requested value '{0}' was not found.".FormatWith(CultureInfo.InvariantCulture, value));
+                }
+
+                result |= enumValues[matchingIndex.Value];
+
+                // Move our pointer to the ending index to go again.
+                valueIndex = endIndex + 1;
+            }
+
+            return Enum.ToObject(enumType, result);
+        }
+
+        static int? MatchName(string value, string[] enumNames, string[] resolvedNames, int valueIndex, int valueSubstringLength, StringComparison comparison)
+        {
+            int? matchingIndex = FindIndexByName(resolvedNames, value, valueIndex, valueSubstringLength, comparison);
+            if (matchingIndex == null)
+            {
+                matchingIndex = FindIndexByName(enumNames, value, valueIndex, valueSubstringLength, comparison);
+            }
+
+            return matchingIndex;
+        }
+
+        static int? FindIndexByName(string[] enumNames, string value, int valueIndex, int valueSubstringLength, StringComparison comparison)
+        {
+            for (int i = 0; i < enumNames.Length; i++)
+            {
+                if (enumNames[i].Length == valueSubstringLength &&
+                    string.Compare(enumNames[i], 0, value, valueIndex, valueSubstringLength, comparison) == 0)
+                {
+                    return i;
+                }
+            }
+
+            return null;
         }
     }
 }

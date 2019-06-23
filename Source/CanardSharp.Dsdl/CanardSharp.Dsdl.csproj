@@ -32,6 +32,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
+    </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
@@ -43,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitExtensions.cs" />
+    <Compile Include="BitSerializer.cs" />
     <Compile Include="DataTypes\ArrayDsdlType.cs" />
     <Compile Include="DataTypes\ArrayDsdlTypeMode.cs" />
     <Compile Include="DataTypes\BooleanDsdlType.cs" />
@@ -56,6 +60,7 @@
     <Compile Include="DataTypes\IntDsdlType.cs" />
     <Compile Include="DataTypes\UIntDsdlType.cs" />
     <Compile Include="DsdlSerializer.cs" />
+    <Compile Include="DsdlSerializerReader.cs" />
     <Compile Include="DsdlSerializerWriter.cs" />
     <Compile Include="FileSystemUavcanTypeResolver.cs" />
     <Compile Include="IO\BitStream.cs" />
@@ -105,6 +110,8 @@
     <Compile Include="Range.cs" />
     <Compile Include="Signature.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

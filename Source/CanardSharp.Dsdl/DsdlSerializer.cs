@@ -20,9 +20,21 @@ namespace CanardSharp.Dsdl
             ContractResolver = new ContractResolver(schemeResolver);
         }
 
-        public T Deserialize<T>(byte[] buffer, int offset, int length)
+        public T Deserialize<T>(byte[] buffer, int offset)
         {
-            throw new NotImplementedException();
+            var type = typeof(T);
+            var contract = ContractResolver.ResolveContract(type);
+            if (contract.DsdlType == null)
+                throw new ArgumentException("Cannot find DSDL scheme for provided type.", nameof(T));
+
+            return (T)Deserialize(buffer, offset, contract.DsdlType, contract);
+        }
+
+        public object Deserialize(byte[] buffer, int offset, DsdlType dsdlScheme, IContract contract = null)
+        {
+            var stream = new BitStreamReader(buffer, startIndex: offset);
+            var reader = new DsdlSerializerReader(this);
+            return reader.Deserialize(stream, dsdlScheme, contract);
         }
 
         public int Serialize<T>(T value, byte[] buffer, int offset = 0)
@@ -33,7 +45,7 @@ namespace CanardSharp.Dsdl
             var type = typeof(T);
             var contract = ContractResolver.ResolveContract(type);
             if (contract.DsdlType == null)
-                throw new ArgumentException("Cannot find DSDL scheme for provided value.", nameof(value));
+                throw new ArgumentException("Cannot find DSDL scheme for provided type.", nameof(T));
 
             return Serialize(value, contract.DsdlType, buffer, offset);
         }

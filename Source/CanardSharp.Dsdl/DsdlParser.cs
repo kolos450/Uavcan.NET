@@ -206,7 +206,7 @@ namespace CanardSharp.Dsdl
                         Name = attrName,
                         Type = attrType,
                     };
-                    type.Fields.Add(field);
+                    type.AddMember(field);
                     if (attrName != null)
                         type.Members.Add(attrName, field);
                     break;
@@ -217,7 +217,7 @@ namespace CanardSharp.Dsdl
                         throw new Exception("Constant assignment expected.");
                     var expression = string.Join(" ", tokens, offset + 1, tokens.Length - offset - 1);
                     var constant = CreateConstant(attrType, attrName, expression);
-                    type.Constants.Add(constant);
+                    type.AddMember(constant);
                     if (attrName != null)
                         type.Members.Add(attrName, constant);
                     break;

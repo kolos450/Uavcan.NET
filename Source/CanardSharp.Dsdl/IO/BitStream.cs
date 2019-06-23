@@ -76,6 +76,8 @@ namespace CanardSharp.IO
 
             _byteArray = buffer;
             _bufferLengthInBits = (uint)buffer.Length * (uint)Native.BitsPerByte;
+
+            LengthInBytes = buffer.Length;
         }
 
         /// <summary>
@@ -94,6 +96,8 @@ namespace CanardSharp.IO
             _byteArray = buffer;
             _byteArrayIndex = startIndex;
             _bufferLengthInBits = (uint)(buffer.Length - startIndex) * (uint)Native.BitsPerByte;
+
+            LengthInBytes = buffer.Length;
         }
 
         /// <summary>
@@ -234,6 +238,7 @@ namespace CanardSharp.IO
 
         // maximum length of buffer to read in bits
         private uint _bufferLengthInBits = 0;
+        private int _bufferLengthInBytes = 0;
 
         // the index in the source buffer for the next byte to be read
         private int _byteArrayIndex = 0;
@@ -245,6 +250,8 @@ namespace CanardSharp.IO
 
         // the number of bits (partial byte) left to read in the overlapped byte field
         private int _cbitsInPartialByte = 0;
+
+        public int LengthInBytes { get; }
     }
 
     /// <summary>

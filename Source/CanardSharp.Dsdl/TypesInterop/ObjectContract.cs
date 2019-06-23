@@ -35,25 +35,25 @@ namespace CanardSharp.Dsdl.TypesInterop
             }
         }
 
-        /// <summary>
-        /// Gets or sets the function used to create the object. When set this function will override <see cref="JsonContract.DefaultCreator"/>.
-        /// This function is called with a collection of arguments which are defined by the <see cref="JsonObjectContract.CreatorParameters"/> collection.
-        /// </summary>
-        /// <value>The function used to create the object.</value>
-        public ObjectConstructor<object> OverrideCreator
-        {
-            get => _overrideCreator;
-            set => _overrideCreator = value;
-        }
+        ///// <summary>
+        ///// Gets or sets the function used to create the object. When set this function will override <see cref="JsonContract.DefaultCreator"/>.
+        ///// This function is called with a collection of arguments which are defined by the <see cref="JsonObjectContract.CreatorParameters"/> collection.
+        ///// </summary>
+        ///// <value>The function used to create the object.</value>
+        //public ObjectConstructor<object> OverrideCreator
+        //{
+        //    get => _overrideCreator;
+        //    set => _overrideCreator = value;
+        //}
 
-        internal ObjectConstructor<object> ParameterizedCreator
-        {
-            get => _parameterizedCreator;
-            set => _parameterizedCreator = value;
-        }
+        //internal ObjectConstructor<object> ParameterizedCreator
+        //{
+        //    get => _parameterizedCreator;
+        //    set => _parameterizedCreator = value;
+        //}
 
-        private ObjectConstructor<object> _overrideCreator;
-        private ObjectConstructor<object> _parameterizedCreator;
+        //private ObjectConstructor<object> _overrideCreator;
+        //private ObjectConstructor<object> _parameterizedCreator;
         private DsdlPropertyCollection _creatorParameters;
 
         /// <summary>

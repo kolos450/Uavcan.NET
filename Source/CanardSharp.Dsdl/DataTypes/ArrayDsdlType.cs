@@ -13,6 +13,8 @@ namespace CanardSharp.Dsdl.DataTypes
         int _maxSize;
 
         public DsdlType ItemType => _valueType;
+        public ArrayDsdlTypeMode Mode => _mode;
+        public int MaxSize => _maxSize;
 
         public ArrayDsdlType(DsdlType valueType, ArrayDsdlTypeMode mode, int maxSize)
         {

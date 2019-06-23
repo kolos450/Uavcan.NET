@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace CanardSharp.Dsdl.TypesInterop.Utilities
@@ -131,6 +132,212 @@ namespace CanardSharp.Dsdl.TypesInterop.Utilities
 
             isEnum = false;
             return PrimitiveTypeCode.Object;
+        }
+
+        public static bool IsInteger(object value)
+        {
+            switch (GetTypeCode(value.GetType()))
+            {
+                case PrimitiveTypeCode.SByte:
+                case PrimitiveTypeCode.Byte:
+                case PrimitiveTypeCode.Int16:
+                case PrimitiveTypeCode.UInt16:
+                case PrimitiveTypeCode.Int32:
+                case PrimitiveTypeCode.UInt32:
+                case PrimitiveTypeCode.Int64:
+                case PrimitiveTypeCode.UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Converts the value to the specified type. If the value is unable to be converted, the
+        /// value is checked whether it assignable to the specified type.
+        /// </summary>
+        /// <param name="initialValue">The value to convert.</param>
+        /// <param name="culture">The culture to use when converting.</param>
+        /// <param name="targetType">The type to convert or cast the value to.</param>
+        /// <returns>
+        /// The converted type. If conversion was unsuccessful, the initial value
+        /// is returned if assignable to the target type.
+        /// </returns>
+        public static object ConvertOrCast(object initialValue, CultureInfo culture, Type targetType)
+        {
+            if (targetType == typeof(object))
+            {
+                return initialValue;
+            }
+
+            if (initialValue == null && ReflectionUtils.IsNullable(targetType))
+            {
+                return null;
+            }
+
+            if (TryConvert(initialValue, culture, targetType, out object convertedValue))
+            {
+                return convertedValue;
+            }
+
+            return EnsureTypeAssignable(initialValue, initialValue?.GetType(), targetType);
+        }
+
+        static object EnsureTypeAssignable(object value, Type initialType, Type targetType)
+        {
+            Type valueType = value?.GetType();
+
+            if (value != null)
+            {
+                if (targetType.IsAssignableFrom(valueType))
+                {
+                    return value;
+                }
+            }
+            else
+            {
+                if (ReflectionUtils.IsNullable(targetType))
+                {
+                    return null;
+                }
+            }
+
+            throw new ArgumentException("Could not cast or convert from {0} to {1}.".FormatWith(CultureInfo.InvariantCulture, initialType?.ToString() ?? "{null}", targetType));
+        }
+
+        static bool TryConvert(object initialValue, CultureInfo culture, Type targetType, out object value)
+        {
+            try
+            {
+                if (TryConvertInternal(initialValue, culture, targetType, out value) == ConvertResult.Success)
+                {
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+            catch
+            {
+                value = null;
+                return false;
+            }
+        }
+
+        internal enum ConvertResult
+        {
+            Success = 0,
+            CannotConvertNull = 1,
+            NotInstantiableType = 2,
+            NoValidConversion = 3
+        }
+
+        static ConvertResult TryConvertInternal(object initialValue, CultureInfo culture, Type targetType, out object value)
+        {
+            if (initialValue == null)
+            {
+                throw new ArgumentNullException(nameof(initialValue));
+            }
+
+            if (ReflectionUtils.IsNullableType(targetType))
+            {
+                targetType = Nullable.GetUnderlyingType(targetType);
+            }
+
+            Type initialType = initialValue.GetType();
+
+            if (targetType == initialType)
+            {
+                value = initialValue;
+                return ConvertResult.Success;
+            }
+
+            // use Convert.ChangeType if both types are IConvertible
+            if (IsConvertible(initialValue.GetType()) && IsConvertible(targetType))
+            {
+                if (targetType.IsEnum)
+                {
+                    if (initialValue is string)
+                    {
+                        value = Enum.Parse(targetType, initialValue.ToString(), true);
+                        return ConvertResult.Success;
+                    }
+                    else if (IsInteger(initialValue))
+                    {
+                        value = Enum.ToObject(targetType, initialValue);
+                        return ConvertResult.Success;
+                    }
+                }
+
+                value = System.Convert.ChangeType(initialValue, targetType, culture);
+                return ConvertResult.Success;
+            }
+
+            if (initialValue is DateTime dt && targetType == typeof(DateTimeOffset))
+            {
+                value = new DateTimeOffset(dt);
+                return ConvertResult.Success;
+            }
+
+            if (initialValue is byte[] bytes && targetType == typeof(Guid))
+            {
+                value = new Guid(bytes);
+                return ConvertResult.Success;
+            }
+
+            if (initialValue is Guid guid && targetType == typeof(byte[]))
+            {
+                value = guid.ToByteArray();
+                return ConvertResult.Success;
+            }
+
+            if (initialValue is string s)
+            {
+                if (targetType == typeof(Guid))
+                {
+                    value = new Guid(s);
+                    return ConvertResult.Success;
+                }
+                if (targetType == typeof(Uri))
+                {
+                    value = new Uri(s, UriKind.RelativeOrAbsolute);
+                    return ConvertResult.Success;
+                }
+                if (targetType == typeof(TimeSpan))
+                {
+                    value = TimeSpan.Parse(s, CultureInfo.InvariantCulture);
+                    return ConvertResult.Success;
+                }
+                if (targetType == typeof(byte[]))
+                {
+                    value = System.Convert.FromBase64String(s);
+                    return ConvertResult.Success;
+                }
+                if (targetType == typeof(Version))
+                {
+                    if (Version.TryParse(s, out Version result))
+                    {
+                        value = result;
+                        return ConvertResult.Success;
+                    }
+                    value = null;
+                    return ConvertResult.NoValidConversion;
+                }
+                if (typeof(Type).IsAssignableFrom(targetType))
+                {
+                    value = Type.GetType(s, true);
+                    return ConvertResult.Success;
+                }
+            }
+
+            if (targetType.IsInterface() || targetType.IsGenericTypeDefinition || targetType.IsAbstract)
+            {
+                value = null;
+                return ConvertResult.NotInstantiableType;
+            }
+
+            value = null;
+            return ConvertResult.NoValidConversion;
         }
     }
 }

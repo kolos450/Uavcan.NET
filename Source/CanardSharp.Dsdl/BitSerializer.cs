@@ -1,19 +1,57 @@
 ﻿using CanardSharp.IO;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace CanardSharp
+namespace CanardSharp.Dsdl
 {
-    class UavcanSerializer
+    static class BitSerializer
     {
-        public bool DeserializeBoolean(BitStreamReader bitStream, byte bitLength) =>
-            Deserialize(bitStream, b => LittleEndianBitConverter.ToBoolean(b), bitLength);
-        public long DeserializeInt(BitStreamReader bitStream, byte bitLength) =>
-            Deserialize(bitStream, b => ExtendSignBit(LittleEndianBitConverter.ToInt64(b), bitLength), bitLength);
-        public ulong DeserializeUInt(BitStreamReader bitStream, byte bitLength) =>
-            Deserialize(bitStream, b => LittleEndianBitConverter.ToUInt64(b), bitLength);
-        public double DeserializeFloat(BitStreamReader bitStream, byte bitLength) =>
-            Deserialize(bitStream, b => LittleEndianBitConverter.ToDouble(b), bitLength);
+        public static int IntBitLength(int value) => Math.Max((int)Math.Ceiling(Math.Log(value, 2)), 1);
+
+        public static bool ReadBoolean(BitStreamReader bitStream, int bitLength) =>
+            Read(bitStream, b => LittleEndianBitConverter.ToBoolean(b), bitLength);
+        public static long ReadInt(BitStreamReader bitStream, int bitLength) =>
+            Read(bitStream, b => ExtendSignBit(LittleEndianBitConverter.ToInt64(b), bitLength), bitLength);
+        public static ulong ReadUInt(BitStreamReader bitStream, int bitLength) =>
+            Read(bitStream, b => LittleEndianBitConverter.ToUInt64(b), bitLength);
+        public static double ReadFloat(BitStreamReader bitStream, int bitLength) =>
+            Read(bitStream, b => LittleEndianBitConverter.ToDouble(b), bitLength);
+
+        public static object ReadIntTyped(BitStreamReader bitStream, int bitLength)
+        {
+            var value = ReadInt(bitStream, bitLength);
+            if (bitLength <= 8)
+                return (sbyte)value;
+            if (bitLength <= 16)
+                return (short)value;
+            if (bitLength <= 32)
+                return (int)value;
+            return value;
+        }
+
+        public static object ReadUIntTyped(BitStreamReader bitStream, int bitLength)
+        {
+            var value = ReadUInt(bitStream, bitLength);
+            if (bitLength <= 8)
+                return (byte)value;
+            if (bitLength <= 16)
+                return (ushort)value;
+            if (bitLength <= 32)
+                return (uint)value;
+            return value;
+        }
+
+        public static object ReadFloatTyped(BitStreamReader bitStream, int bitLength)
+        {
+            var value = ReadFloat(bitStream, bitLength);
+            if (bitLength <= 32)
+                return (float)value;
+            return value;
+        }
 
         /**
          * This function can be used to extract values from received UAVCAN transfers. It decodes a scalar value -
@@ -42,7 +80,7 @@ namespace CanardSharp
          *  | [33, 64]   | false           | ulong                                 |
          *  | [33, 64]   | true            | long, or 64-bit float                 |
          */
-        T Deserialize<T>(BitStreamReader reader, Func<byte[], T> func, byte bitLength)
+        static T Read<T>(BitStreamReader reader, Func<byte[], T> func, int bitLength)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -102,15 +140,15 @@ namespace CanardSharp
             return value;
         }
 
-        ArrayPool<byte> _arrayPool = ArrayPool<byte>.Create();
+        static ArrayPool<byte> _arrayPool = ArrayPool<byte>.Create();
 
-        void Serialize(BitStreamWriter destination, Action<byte[]> bytesFiller, byte bitLength)
+        static void Write(BitStreamWriter destination, Action<byte[]> bytesFiller, byte bitLength)
         {
             var buffer = _arrayPool.Rent(8);
             try
             {
                 bytesFiller(buffer);
-                Serialize(destination, buffer, 0, bitLength);
+                Write(destination, buffer, 0, bitLength);
             }
             finally
             {
@@ -118,28 +156,28 @@ namespace CanardSharp
             }
         }
 
-        public void Serialize(BitStreamWriter destination, bool value, byte bitLength) =>
-            Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, sbyte value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, byte value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, short value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, ushort value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, int value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, uint value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public void Serialize(BitStreamWriter destination, long value, byte bitLength) =>
-            Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public void Serialize(BitStreamWriter destination, ulong value, byte bitLength) =>
-            Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Serialize(BitStreamWriter destination, float value, byte bitLength) =>
-        //    Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        public void Serialize(BitStreamWriter destination, double value, byte bitLength) =>
-            Serialize(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        public static void Write(BitStreamWriter destination, bool value, byte bitLength) =>
+            Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, sbyte value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, byte value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, short value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, ushort value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, int value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, uint value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        public static void Write(BitStreamWriter destination, long value, byte bitLength) =>
+            Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        public static void Write(BitStreamWriter destination, ulong value, byte bitLength) =>
+            Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        //public void Write(BitStreamWriter destination, float value, byte bitLength) =>
+        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        public static void Write(BitStreamWriter destination, double value, byte bitLength) =>
+            Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
 
         /**
          * This function can be used to encode values for later transmission in a UAVCAN transfer. It encodes a scalar value -
@@ -161,7 +199,7 @@ namespace CanardSharp
          *  | [17, 32]   | uint, int, or 32-bit float            |
          *  | [33, 64]   | ulong, long, or 64-bit float          |
          */
-        void Serialize(BitStreamWriter destination,
+        static void Write(BitStreamWriter destination,
                         byte[] source,
                         int sourceOffset,
                         byte bitLength)

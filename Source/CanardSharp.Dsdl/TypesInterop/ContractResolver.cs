@@ -242,23 +242,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             {
                 if (contract.DefaultCreator == null || contract.DefaultCreatorNonPublic)
                 {
-                    ConstructorInfo constructor = GetParameterizedConstructor(contract.NonNullableUnderlyingType);
-                    if (constructor != null)
-                    {
-                        contract.ParameterizedCreator = TypeReflector.ReflectionDelegateFactory.CreateParameterizedConstructor(constructor);
-                        contract.CreatorParameters.AddRange(CreateConstructorParameters(constructor, contract.Properties));
-                    }
-                }
-                else if (contract.NonNullableUnderlyingType.IsValueType())
-                {
-                    // value types always have default constructor
-                    // check whether there is a constructor that matches with non-writable properties on value type
-                    ConstructorInfo constructor = GetImmutableConstructor(contract.NonNullableUnderlyingType, contract.Properties);
-                    if (constructor != null)
-                    {
-                        contract.OverrideCreator = TypeReflector.ReflectionDelegateFactory.CreateParameterizedConstructor(constructor);
-                        contract.CreatorParameters.AddRange(CreateConstructorParameters(constructor, contract.Properties));
-                    }
+                    throw new NotSupportedException($"Public default constructor expected, '{contract.UnderlyingType.FullName}'.");
                 }
             }
 

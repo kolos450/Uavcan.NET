@@ -1,4 +1,5 @@
-﻿using CanardSharp.Dsdl.TypesInterop;
+﻿using CanardSharp.Dsdl.DataTypes;
+using CanardSharp.Dsdl.TypesInterop;
 using CanardSharp.IO;
 using System;
 using System.Collections.Generic;
@@ -29,13 +30,24 @@ namespace CanardSharp.Dsdl
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            var type = value.GetType();
+            var type = typeof(T);
+            var contract = ContractResolver.ResolveContract(type);
+            if (contract.DsdlType == null)
+                throw new ArgumentException("Cannot find DSDL scheme for provided value.", nameof(value));
+
+            return Serialize(value, contract.DsdlType, buffer, offset);
+        }
+
+        public int Serialize(object value, DsdlType dsdlScheme, byte[] buffer, int offset = 0)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
             var bytesList = new List<byte>();
             var stream = new BitStreamWriter(bytesList);
-            var contract = ContractResolver.ResolveContract(type);
 
             var writer = new DsdlSerializerWriter(this);
-            writer.Serialize(stream, value, contract);
+            writer.Serialize(stream, value, dsdlScheme);
             var bytesCount = bytesList.Count;
 
             for (int i = 0; i < bytesCount; i++)

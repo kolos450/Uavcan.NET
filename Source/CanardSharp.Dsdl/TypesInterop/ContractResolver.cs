@@ -140,12 +140,40 @@ namespace CanardSharp.Dsdl.TypesInterop
 
             t = ReflectionUtils.EnsureNotNullableType(t);
 
+            if (CollectionUtils.IsDictionaryType(t))
+            {
+                return CreateDictionaryContract(objectType);
+            }
+
             if (typeof(IEnumerable).IsAssignableFrom(t))
             {
                 return CreateArrayContract(objectType);
             }
 
             return CreateObjectContract(objectType);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="JsonDictionaryContract"/> for the given type.
+        /// </summary>
+        /// <param name="objectType">Type of the object.</param>
+        /// <returns>A <see cref="JsonDictionaryContract"/> for the given type.</returns>
+        protected virtual DictionaryContract CreateDictionaryContract(Type objectType)
+        {
+            DictionaryContract contract = new DictionaryContract(objectType);
+            InitializeContract(contract);
+            contract.DictionaryKeyResolver = ResolveDictionaryKey;
+            return contract;
+        }
+
+        /// <summary>
+        /// Resolves the key of the dictionary. By default <see cref="ResolvePropertyName"/> is used to resolve dictionary keys.
+        /// </summary>
+        /// <param name="dictionaryKey">Key of the dictionary.</param>
+        /// <returns>Resolved key of the dictionary.</returns>
+        protected virtual string ResolveDictionaryKey(string dictionaryKey)
+        {
+            return dictionaryKey;
         }
 
         static bool IsSupportedPrimitiveType(Type t)
@@ -205,7 +233,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             ObjectContract contract = new ObjectContract(objectType);
             InitializeContract(contract);
 
-            var scheme = ResolveDsdlType(objectType);
+            var scheme = TryResolveDsdlType(objectType);
             contract.DsdlType = scheme;
 
             contract.Properties.AddRange(CreateProperties(contract.NonNullableUnderlyingType, scheme));
@@ -241,6 +269,9 @@ namespace CanardSharp.Dsdl.TypesInterop
 
         void ValidateDsdlTypeCompatibility(ObjectContract contract, CompositeDsdlType scheme)
         {
+            if (scheme == null)
+                return;
+
             foreach (var member in scheme.Fields)
             {
                 if (member.Type is VoidDsdlType)
@@ -251,7 +282,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             }
         }
 
-        CompositeDsdlType ResolveDsdlType(Type type)
+        CompositeDsdlType TryResolveDsdlType(Type type)
         {
             string ns = null, name = null, suffix = null;
 
@@ -265,7 +296,7 @@ namespace CanardSharp.Dsdl.TypesInterop
                 if (dataContractAttribute.IsNameSetExplicitly)
                 {
                     name = dataContractAttribute.Name;
-                    var colonIndex = name.LastIndexOf(':');
+                    var colonIndex = name.LastIndexOf('.');
                     if (colonIndex != -1)
                     {
                         suffix = name.Substring(colonIndex + 1);
@@ -279,7 +310,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             if (name == null)
                 name = type.Name;
 
-            var uavcanType = _schemeResolver.ResolveType(ns, name);
+            var uavcanType = _schemeResolver.TryResolveType(ns, name);
             switch (uavcanType)
             {
                 case MessageType t:
@@ -295,7 +326,7 @@ namespace CanardSharp.Dsdl.TypesInterop
                             throw new InvalidOperationException($"{ns}.{name} is service. Please specify :request or :response suffix explicitly.");
                     }
                 default:
-                    throw new InvalidOperationException("{ns}.{name} has unknown type.");
+                    return null;
             }
         }
 
@@ -436,7 +467,8 @@ namespace CanardSharp.Dsdl.TypesInterop
 
                 if (property != null)
                 {
-                    property.DsdlType = scheme.TryGetField(property.PropertyName)?.Type;
+                    if (scheme != null)
+                        property.DsdlType = scheme.TryGetField(property.PropertyName)?.Type;
 
                     properties.AddProperty(property);
                 }

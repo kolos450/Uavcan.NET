@@ -68,7 +68,6 @@
     <Compile Include="TypesInterop\ArrayContract.cs" />
     <Compile Include="TypesInterop\ContainerContract.cs" />
     <Compile Include="TypesInterop\ContractResolver.cs" />
-    <Compile Include="TypesInterop\ContractResolverEx.cs" />
     <Compile Include="TypesInterop\DictionaryContract.cs" />
     <Compile Include="TypesInterop\DsdlProperty.cs" />
     <Compile Include="TypesInterop\DsdlPropertyCollection.cs" />
@@ -88,6 +87,8 @@
     <Compile Include="TypesInterop\Utilities\CollectionUtils.cs" />
     <Compile Include="TypesInterop\Utilities\ConvertUtils.cs" />
     <Compile Include="TypesInterop\Utilities\DynamicReflectionDelegateFactory.cs" />
+    <Compile Include="TypesInterop\Utilities\EnumInfo.cs" />
+    <Compile Include="TypesInterop\Utilities\EnumUtils.cs" />
     <Compile Include="TypesInterop\Utilities\ILGeneratorExtensions.cs" />
     <Compile Include="TypesInterop\Utilities\MethodCall.cs" />
     <Compile Include="TypesInterop\Utilities\ObjectConstructor.cs" />

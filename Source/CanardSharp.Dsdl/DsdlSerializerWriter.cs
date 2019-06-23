@@ -23,9 +23,10 @@ namespace CanardSharp.Dsdl
             _serializer = dsdlSerializer;
         }
 
-        public void Serialize<T>(BitStreamWriter stream, T value, IContract contract)
+        public void Serialize(BitStreamWriter stream, object value, DsdlType dsdlScheme)
         {
-            SerializeValue(stream, value, contract, null, null, null, null);
+            var contract = _serializer.ContractResolver.ResolveContract(value.GetType());
+            SerializeValue(stream, value, contract, null, null, null, dsdlScheme);
         }
 
         private void SerializeValue(BitStreamWriter writer, object value, IContract valueContract, DsdlProperty member, ContainerContract containerContract, DsdlProperty containerProperty, DsdlType derivedDsdlType)
@@ -36,7 +37,7 @@ namespace CanardSharp.Dsdl
             switch (valueContract)
             {
                 case ObjectContract contract:
-                    SerializeObject(writer, value, contract, member, containerContract, containerProperty);
+                    SerializeObject(writer, value, contract, member, containerContract, containerProperty, derivedDsdlType);
                     break;
                 case ArrayContract contract:
                     if (contract.IsMultidimensionalArray)
@@ -45,6 +46,9 @@ namespace CanardSharp.Dsdl
                     break;
                 case PrimitiveContract contract:
                     SerializePrimitive(writer, value, contract, member, containerContract, containerProperty, derivedDsdlType);
+                    break;
+                case DictionaryContract contract:
+                    SerializeDictionary(writer, (value is IDictionary dictionary) ? dictionary : contract.CreateWrapper(value), contract, member, containerContract, containerProperty, derivedDsdlType);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -56,7 +60,7 @@ namespace CanardSharp.Dsdl
             if (!(derivedDsdlType is PrimitiveDsdlType))
                 throw new InvalidOperationException($"Primitive DSDL type expected for type '{contract.UnderlyingType.FullName}'.");
 
-
+            Console.WriteLine($"{value.GetType().Name} {value}");
 
             //JsonWriter.WriteValue(writer, contract.TypeCode, value);
         }
@@ -79,20 +83,22 @@ namespace CanardSharp.Dsdl
             return true;
         }
 
-        void SerializeObject(BitStreamWriter writer, object value, ObjectContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty)
+        void SerializeObject(BitStreamWriter writer, object value, ObjectContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty, DsdlType derivedDsdlType)
         {
-            if (!(contract.DsdlType is CompositeDsdlType compositeDsdlType))
-                throw new InvalidOperationException($"Composite DSDL type expected for type '{contract.UnderlyingType.FullName}'.");
+            var dsdlScheme = GetScheme<CompositeDsdlType>(contract, derivedDsdlType);
 
             _serializeStack.Push(value);
 
             //WriteObjectStart(writer, value, contract, member, collectionContract, containerProperty);
 
-            foreach (var dsdlMember in compositeDsdlType.Fields)
+            foreach (var dsdlMember in dsdlScheme.Fields)
             {
+                if (dsdlMember.Type is VoidDsdlType voidDsdlType)
+                    WriteAlignment(writer, voidDsdlType);
+
                 var property = contract.Properties.GetProperty(dsdlMember.Name, StringComparison.Ordinal);
 
-                if (!CalculatePropertyValues(value, contract, member, property, out var memberContract, out var memberValue, out var derivedDsdlType))
+                if (!CalculatePropertyValues(value, contract, member, property, out var memberContract, out var memberValue, out derivedDsdlType))
                     continue;
 
                 //property.WritePropertyName(writer);
@@ -102,6 +108,38 @@ namespace CanardSharp.Dsdl
             //writer.WriteEndObject();
 
             _serializeStack.Pop();
+        }
+
+        void WriteAlignment(BitStreamWriter writer, VoidDsdlType voidDsdlType)
+        {
+            throw new NotImplementedException();
+        }
+
+        static T GetScheme<T>(IContract contract, DsdlType derivedScheme) where T : DsdlType
+        {
+            T result = null;
+            var schemeFromContract = contract.DsdlType;
+            if (schemeFromContract != null)
+            {
+                result = schemeFromContract as T;
+                if (result == null)
+                    throw new InvalidOperationException($"Unexpected DSDL type for type '{contract.UnderlyingType.FullName}'.");
+            }
+
+            if (derivedScheme != null)
+            {
+                if (result != null && result != derivedScheme)
+                    throw new InvalidOperationException($"DSDL scheme mismatch for type '{contract.UnderlyingType.FullName}'.");
+
+                result = derivedScheme as T;
+                if (result == null)
+                    throw new InvalidOperationException($"Unexpected DSDL type for type '{contract.UnderlyingType.FullName}'.");
+            }
+
+            if (result == null)
+                throw new InvalidOperationException($"Unexpected DSDL type for type '{contract.UnderlyingType.FullName}'.");
+
+            return result;
         }
 
         bool CalculatePropertyValues(object value, ContainerContract contract, DsdlProperty propertyOwner, DsdlProperty property, out IContract memberContract, out object memberValue, out DsdlType derivedDsdlType)
@@ -153,7 +191,7 @@ namespace CanardSharp.Dsdl
             foreach (object value in values)
             {
                 var valueContract = contract.FinalItemContract ??
-                    _serializer.ContractResolver.ResolveContract(value.GetType());
+                    (value == null ? null : _serializer.ContractResolver.ResolveContract(value.GetType()));
 
                 if (!CheckForCircularReference(value, null, valueContract))
                     continue;
@@ -189,6 +227,103 @@ namespace CanardSharp.Dsdl
             }
 
             return true;
+        }
+
+        void SerializeDictionary(BitStreamWriter writer, IDictionary values, DictionaryContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty, DsdlType derivedDsdlType)
+        {
+            var dsdlScheme = GetScheme<CompositeDsdlType>(contract, derivedDsdlType);
+
+            object underlyingDictionary = values is IWrappedDictionary wrappedDictionary ? wrappedDictionary.UnderlyingDictionary : values;
+
+            _serializeStack.Push(underlyingDictionary);
+
+            //WriteObjectStart(writer, underlyingDictionary, contract, member, collectionContract, containerProperty);
+
+            if (contract.ItemContract == null)
+                contract.ItemContract = _serializer.ContractResolver.ResolveContract(contract.DictionaryValueType ?? typeof(object));
+
+            if (contract.KeyContract == null)
+                contract.KeyContract = _serializer.ContractResolver.ResolveContract(contract.DictionaryKeyType ?? typeof(object));
+
+            var dictionaryNormalized = PreprocessDictionary(values, contract);
+
+            foreach (var dsdlMember in dsdlScheme.Fields)
+            {
+                if (dsdlMember.Type is VoidDsdlType voidDsdlType)
+                    WriteAlignment(writer, voidDsdlType);
+
+                if (!dictionaryNormalized.TryGetValue(dsdlMember.Name, out var value))
+                    throw new InvalidOperationException($"Cannot get member '{dsdlMember.Name}' from dictionary.");
+
+                var valueContract = contract.FinalItemContract ??
+                    (value == null ? null : _serializer.ContractResolver.ResolveContract(value.GetType()));
+
+                if (!CheckForCircularReference(value, null, valueContract))
+                    continue;
+
+                //writer.WritePropertyName(dsdlMember.Name, escape);
+
+                SerializeValue(writer, value, valueContract, null, contract, member, dsdlMember.Type);
+            }
+
+            //writer.WriteEndObject();
+
+            _serializeStack.Pop();
+        }
+
+        IDictionary<string, object> PreprocessDictionary(IDictionary values, DictionaryContract contract)
+        {
+            var result = new Dictionary<string, object>(StringComparer.Ordinal);
+
+            // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+            IDictionaryEnumerator e = values.GetEnumerator();
+            try
+            {
+                while (e.MoveNext())
+                {
+                    DictionaryEntry entry = e.Entry;
+
+                    string propertyName = GetPropertyName(entry.Key, contract.KeyContract, out bool escape);
+
+                    propertyName = (contract.DictionaryKeyResolver != null)
+                        ? contract.DictionaryKeyResolver(propertyName)
+                        : propertyName;
+
+                    result[propertyName] = entry.Value;
+                }
+            }
+            finally
+            {
+                (e as IDisposable)?.Dispose();
+            }
+
+            return result;
+        }
+
+        string GetPropertyName(object name, IContract contract, out bool escape)
+        {
+            if (contract is PrimitiveContract primitiveContract)
+            {
+                switch (primitiveContract.TypeCode)
+                {
+                    default:
+                        {
+                            escape = true;
+
+                            if (primitiveContract.IsEnum && EnumUtils.TryToString(primitiveContract.NonNullableUnderlyingType, name, out string enumName))
+                            {
+                                return enumName;
+                            }
+
+                            return Convert.ToString(name, CultureInfo.InvariantCulture);
+                        }
+                }
+            }
+            else
+            {
+                escape = true;
+                return name.ToString();
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanardSharp.Harness.Data
 {
-    [DataContract(Name = "IOState:Request", Namespace = "kplc")]
+    [DataContract(Name = "IOState.Request", Namespace = "kplc")]
     sealed class IOStateRequest
     {
         [DataMember(Name = "state")]

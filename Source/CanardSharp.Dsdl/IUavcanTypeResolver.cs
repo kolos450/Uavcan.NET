@@ -10,5 +10,6 @@ namespace CanardSharp.Dsdl
     public interface IUavcanTypeResolver
     {
         UavcanType ResolveType(string ns, string typeName);
+        UavcanType TryResolveType(string ns, string typeName);
     }
 }

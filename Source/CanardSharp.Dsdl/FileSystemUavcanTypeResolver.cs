@@ -70,7 +70,7 @@ namespace CanardSharp.Dsdl
                 throw new Exception($"Invalid namespace: '{value}'.");
         }
 
-        string LocateNamespaceDirectory(string ns)
+        string TryLocateNamespaceDirectory(string ns)
         {
             var namespaceComponents = ns.Split(new[] { '.' }, 2);
             string subPath = string.Empty;
@@ -90,7 +90,7 @@ namespace CanardSharp.Dsdl
                 return Path.Combine(_root, subPath);
             }
 
-            throw new Exception($"Unknown namespace: {ns}.");
+            return null;
         }
 
         string TryLocateCompoundTypeDefiniton(string currentNs, string requiredTypeName)
@@ -100,7 +100,9 @@ namespace CanardSharp.Dsdl
                 requiredTypeName;
 
             var ns = fullTypeName.Substring(0, fullTypeName.LastIndexOf('.'));
-            var nsDirectory = LocateNamespaceDirectory(ns);
+            var nsDirectory = TryLocateNamespaceDirectory(ns);
+            if (nsDirectory == null)
+                return null;
 
             foreach (var file in Directory.EnumerateFiles(nsDirectory, "*." + DsdlExtension))
             {
@@ -118,9 +120,15 @@ namespace CanardSharp.Dsdl
 
         public UavcanType ResolveType(string ns, string typeName)
         {
+            return TryResolveType(ns, typeName) ??
+                 throw new Exception($"Type definition not found: {typeName}.");
+        }
+
+        public UavcanType TryResolveType(string ns, string typeName)
+        {
             var definitionPath = TryLocateCompoundTypeDefiniton(ns, typeName);
             if (definitionPath == null)
-                throw new Exception($"Type definition not found: {typeName}.");
+                return null;
 
             var meta = ParseMeta(definitionPath);
             using (var stream = File.Open(definitionPath, FileMode.Open, FileAccess.Read, FileShare.Read))

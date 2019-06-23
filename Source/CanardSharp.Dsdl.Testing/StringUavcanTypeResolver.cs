@@ -23,11 +23,16 @@ namespace CanardSharp.Dsdl.Testing
 
         public UavcanType ResolveType(string ns, string typeName)
         {
+            return TryResolveType(ns, typeName) ??
+                 throw new Exception($"Type definition not found: {typeName}.");
+        }
+        public UavcanType TryResolveType(string ns, string typeName)
+        {
             (UavcanTypeMeta Meta, string Definition) pair;
 
             if (!_lookup.TryGetValue(typeName, out pair) &&
                 !_lookup.TryGetValue(ns + "." + typeName, out pair))
-                throw new Exception($"Type definition not found: {typeName}.");
+                return null;
 
             using (var reader = new StringReader(pair.Definition))
             {

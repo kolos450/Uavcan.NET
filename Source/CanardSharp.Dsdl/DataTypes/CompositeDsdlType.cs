@@ -39,5 +39,17 @@ namespace CanardSharp.Dsdl.DataTypes
             throw new NotSupportedException();
 
         public override ulong? GetDataTypeSignature() => null;
+
+        public DsdlField TryGetField(string fieldName)
+        {
+            if (fieldName == null)
+                throw new ArgumentNullException(nameof(fieldName));
+
+            var fields = Fields;
+            if (fieldName == null)
+                return null;
+
+            return fields.FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.Ordinal));
+        }
     }
 }

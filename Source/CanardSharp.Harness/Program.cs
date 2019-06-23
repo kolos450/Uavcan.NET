@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CanardSharp.Dsdl;
+using CanardSharp.Harness.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +12,18 @@ namespace CanardSharp.Harness
     {
         static void Main(string[] args)
         {
+            var schemeResolver = new FileSystemUavcanTypeResolver(@"C:\Sources\libuavcan\dsdl\kplc");
+            var serializer = new DsdlSerializer(schemeResolver);
+
+            var iostate = new IOStateRequest
+            {
+                State = new byte[3] { 1, 2, 3 },
+                StateInverted = new byte[3] { 1, 2, 3 },
+            };
+
+            var maxBufferLength = serializer.GetMaxBufferLength<IOStateRequest>();
+            var buffer = new byte[maxBufferLength];
+            serializer.Serialize(iostate, buffer);
         }
     }
 }

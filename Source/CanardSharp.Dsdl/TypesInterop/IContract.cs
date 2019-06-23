@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using CanardSharp.Dsdl.DataTypes;
 using CanardSharp.Dsdl.TypesInterop.Utilities;
 
 namespace CanardSharp.Dsdl.TypesInterop
 {
-    public class ResolvedContract
+    public abstract class IContract
     {
         internal bool IsNullable;
         internal bool IsConvertable;
@@ -57,7 +58,9 @@ namespace CanardSharp.Dsdl.TypesInterop
         /// <value><c>true</c> if the default object creator is non-public; otherwise, <c>false</c>.</value>
         public bool DefaultCreatorNonPublic { get; set; }
 
-        internal ResolvedContract(Type underlyingType)
+        public DsdlType DsdlType { get; set; }
+
+        internal IContract(Type underlyingType)
         {
             if (underlyingType == null)
                 throw new ArgumentNullException(nameof(underlyingType));

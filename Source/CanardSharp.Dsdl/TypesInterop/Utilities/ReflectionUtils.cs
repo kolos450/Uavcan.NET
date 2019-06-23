@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -508,6 +509,333 @@ namespace CanardSharp.Dsdl.TypesInterop.Utilities
             }
 
             return false;
+        }
+
+        public static Type EnsureNotNullableType(Type t)
+        {
+            return (IsNullableType(t))
+                ? Nullable.GetUnderlyingType(t)
+                : t;
+        }
+
+        public static bool ImplementsGenericDefinition(Type type, Type genericInterfaceDefinition)
+        {
+            return ImplementsGenericDefinition(type, genericInterfaceDefinition, out _);
+        }
+
+        public static bool ImplementsGenericDefinition(Type type, Type genericInterfaceDefinition, out Type implementingType)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(genericInterfaceDefinition));
+
+            if (!genericInterfaceDefinition.IsInterface() || !genericInterfaceDefinition.IsGenericTypeDefinition)
+            {
+                throw new ArgumentNullException("'{0}' is not a generic interface definition.".FormatWith(CultureInfo.InvariantCulture, genericInterfaceDefinition));
+            }
+
+            if (type.IsInterface())
+            {
+                if (type.IsGenericType())
+                {
+                    Type interfaceDefinition = type.GetGenericTypeDefinition();
+
+                    if (genericInterfaceDefinition == interfaceDefinition)
+                    {
+                        implementingType = type;
+                        return true;
+                    }
+                }
+            }
+
+            foreach (Type i in type.GetInterfaces())
+            {
+                if (i.IsGenericType())
+                {
+                    Type interfaceDefinition = i.GetGenericTypeDefinition();
+
+                    if (genericInterfaceDefinition == interfaceDefinition)
+                    {
+                        implementingType = i;
+                        return true;
+                    }
+                }
+            }
+
+            implementingType = null;
+            return false;
+        }
+
+        public static bool IsGenericDefinition(Type type, Type genericInterfaceDefinition)
+        {
+            if (!type.IsGenericType())
+            {
+                return false;
+            }
+
+            Type t = type.GetGenericTypeDefinition();
+            return (t == genericInterfaceDefinition);
+        }
+
+        public static bool InheritsGenericDefinition(Type type, Type genericClassDefinition)
+        {
+            return InheritsGenericDefinition(type, genericClassDefinition, out _);
+        }
+
+        public static bool InheritsGenericDefinition(Type type, Type genericClassDefinition, out Type implementingType)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (genericClassDefinition == null)
+                throw new ArgumentNullException(nameof(genericClassDefinition));
+
+            if (!genericClassDefinition.IsClass || !genericClassDefinition.IsGenericTypeDefinition)
+            {
+                throw new ArgumentNullException("'{0}' is not a generic class definition.".FormatWith(CultureInfo.InvariantCulture, genericClassDefinition));
+            }
+
+            return InheritsGenericDefinitionInternal(type, genericClassDefinition, out implementingType);
+        }
+
+        static bool InheritsGenericDefinitionInternal(Type currentType, Type genericClassDefinition, out Type implementingType)
+        {
+            do
+            {
+                if (currentType.IsGenericType() && genericClassDefinition == currentType.GetGenericTypeDefinition())
+                {
+                    implementingType = currentType;
+                    return true;
+                }
+
+                currentType = currentType.BaseType();
+            }
+            while (currentType != null);
+
+            implementingType = null;
+            return false;
+        }
+
+        public static void GetDictionaryKeyValueTypes(Type dictionaryType, out Type keyType, out Type valueType)
+        {
+            if (dictionaryType == null)
+                throw new ArgumentNullException(nameof(dictionaryType));
+
+            if (ImplementsGenericDefinition(dictionaryType, typeof(IDictionary<,>), out Type genericDictionaryType))
+            {
+                if (genericDictionaryType.IsGenericTypeDefinition)
+                {
+                    throw new Exception("Type {0} is not a dictionary.".FormatWith(CultureInfo.InvariantCulture, dictionaryType));
+                }
+
+                Type[] dictionaryGenericArguments = genericDictionaryType.GetGenericArguments();
+
+                keyType = dictionaryGenericArguments[0];
+                valueType = dictionaryGenericArguments[1];
+                return;
+            }
+            if (typeof(IDictionary).IsAssignableFrom(dictionaryType))
+            {
+                keyType = null;
+                valueType = null;
+                return;
+            }
+
+            throw new Exception("Type {0} is not a dictionary.".FormatWith(CultureInfo.InvariantCulture, dictionaryType));
+        }
+
+        /// <summary>
+        /// Gets the type of the typed collection's items.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <returns>The type of the typed collection's items.</returns>
+        public static Type GetCollectionItemType(Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+            if (ImplementsGenericDefinition(type, typeof(IEnumerable<>), out Type genericListType))
+            {
+                if (genericListType.IsGenericTypeDefinition)
+                {
+                    throw new Exception("Type {0} is not a collection.".FormatWith(CultureInfo.InvariantCulture, type));
+                }
+
+                return genericListType.GetGenericArguments()[0];
+            }
+            if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                return null;
+            }
+
+            throw new Exception("Type {0} is not a collection.".FormatWith(CultureInfo.InvariantCulture, type));
+        }
+
+        public static object GetDefaultValue(Type type)
+        {
+            if (!type.IsValueType())
+            {
+                return null;
+            }
+
+            switch (ConvertUtils.GetTypeCode(type))
+            {
+                case PrimitiveTypeCode.Boolean:
+                    return false;
+                case PrimitiveTypeCode.Char:
+                case PrimitiveTypeCode.SByte:
+                case PrimitiveTypeCode.Byte:
+                case PrimitiveTypeCode.Int16:
+                case PrimitiveTypeCode.UInt16:
+                case PrimitiveTypeCode.Int32:
+                case PrimitiveTypeCode.UInt32:
+                    return 0;
+                case PrimitiveTypeCode.Int64:
+                case PrimitiveTypeCode.UInt64:
+                    return 0L;
+                case PrimitiveTypeCode.Single:
+                    return 0f;
+                case PrimitiveTypeCode.Double:
+                    return 0.0;
+                case PrimitiveTypeCode.Decimal:
+                    return 0m;
+                case PrimitiveTypeCode.DateTime:
+                    return new DateTime();
+                case PrimitiveTypeCode.Guid:
+                    return new Guid();
+            }
+
+            if (IsNullable(type))
+            {
+                return null;
+            }
+
+            // possibly use IL initobj for perf here?
+            return Activator.CreateInstance(type);
+        }
+
+        /// <summary>
+        /// Determines whether the specified MemberInfo can be read.
+        /// </summary>
+        /// <param name="member">The MemberInfo to determine whether can be read.</param>
+        /// /// <param name="nonPublic">if set to <c>true</c> then allow the member to be gotten non-publicly.</param>
+        /// <returns>
+        /// 	<c>true</c> if the specified MemberInfo can be read; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool CanReadMemberValue(MemberInfo member, bool nonPublic)
+        {
+            switch (member.MemberType())
+            {
+                case MemberTypes.Field:
+                    FieldInfo fieldInfo = (FieldInfo)member;
+
+                    if (nonPublic)
+                    {
+                        return true;
+                    }
+                    else if (fieldInfo.IsPublic)
+                    {
+                        return true;
+                    }
+                    return false;
+                case MemberTypes.Property:
+                    PropertyInfo propertyInfo = (PropertyInfo)member;
+
+                    if (!propertyInfo.CanRead)
+                    {
+                        return false;
+                    }
+                    if (nonPublic)
+                    {
+                        return true;
+                    }
+                    return (propertyInfo.GetGetMethod(nonPublic) != null);
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified MemberInfo can be set.
+        /// </summary>
+        /// <param name="member">The MemberInfo to determine whether can be set.</param>
+        /// <param name="nonPublic">if set to <c>true</c> then allow the member to be set non-publicly.</param>
+        /// <param name="canSetReadOnly">if set to <c>true</c> then allow the member to be set if read-only.</param>
+        /// <returns>
+        /// 	<c>true</c> if the specified MemberInfo can be set; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool CanSetMemberValue(MemberInfo member, bool nonPublic, bool canSetReadOnly)
+        {
+            switch (member.MemberType())
+            {
+                case MemberTypes.Field:
+                    FieldInfo fieldInfo = (FieldInfo)member;
+
+                    if (fieldInfo.IsLiteral)
+                    {
+                        return false;
+                    }
+                    if (fieldInfo.IsInitOnly && !canSetReadOnly)
+                    {
+                        return false;
+                    }
+                    if (nonPublic)
+                    {
+                        return true;
+                    }
+                    if (fieldInfo.IsPublic)
+                    {
+                        return true;
+                    }
+                    return false;
+                case MemberTypes.Property:
+                    PropertyInfo propertyInfo = (PropertyInfo)member;
+
+                    if (!propertyInfo.CanWrite)
+                    {
+                        return false;
+                    }
+                    if (nonPublic)
+                    {
+                        return true;
+                    }
+                    return (propertyInfo.GetSetMethod(nonPublic) != null);
+                default:
+                    return false;
+            }
+        }
+
+        public static bool HasDefaultConstructor(Type t, bool nonPublic)
+        {
+            if (t == null)
+                throw new ArgumentNullException(nameof(t));
+
+            if (t.IsValueType())
+            {
+                return true;
+            }
+
+            return (GetDefaultConstructor(t, nonPublic) != null);
+        }
+
+        public static ConstructorInfo GetDefaultConstructor(Type t, bool nonPublic)
+        {
+            BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+            if (nonPublic)
+            {
+                bindingFlags |= BindingFlags.NonPublic;
+            }
+
+            return t.GetConstructors(bindingFlags).SingleOrDefault(c => !c.GetParameters().Any());
+        }
+
+        public static ConstructorInfo GetDefaultConstructor(Type t)
+        {
+            return GetDefaultConstructor(t, false);
         }
     }
 }

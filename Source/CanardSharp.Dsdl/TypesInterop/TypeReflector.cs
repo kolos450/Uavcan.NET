@@ -12,19 +12,7 @@ namespace CanardSharp.Dsdl.TypesInterop
 {
     static class TypeReflector
     {
-        private static bool? _dynamicCodeGeneration;
-        private static bool? _fullyTrusted;
-
-        public const string IdPropertyName = "$id";
-        public const string RefPropertyName = "$ref";
-        public const string TypePropertyName = "$type";
-        public const string ValuePropertyName = "$value";
-        public const string ArrayValuesPropertyName = "$values";
-
-        public const string ShouldSerializePrefix = "ShouldSerialize";
-        public const string SpecifiedPostfix = "Specified";
-
-        private static readonly ConcurrentDictionary<Type, Type> AssociatedMetadataTypesCache = new ConcurrentDictionary<Type, Type>();
+        public const string ConcurrentDictionaryTypeName = "System.Collections.Concurrent.ConcurrentDictionary`2";
 
         public static T GetCachedAttribute<T>(object attributeProvider) where T : Attribute
         {
@@ -162,6 +150,14 @@ namespace CanardSharp.Dsdl.TypesInterop
             }
 
             return ReflectionUtils.GetAttribute<T>(provider, true);
+        }
+
+        public static ReflectionDelegateFactory ReflectionDelegateFactory
+        {
+            get
+            {
+                return DynamicReflectionDelegateFactory.Instance;
+            }
         }
     }
 }

@@ -264,10 +264,10 @@ namespace CanardSharp.IO
         public BitStreamWriter(List<byte> bufferToWriteTo)
         {
             if (bufferToWriteTo == null)
-            {
                 throw new ArgumentNullException("bufferToWriteTo");
-            }
+
             _targetBuffer = bufferToWriteTo;
+            _targetBufferOffset = bufferToWriteTo.Count;
         }
 
         /// <summary>
@@ -324,9 +324,12 @@ namespace CanardSharp.IO
 
 
         // the buffer that the bits are written into
-        private List<byte> _targetBuffer = null;
+        readonly List<byte> _targetBuffer;
+        readonly int _targetBufferOffset;
 
         // number of free bits remaining in the last byte added to the target buffer
         private int _remaining = 0;
+
+        public int Position => _targetBuffer.Count - _targetBufferOffset;
     }
 }

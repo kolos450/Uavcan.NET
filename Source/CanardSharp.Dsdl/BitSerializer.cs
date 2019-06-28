@@ -92,10 +92,14 @@ namespace CanardSharp.Dsdl
             {
                 Array.Clear(bytes, 0, bytes.Length);
 
-                var bytesToRead = (bitLength + 7) / 8;
-                for (int i = 0; i < bytesToRead; i++)
+                int i = 0;
+                while (bitLength > 0)
                 {
-                    bytes[i] = reader.ReadByte(i == bytesToRead - 1 ? bitLength % 8 : 8);
+                    var currentBitLen = bitLength;
+                    if (currentBitLen > 8)
+                        currentBitLen = 8;
+                    bytes[i++] = reader.ReadByte(currentBitLen);
+                    bitLength -= currentBitLen;
                 }
 
                 return func(bytes);
@@ -211,10 +215,13 @@ namespace CanardSharp.Dsdl
             if (bitLength < 1 || bitLength > 64)
                 throw new ArgumentOutOfRangeException(nameof(bitLength));
 
-            var bytesToWrite = (bitLength + 7) / 8;
-            for (int i = 0; i < bytesToWrite; i++)
+            while (bitLength > 0)
             {
-                destination.Write(source[sourceOffset + i], i == bytesToWrite - 1 ? bitLength % 8 : 8);
+                var currentBitLen = bitLength;
+                if (currentBitLen > 8)
+                    currentBitLen = 8;
+                destination.Write(source[sourceOffset++], currentBitLen);
+                bitLength -= currentBitLen;
             }
         }
     }

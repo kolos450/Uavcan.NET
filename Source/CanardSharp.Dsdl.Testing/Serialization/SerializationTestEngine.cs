@@ -14,7 +14,7 @@ namespace CanardSharp.Dsdl.Testing.Serialization
     static class SerializationTestEngine
     {
         static IUavcanTypeResolver _uavcanTypeResolver;
-        static CompareLogic _compareLogic;
+        static CompareLogic _compareLogic = new CompareLogic();
 
         static SerializationTestEngine()
         {
@@ -29,7 +29,7 @@ namespace CanardSharp.Dsdl.Testing.Serialization
             _uavcanTypeResolver = new TypeResolverFactory().Create(scheme);
         }
 
-        public static void Test(object data, string expectedSerializedContent)
+        public static void Test(object data, string expectedSerializedContent, bool doRoundtripTest)
         {
             var expectedBytes = Hex.Decode(expectedSerializedContent);
 
@@ -40,14 +40,17 @@ namespace CanardSharp.Dsdl.Testing.Serialization
             var size = serializer.Serialize(data, buffer);
             buffer = buffer.Take(size).ToArray();
 
-            Assert.IsTrue(expectedBytes.SequenceEqual(buffer));
+            Assert.IsTrue(expectedBytes.SequenceEqual(buffer), "Serialized payload mismatch.");
 
             var deserialized = serializer.Deserialize(data.GetType(), buffer);
 
-            var comparisonResult = _compareLogic.Compare(data, deserialized);
-            if (!comparisonResult.AreEqual)
+            if (doRoundtripTest)
             {
-                Assert.Fail(comparisonResult.DifferencesString);
+                var comparisonResult = _compareLogic.Compare(data, deserialized);
+                if (!comparisonResult.AreEqual)
+                {
+                    Assert.Fail(comparisonResult.DifferencesString);
+                }
             }
         }
     }

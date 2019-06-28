@@ -4,6 +4,7 @@ using CanardSharp.Testing.Framework;
 using Irony.Parsing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -127,29 +128,26 @@ namespace SerializationTestGenerator
             int counter = 0;
             foreach (var t in _types)
             {
-                if (t.TestCasesRoot != null)
+                foreach (var tcase in t.TestCases)
                 {
-                    foreach (var tcase in t.TestCasesRoot.ChildNodes)
+                    yield return "        [TestMethod]";
+                    yield return $"        public void {t.Name}_{counter++}()";
+                    yield return "        {";
+
+                    foreach (var i in BuildTestMethod(t, tcase))
                     {
-                        yield return "        [TestMethod]";
-                        yield return $"        public void {t.Name}_{counter++}()";
-                        yield return "        {";
-
-                        foreach (var i in BuildTestMethod(t, tcase))
-                        {
-                            yield return "            " + i;
-                        }
-
-                        yield return "        }";
-                        yield return "";
+                        yield return "            " + i;
                     }
+
+                    yield return "        }";
+                    yield return "";
                 }
             }
             yield return "    }";
             yield return "}";
         }
 
-        IEnumerable<string> BuildTestMethod(TestType t, ParseTreeNode tcase)
+        IEnumerable<string> BuildTestMethod(TestType t, TestCase tcase)
         {
             string pySerialized = PySerialize(t, tcase).Trim();
 
@@ -157,10 +155,12 @@ namespace SerializationTestGenerator
                 throw new NotSupportedException("Message is the only supported type.");
 
             yield return $"var obj = new {t.CSharpName} {{ " +
-                string.Join(", ", BuildTestMethodMembers(scheme.Fields, tcase.FindChild("members"))) +
+                string.Join(", ", BuildTestMethodMembers(scheme.Fields, tcase.Tree.FindChild("members"))) +
                 " };";
 
-            yield return $"SerializationTestEngine.Test(obj, \"{pySerialized}\");";
+            var doRoundtripTest = tcase.Directives.Contains("disableRoundtripTest") ? "false" : "true";
+
+            yield return $"SerializationTestEngine.Test(obj, \"{pySerialized}\", doRoundtripTest: {doRoundtripTest});";
         }
 
         IEnumerable<string> BuildTestMethodMembers(IReadOnlyList<DsdlField> fields, ParseTreeNode parseTreeNode)
@@ -201,7 +201,7 @@ namespace SerializationTestGenerator
             }
         }
 
-        string PySerialize(TestType t, ParseTreeNode tcase)
+        string PySerialize(TestType t, TestCase tcase)
         {
             var content = BuildPythonSerializationScript(t, tcase);
             var file = Path.Combine(PyUavcanDirectory, Path.GetRandomFileName() + ".py");
@@ -219,9 +219,9 @@ namespace SerializationTestGenerator
             }
         }
 
-        string BuildPythonSerializationScript(TestType t, ParseTreeNode tcase)
+        string BuildPythonSerializationScript(TestType t, TestCase tcase)
         {
-            var initializer = BuildPythonInitializer(t, tcase);
+            var initializer = BuildPythonInitializer(t, tcase.Tree);
 
             return $@"import uavcan
 
@@ -637,34 +637,73 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     var typeName = node.FindChild("Identifier").FindTokenAndGetText();
                     var typeBody = node.FindChild("type_body_content").FindTokenAndGetText();
                     var typeTests = node.FindChild("type_test_cases_opt");
-                    CreateType(string.Join(".", _namespacesStack), typeName, typeBody, typeTests);
+                    var testCases = CreateTestCases(typeTests);
+                    CreateType(string.Join(".", _namespacesStack), typeName, typeBody, testCases);
                     break;
                 default:
                     throw new InvalidOperationException();
             }
         }
 
-        void CreateType(string ns, string name, string body, ParseTreeNode testCasesRoot)
+
+
+        void CreateType(string ns, string name, string body, IEnumerable<TestCase> testCases)
         {
             var type = new TestType
             {
                 Namespace = ns,
                 Name = name,
                 BodyText = body,
-                TestCasesRoot = testCasesRoot
+                TestCases = testCases,
             };
 
             _types.Add(type);
         }
 
-        class TestType
+        private static IEnumerable<TestCase> CreateTestCases(ParseTreeNode testCasesRoot)
+        {
+            if (testCasesRoot == null)
+                return Enumerable.Empty<TestCase>();
+
+            var testCases = new List<TestCase>();
+
+            foreach (var i in testCasesRoot.ChildNodes)
+            {
+                var directives = new HashSet<string>(StringComparer.Ordinal);
+
+                var directives_opt = i.FindChild("directives_opt");
+                if (directives_opt != null)
+                {
+                    foreach (var j in directives_opt.ChildNodes)
+                    {
+                        directives.Add(j.FindChild("Identifier").FindTokenAndGetText());
+                    }
+                }
+
+                testCases.Add(new TestCase
+                {
+                    Tree = i,
+                    Directives = directives
+                });
+            }
+
+            return testCases;
+        }
+
+        sealed class TestCase
+        {
+            public ParseTreeNode Tree { get; set; }
+            public ISet<string> Directives { get; set; }
+        }
+
+        sealed class TestType
         {
             public string Namespace { get; set; }
             public string Name { get; set; }
             public string CSharpName { get; set; }
             public string BodyText { get; set; }
             public IUavcanType Body { get; set; }
-            public ParseTreeNode TestCasesRoot { get; set; }
+            public IEnumerable<TestCase> TestCases { get; set; }
         }
     }
 }

@@ -72,6 +72,8 @@ namespace CanardSharp.Testing.Framework
             var member = new NonTerminal("member");
             var members = new NonTerminal("members");
             var nested_members = new NonTerminal("nested_members");
+            var directive = new NonTerminal("directive");
+            var directives_opt = new NonTerminal("directives_opt");
 
             var type_body_content = new FreeTextLiteral("type_body_content", FreeTextOptions.None, "}");
             #endregion
@@ -123,7 +125,7 @@ namespace CanardSharp.Testing.Framework
 
             type_test_cases_opt.Rule = MakeStarRule(type_test_cases_opt, null, type_test_case);
 
-            type_test_case.Rule = ".{" + members + "}";
+            type_test_case.Rule = ".{" + members + "}" + directives_opt;
 
             members.Rule = MakeStarRule(members, ToTerm(","), member);
 
@@ -132,6 +134,9 @@ namespace CanardSharp.Testing.Framework
             nested_members.Rule = ("[" + members + "]") | ("{" + members + "}");
 
             literal.Rule = Number | "true" | "false" | "null";
+
+            directive.Rule = "@" + identifier;
+            directives_opt.Rule = MakeStarRule(directives_opt, null, directive);
         }
 
         public override void SkipWhitespace(ISourceStream source)

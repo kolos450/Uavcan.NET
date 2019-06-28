@@ -11,6 +11,8 @@ namespace CanardSharp.Dsdl.DataTypes
         protected readonly int _bitlen;
         protected readonly CastMode _castMode;
 
+        public CastMode CastMode => _castMode;
+
         protected PrimitiveDsdlType(int bitlen, CastMode castMode)
         {
             if (!ValidateBitlen(bitlen))

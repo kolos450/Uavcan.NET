@@ -50,6 +50,14 @@ namespace uavcan.samples
     {
         saturated int24 val
     }
+    type S12_s_uint24
+    {
+        saturated uint24 val
+    }
+    type S14_s_uint24
+    {
+        truncated uint24 val
+    }
     type CmpTestA
     {
         int8 field

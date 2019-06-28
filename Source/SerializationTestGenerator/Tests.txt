@@ -7,8 +7,8 @@ namespace uavcan.samples
     .{0}
     .{1}
     .{15}
-    .{248}
-    .{255}
+    .{248}@disableRoundtripTest
+    .{255}@disableRoundtripTest
 
 	type S01_s_uint4
 	{
@@ -17,8 +17,8 @@ namespace uavcan.samples
     .{0}
     .{1}
     .{15}
-    .{248}
-    .{255}
+    .{248}@disableRoundtripTest
+    .{255}@disableRoundtripTest
 
 	type S02_uint64
 	{
@@ -111,8 +111,28 @@ namespace uavcan.samples
     .{0}
     .{4194304}
     .{-2097152}
-    .{134217743}
-    .{-134217744}
+    .{134217743}@disableRoundtripTest
+    .{-134217744}@disableRoundtripTest
+    
+    type S12_s_uint24
+	{
+		saturated uint24 val
+	}
+    .{0}
+    .{4194304}
+    .{2097152}
+    .{134217743}@disableRoundtripTest
+    .{134217744}@disableRoundtripTest
+    
+    type S14_s_uint24
+	{
+		truncated uint24 val
+	}
+    .{0}
+    .{4194304}
+    .{2097152}
+    .{134217743}@disableRoundtripTest
+    .{134217744}@disableRoundtripTest
     
     type CmpTestA
     {

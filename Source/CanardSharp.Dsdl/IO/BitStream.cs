@@ -72,10 +72,11 @@ namespace CanardSharp.IO
         /// <param name="buffer">Buffer of bytes</param>
         public BitStreamReader(byte[] buffer)
         {
-            Debug.Assert(buffer != null);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             _byteArray = buffer;
-            _bufferLengthInBits = (uint)buffer.Length * (uint)Native.BitsPerByte;
+            _bufferLengthInBits = (uint)buffer.Length * Native.BitsPerByte;
 
             LengthInBytes = buffer.Length;
         }
@@ -87,15 +88,14 @@ namespace CanardSharp.IO
         /// <param name="startIndex">The index to start reading at</param>
         public BitStreamReader(byte[] buffer, int startIndex)
         {
-            Debug.Assert(buffer != null);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (startIndex < 0 || startIndex > buffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
 
-            if (startIndex < 0 || startIndex >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException("startIndex");
-            }
             _byteArray = buffer;
             _byteArrayIndex = startIndex;
-            _bufferLengthInBits = (uint)(buffer.Length - startIndex) * (uint)Native.BitsPerByte;
+            _bufferLengthInBits = (uint)(buffer.Length - startIndex) * Native.BitsPerByte;
 
             LengthInBytes = buffer.Length;
         }
@@ -110,9 +110,7 @@ namespace CanardSharp.IO
             : this(buffer)
         {
             if (bufferLengthInBits > (buffer.Length * Native.BitsPerByte))
-            {
                 throw new ArgumentOutOfRangeException("bufferLengthInBits");
-            }
 
             _bufferLengthInBits = bufferLengthInBits;
         }
@@ -139,20 +137,14 @@ namespace CanardSharp.IO
         {
             // if the end of the stream has been reached, then throw an exception
             if (EndOfStream)
-            {
                 throw new EndOfStreamException();
-            }
 
             // we only support 1-8 bits currently, not multiple bytes, and not 0 bits
             if (countOfBits > Native.BitsPerByte || countOfBits <= 0)
-            {
                 throw new ArgumentOutOfRangeException("countOfBits");
-            }
 
             if (countOfBits > _bufferLengthInBits)
-            {
                 throw new ArgumentOutOfRangeException("countOfBits");
-            }
 
             _bufferLengthInBits -= (uint)countOfBits;
 

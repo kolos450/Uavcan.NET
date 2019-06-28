@@ -691,7 +691,7 @@ namespace CanardSharp.Dsdl
 
                 case ArrayDsdlTypeMode.Dynamic:
                     {
-                        if (tailArrayOptimization && scheme.MinBitlen >= 8)
+                        if (tailArrayOptimization && scheme.ItemType.MinBitlen >= 8)
                         {
                             while (reader.LengthInBytes - reader.CurrentIndex > 1)
                                 list.Add(ReadArrayItem());

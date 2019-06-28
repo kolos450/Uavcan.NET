@@ -330,8 +330,10 @@ namespace CanardSharp.Dsdl
                     {
                         if (arrayCount > arrayDsdlType.MaxSize)
                             throw new SerializationException($"'{contract.UnderlyingType.FullName}' is too big. MaxSize is {arrayDsdlType.MaxSize}.");
-                        if (!tailArrayOptimization)
+                        if (!tailArrayOptimization || arrayDsdlType.ElementType.MinBitlen < 8)
                             WriteDynamicArraySize(writer, arrayCount, arrayDsdlType);
+                        else
+                            tailArrayOptimization = false;
                         break;
                     }
                 case ArrayDsdlTypeMode.Static:
@@ -343,8 +345,11 @@ namespace CanardSharp.Dsdl
             }
 
             // Note: an exception from the IEnumerable won't be caught.
+            int i = 0;
             foreach (object value in values)
             {
+                i++;
+
                 var valueContract = contract.FinalItemContract ??
                     (value == null ? null : _serializer.ContractResolver.ResolveContract(value.GetType()));
 
@@ -355,7 +360,8 @@ namespace CanardSharp.Dsdl
                     throw new InvalidOperationException(
                         $"DSDL type mismatch for enumerated item '{contract.UnderlyingType.FullName}.{valueContract.UnderlyingType}'.");
 
-                SerializeValue(writer, value, valueContract, null, contract, member, arrayDsdlType.ElementType);
+                var tao = i == arrayCount ? tailArrayOptimization : false;
+                SerializeValue(writer, value, valueContract, null, contract, member, arrayDsdlType.ElementType, tao);
             }
 
             //writer.WriteEndArray();
@@ -484,8 +490,7 @@ namespace CanardSharp.Dsdl
                     var rp = resolvedProp.Value;
                     var tao = tailArrayOptimization &&
                         isLastMember &&
-                        dsdlMember.Type is ArrayDsdlType adt &&
-                        adt.ElementType.MinBitlen >= 8;
+                        dsdlMember.Type is ArrayDsdlType adt;
                     SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type, tao);
                 }
             }

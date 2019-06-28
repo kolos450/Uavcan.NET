@@ -146,7 +146,7 @@ namespace CanardSharp.Dsdl
 
         IEnumerable ReadDynamicArray(BitStreamReader reader, ArrayDsdlType t, bool tailArrayOptimization)
         {
-            if (tailArrayOptimization && t.MinBitlen >= 8)
+            if (tailArrayOptimization && t.ElementType.MinBitlen >= 8)
             {
                 var result = new ArrayList();
                 while (reader.LengthInBytes - reader.CurrentIndex > 1)
@@ -160,7 +160,10 @@ namespace CanardSharp.Dsdl
                 var arraySize = ReadDynamicArraySize(reader, t);
                 var result = new object[arraySize];
                 for (int i = 0; i < arraySize; i++)
-                    result[i] = CreateUnknownObject(reader, t.ElementType);
+                {
+                    var tao = i == arraySize - 1 ? tailArrayOptimization : false;
+                    result[i] = CreateUnknownObject(reader, t.ElementType, tao);
+                }
                 return result;
             }
         }
@@ -675,9 +678,9 @@ namespace CanardSharp.Dsdl
             if (contract.ItemContract == null)
                 contract.ItemContract = GetContractSafe(contract.CollectionItemType);
 
-            object ReadArrayItem()
+            object ReadArrayItem(bool tao = false)
             {
-                return CreateValueInternal(reader, contract.ItemContract, null, contract, containerProperty, null, scheme.ElementType, contract.CollectionItemType);
+                return CreateValueInternal(reader, contract.ItemContract, null, contract, containerProperty, null, scheme.ElementType, contract.CollectionItemType, tao);
             }
 
             switch (scheme.Mode)
@@ -700,7 +703,10 @@ namespace CanardSharp.Dsdl
                         {
                             var arraySize = ReadDynamicArraySize(reader, scheme);
                             for (int i = 0; i < arraySize; i++)
-                                list.Add(ReadArrayItem());
+                            {
+                                var tao = i == arraySize - 1 ? tailArrayOptimization : false;
+                                list.Add(ReadArrayItem(tao));
+                            }
                         }
                         break;
                     }

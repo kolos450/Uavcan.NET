@@ -1,5 +1,4 @@
 ﻿using CanardSharp.Dsdl.DataTypes;
-using CanardSharp.IO;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -32,7 +31,7 @@ namespace CanardSharp.Dsdl
         static void ValidateTypeFullName(string value)
         {
             if (value.Length > MAX_FULL_TYPE_NAME_LEN)
-                throw new Exception($"Type name is too long.: '{value}'");
+                throw new Exception($"Type name is too long: '{value}'");
             if (!_fullNameRegex.IsMatch(value))
                 throw new Exception($"Invalid type full name: '{value}'.");
         }
@@ -81,14 +80,68 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        public static IUavcanType Parse(TextReader reader, UavcanTypeMeta meta, IUavcanTypeResolver typeResolver)
+        sealed class DsdlTypeReference : DsdlType
+        {
+            public string Namespace { get; }
+            public string Name { get; }
+
+            public DsdlTypeReference(string ns, string attrTypeName)
+            {
+                Namespace = ns;
+                Name = attrTypeName;
+            }
+
+            public override int MaxBitlen => throw new InvalidOperationException();
+            public override int MinBitlen => throw new InvalidOperationException();
+            public override ulong? GetDataTypeSignature() => throw new InvalidOperationException();
+            public override string GetNormalizedMemberDefinition() => throw new InvalidOperationException();
+        }
+
+        public static void ResolveNestedTypes(IUavcanType type, IUavcanTypeResolver typeResolver)
+        {
+            switch (type)
+            {
+                case MessageType t:
+                    ResolveNestedTypesCore(t.UnderlyingCompositeDsdlType, typeResolver);
+                    break;
+                case ServiceType t:
+                    ResolveNestedTypesCore(t.Request, typeResolver);
+                    ResolveNestedTypesCore(t.Response, typeResolver);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type));
+            }
+        }
+
+        static void ResolveNestedTypesCore(CompositeDsdlTypeBase t, IUavcanTypeResolver typeResolver)
+        {
+            foreach (var f in t.Fields)
+            {
+                if (f.Type is DsdlTypeReference reference)
+                {
+                    var nestedType = typeResolver.ResolveType(reference.Namespace, reference.Name);
+                    switch (nestedType)
+                    {
+                        case ServiceType _:
+                            throw new Exception("A service type can not be nested into another compound type.");
+                        case MessageType messageType:
+                            f.Type = messageType;
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
+                    }
+                }
+            }
+        }
+
+        public static IUavcanType Parse(TextReader reader, UavcanTypeMeta meta)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
             if (meta == null)
                 throw new ArgumentNullException(nameof(meta));
-            if (typeResolver == null)
-                throw new ArgumentNullException(nameof(typeResolver));
+
+            ValidateTypeFullName(meta.FullName);
 
             IUavcanType result = null;
             var compoundType = new CompositeDsdlType();
@@ -128,7 +181,7 @@ namespace CanardSharp.Dsdl
                     else
                     {
                         var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        ProcessLineTokens(meta, compoundType, tokens, typeResolver);
+                        ProcessLineTokens(meta, compoundType, tokens);
                     }
                 }
                 catch (Exception ex)
@@ -153,10 +206,13 @@ namespace CanardSharp.Dsdl
                 throw new InvalidOperationException();
             }
 
+            ValidateDTID(result);
+            ValidateUnion(result);
+
             return result;
         }
 
-        static void ProcessLineTokens(UavcanTypeMeta meta, CompositeDsdlType type, string[] tokens, IUavcanTypeResolver typeResolver)
+        static void ProcessLineTokens(UavcanTypeMeta meta, CompositeDsdlType type, string[] tokens)
         {
             if (tokens.Length < 1)
                 throw new Exception("Invalid attribute definition.");
@@ -193,9 +249,16 @@ namespace CanardSharp.Dsdl
                     break;
             }
 
-            var attrType = ParseType(meta.Namespace, attrTypeName, castMode, typeResolver);
+            var attrType = ParseType(meta.Namespace, attrTypeName, castMode);
 
-            Debug.Assert(!string.IsNullOrEmpty(attrName) || attrType is VoidDsdlType);
+            switch (attrType)
+            {
+                case VoidDsdlType _:
+                    break;
+                default:
+                    ValidateAttributeName(attrName);
+                    break;
+            }
 
             switch (tokens.Length - offset)
             {
@@ -260,7 +323,7 @@ namespace CanardSharp.Dsdl
                 @"^(?<NAME>[a-z]+)(?<SIZE>\d{1,2})$",
                 RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        static DsdlType ParseType(string ns, string attrTypeName, CastMode castMode, IUavcanTypeResolver typeResolver)
+        static DsdlType ParseType(string ns, string attrTypeName, CastMode castMode)
         {
             Match match;
             if ((match = _typeVoidRegex.Match(attrTypeName)).Success)
@@ -275,7 +338,7 @@ namespace CanardSharp.Dsdl
                 var size = match.Groups["SIZE"].Value;
                 var name = match.Groups["NAME"].Value;
 
-                var valueType = ParseType(ns, name, castMode, typeResolver);
+                var valueType = ParseType(ns, name, castMode);
                 if (valueType is ArrayDsdlType)
                     throw new Exception("Multidimensional arrays are not allowed (protip: use nested types).");
 
@@ -319,16 +382,7 @@ namespace CanardSharp.Dsdl
                 if (castMode != CastMode.Saturated)
                     throw new Exception("Cast mode specifier is not applicable for compound types.");
 
-                var nestedType = typeResolver.ResolveType(ns, attrTypeName);
-                switch (nestedType)
-                {
-                    case ServiceType _:
-                        throw new Exception("A service type can not be nested into another compound type.");
-                    case MessageType t:
-                        return t;
-                    default:
-                        throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
-                }
+                return new DsdlTypeReference(ns, attrTypeName);
             }
         }
 

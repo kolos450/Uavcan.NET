@@ -525,7 +525,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             resolver.ResolveAll();
         }
 
-        class TestTypeResolver : IUavcanTypeResolver
+        class TestTypeResolver : UavcanTypeResolverBase
         {
             Dictionary<string, TestType> _lookup =
                 new Dictionary<string, TestType>(StringComparer.Ordinal);
@@ -539,7 +539,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 }
             }
 
-            public override IUavcanType TryResolveType(string ns, string typeName)
+            protected override IUavcanType TryResolveTypeCore(string ns, string typeName)
             {
                 TestType type;
                 if (!_lookup.TryGetValue(typeName, out type) &&
@@ -560,7 +560,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                             Name = type.Name,
                             Namespace = type.Namespace,
                         };
-                        var body = DsdlParser.Parse(reader, meta, this);
+                        var body = DsdlParser.Parse(reader, meta);
                         type.Body = body;
                     }
                 }

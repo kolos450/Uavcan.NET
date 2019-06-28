@@ -1,11 +1,12 @@
 ﻿using CanardSharp.Dsdl.DataTypes;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text.RegularExpressions;
 
 namespace CanardSharp.Dsdl
 {
-    public class FileSystemUavcanTypeResolver : IUavcanTypeResolver
+    public class FileSystemUavcanTypeResolver : UavcanTypeResolverBase
     {
         public const string DsdlExtension = "uavcan";
 
@@ -118,7 +119,7 @@ namespace CanardSharp.Dsdl
             return null;
         }
 
-        public override IUavcanType TryResolveType(string ns, string typeName)
+        protected override IUavcanType TryResolveTypeCore(string ns, string typeName)
         {
             var definitionPath = TryLocateCompoundTypeDefiniton(ns, typeName);
             if (definitionPath == null)
@@ -128,7 +129,7 @@ namespace CanardSharp.Dsdl
             using (var stream = File.Open(definitionPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var reader = new StreamReader(stream))
             {
-                return DsdlParser.Parse(reader, meta, this);
+                return DsdlParser.Parse(reader, meta);
             }
         }
     }

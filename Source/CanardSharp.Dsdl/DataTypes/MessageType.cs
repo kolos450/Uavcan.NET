@@ -42,5 +42,7 @@ namespace CanardSharp.Dsdl.DataTypes
         public override int MinBitlen => _underlyingCompoundType.MinBitlen;
         public override bool IsUnion => _underlyingCompoundType.IsUnion;
         public override DsdlField TryGetField(string fieldName) => _underlyingCompoundType.TryGetField(fieldName);
+
+        internal CompositeDsdlTypeBase UnderlyingCompositeDsdlType => _underlyingCompoundType;
     }
 }

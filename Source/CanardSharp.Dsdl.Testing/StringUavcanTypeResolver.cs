@@ -8,7 +8,7 @@ using CanardSharp.Dsdl.DataTypes;
 
 namespace CanardSharp.Dsdl.Testing
 {
-    sealed class StringUavcanTypeResolver : IUavcanTypeResolver
+    sealed class StringUavcanTypeResolver : UavcanTypeResolverBase
     {
         Dictionary<string, (UavcanTypeMeta Meta, string Definition)> _lookup =
             new Dictionary<string, (UavcanTypeMeta Meta, string Definition)>(StringComparer.Ordinal);
@@ -21,7 +21,7 @@ namespace CanardSharp.Dsdl.Testing
             }
         }
 
-        public override IUavcanType TryResolveType(string ns, string typeName)
+        protected override IUavcanType TryResolveTypeCore(string ns, string typeName)
         {
             (UavcanTypeMeta Meta, string Definition) pair;
 
@@ -31,7 +31,7 @@ namespace CanardSharp.Dsdl.Testing
 
             using (var reader = new StringReader(pair.Definition))
             {
-                return DsdlParser.Parse(reader, pair.Meta, this);
+                return DsdlParser.Parse(reader, pair.Meta);
             }
         }
     }

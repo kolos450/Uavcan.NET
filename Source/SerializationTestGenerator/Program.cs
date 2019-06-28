@@ -18,7 +18,7 @@ namespace SerializationTestGenerator
     {
         Stack<string> _namespacesStack = new Stack<string>();
         List<TestType> _types = new List<TestType>();
-        Dictionary<CompositeDsdlType, TestType> _compoundTypesLookup = new Dictionary<CompositeDsdlType, TestType>();
+        Dictionary<CompositeDsdlTypeBase, TestType> _compoundTypesLookup = new Dictionary<CompositeDsdlTypeBase, TestType>();
 
         public string SourceText { get; set; }
         public string PyUavcanDirectory { get; set; }
@@ -157,7 +157,7 @@ namespace SerializationTestGenerator
                 throw new NotSupportedException("Message is the only supported type.");
 
             yield return $"var obj = new {t.CSharpName} {{ " +
-                string.Join(", ", BuildTestMethodMembers(scheme.Message.Fields, tcase.FindChild("members"))) +
+                string.Join(", ", BuildTestMethodMembers(scheme.Fields, tcase.FindChild("members"))) +
                 " };";
 
             yield return $"SerializationTestEngine.Test(obj, \"{pySerialized}\");";
@@ -190,7 +190,7 @@ namespace SerializationTestGenerator
                     var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ItemType, x));
                     return $"new {GetCSharpType(adt)} {{ {string.Join(", ", arrayContent)} }}";
 
-                case CompositeDsdlType cdt:
+                case CompositeDsdlTypeBase cdt:
                     var t = _compoundTypesLookup[cdt];
                     return $"new {t.CSharpName} {{ " +
                         string.Join(", ", BuildTestMethodMembers(cdt.Fields, node.FindChild("members"))) +
@@ -244,7 +244,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 throw new NotSupportedException("Message is the only supported type.");
 
             return $"{t.Namespace}.{t.Name} (" +
-                string.Join(", ", BuildPythonInitializerMembers(scheme.Message.Fields, tcase.FindChild("members"))) +
+                string.Join(", ", BuildPythonInitializerMembers(scheme.Fields, tcase.FindChild("members"))) +
                 ")";
         }
 
@@ -293,7 +293,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     var arrayContent = nestesNodes.ChildNodes.Select(x => BuildPythonInitializerMemberElement(adt.ItemType, x));
                     return $"[{string.Join(", ", arrayContent)}]";
 
-                case CompositeDsdlType cdt:
+                case CompositeDsdlTypeBase cdt:
                     var t = _compoundTypesLookup[cdt];
                     return $"{t.Namespace}.{t.Name}(" +
                         string.Join(", ", BuildPythonInitializerMembers(cdt.Fields, node.FindChild("members"))) +
@@ -311,7 +311,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 switch (t.Body)
                 {
                     case MessageType mt:
-                        _compoundTypesLookup.Add(mt.Message, t);
+                        _compoundTypesLookup.Add(mt, t);
                         break;
 
                     case ServiceType st:
@@ -367,7 +367,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                         builder.AppendLine($"    [DataContract(Name = \"{t.Name}\", Namespace = \"{t.Namespace}\")]");
                         builder.AppendLine($"    sealed class {t.CSharpName}");
                         builder.AppendLine("    {");
-                        foreach (var i in BuildCSharpMembers(mt.Message))
+                        foreach (var i in BuildCSharpMembers(mt))
                             builder.AppendLine("        " + i);
                         builder.AppendLine("    }");
                         builder.AppendLine();
@@ -401,7 +401,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             File.WriteAllText(typesPath, builder.ToString());
         }
 
-        IEnumerable<string> BuildCSharpMembers(CompositeDsdlType type)
+        IEnumerable<string> BuildCSharpMembers(CompositeDsdlTypeBase type)
         {
             foreach (var m in type.Fields)
             {
@@ -459,7 +459,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 case ArrayDsdlType t:
                     return GetCSharpType(t.ItemType) + "[]";
 
-                case CompositeDsdlType t:
+                case CompositeDsdlTypeBase t:
                     return _compoundTypesLookup[t].CSharpName;
 
                 default:
@@ -539,7 +539,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 }
             }
 
-            public override UavcanType TryResolveType(string ns, string typeName)
+            public override IUavcanType TryResolveType(string ns, string typeName)
             {
                 TestType type;
                 if (!_lookup.TryGetValue(typeName, out type) &&
@@ -549,7 +549,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 return TryResolveType(type);
             }
 
-            UavcanType TryResolveType(TestType type)
+            IUavcanType TryResolveType(TestType type)
             {
                 if (type.Body == null)
                 {
@@ -663,32 +663,8 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             public string Name { get; set; }
             public string CSharpName { get; set; }
             public string BodyText { get; set; }
-            public UavcanType Body { get; set; }
+            public IUavcanType Body { get; set; }
             public ParseTreeNode TestCasesRoot { get; set; }
-        }
-    }
-
-    static class ParseTreeNodeExtensions
-    {
-        public static string GetText(this ParseTreeNode node, string source)
-        {
-            var span = node.Span;
-            return source.Substring(span.Location.Position, span.Length);
-        }
-
-        public static ParseTreeNode FindChild(this ParseTreeNode node, string termName)
-        {
-            foreach (var i in node.ChildNodes)
-            {
-                if (i.Term?.Name == termName)
-                    return i;
-
-                var child = FindChild(i, termName);
-                if (child != null)
-                    return child;
-            }
-
-            return null;
         }
     }
 }

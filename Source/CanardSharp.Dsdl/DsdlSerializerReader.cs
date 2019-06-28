@@ -69,7 +69,7 @@ namespace CanardSharp.Dsdl
                 case ArrayDsdlType t:
                     return CreateList(reader, contract, member, existingValue, t, tailArrayOptimization);
 
-                case CompositeDsdlType t:
+                case CompositeDsdlTypeBase t:
                     return CreateObject(reader, contract, member, containerContract, containerMember, existingValue, objectType, t, tailArrayOptimization);
 
                 default:
@@ -101,7 +101,7 @@ namespace CanardSharp.Dsdl
                             throw new ArgumentOutOfRangeException(nameof(ArrayDsdlTypeMode));
                     }
 
-                case CompositeDsdlType t:
+                case CompositeDsdlTypeBase t:
                     var dictionary = new Dictionary<string, object>(StringComparer.Ordinal);
 
                     if (t.IsUnion)
@@ -173,7 +173,7 @@ namespace CanardSharp.Dsdl
             return result;
         }
 
-        int ReadUnionFieldIndex(BitStreamReader reader, CompositeDsdlType t)
+        int ReadUnionFieldIndex(BitStreamReader reader, CompositeDsdlTypeBase t)
         {
             var bitLen = BitSerializer.IntBitLength(t.Fields.Count);
             return (int)BitSerializer.ReadUInt(reader, bitLen);
@@ -224,7 +224,7 @@ namespace CanardSharp.Dsdl
             DsdlProperty containerMember,
             object existingValue,
             Type objectType,
-            CompositeDsdlType scheme,
+            CompositeDsdlTypeBase scheme,
             bool tailArrayOptimization)
         {
             if (HasNoDefinedType(contract))
@@ -606,7 +606,7 @@ namespace CanardSharp.Dsdl
             BitStreamReader reader,
             DictionaryContract contract,
             DsdlProperty containerProperty,
-            CompositeDsdlType scheme,
+            CompositeDsdlTypeBase scheme,
             bool tailArrayOptimization)
         {
             object underlyingDictionary = dictionary is IWrappedDictionary wrappedDictionary ? wrappedDictionary.UnderlyingDictionary : dictionary;
@@ -726,7 +726,7 @@ namespace CanardSharp.Dsdl
             reader,
             ObjectContract contract,
             DsdlProperty member,
-            CompositeDsdlType scheme,
+            CompositeDsdlTypeBase scheme,
             bool tailArrayOptimization)
         {
             foreach (var (field, tao) in EnumerateSchemeFields(reader, scheme, tailArrayOptimization))
@@ -755,7 +755,7 @@ namespace CanardSharp.Dsdl
 
         IEnumerable<(DsdlField Field, bool TAO)> EnumerateSchemeFields(
             BitStreamReader reader,
-            CompositeDsdlType scheme,
+            CompositeDsdlTypeBase scheme,
             bool tailArrayOptimization)
         {
             if (scheme.IsUnion)

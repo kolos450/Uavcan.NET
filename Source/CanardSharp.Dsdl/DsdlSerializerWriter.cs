@@ -135,7 +135,7 @@ namespace CanardSharp.Dsdl
 
         void SerializeObject(BitStreamWriter writer, object value, ObjectContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty, DsdlType derivedDsdlType, bool tailArrayOptimization)
         {
-            var dsdlScheme = GetScheme<CompositeDsdlType>(contract, derivedDsdlType);
+            var dsdlScheme = GetScheme<CompositeDsdlTypeBase>(contract, derivedDsdlType);
 
             _serializeStack.Push(value);
 
@@ -298,7 +298,7 @@ namespace CanardSharp.Dsdl
                     if (!(actualContract is ArrayContract))
                         return false;
                     break;
-                case CompositeDsdlType dt:
+                case CompositeDsdlTypeBase dt:
                     if (dt != actualContract.DsdlType)
                         return false;
                     break;
@@ -359,7 +359,7 @@ namespace CanardSharp.Dsdl
             DsdlType derivedDsdlType,
             bool tailArrayOptimization)
         {
-            var dsdlScheme = GetScheme<CompositeDsdlType>(containerContract, derivedDsdlType);
+            var dsdlScheme = GetScheme<CompositeDsdlTypeBase>(containerContract, derivedDsdlType);
 
             //WriteObjectStart(writer, value, contract, member, collectionContract, containerProperty);
 
@@ -418,7 +418,7 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        void WriteUnionFieldIndex(BitStreamWriter writer, int index, CompositeDsdlType t)
+        void WriteUnionFieldIndex(BitStreamWriter writer, int index, CompositeDsdlTypeBase t)
         {
             var bitLen = BitSerializer.IntBitLength(t.Fields.Count);
             BitSerializer.Write(writer, index, bitLen);

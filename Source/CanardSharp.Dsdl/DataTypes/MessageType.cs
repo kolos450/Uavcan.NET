@@ -4,29 +4,43 @@ using System.Text;
 
 namespace CanardSharp.Dsdl.DataTypes
 {
-    public class MessageType : UavcanType
+    public class MessageType : CompositeDsdlTypeBase, IUavcanType
     {
-        public CompositeDsdlType Message { get; set; }
+        readonly CompositeDsdlTypeBase _underlyingCompoundType;
 
-        public override int MaxBitlen => Message.MaxBitlen;
-        public override int MinBitlen => Message.MinBitlen;
+        public MessageType(CompositeDsdlTypeBase compoundType)
+        {
+            _underlyingCompoundType = compoundType;
+        }
 
-        protected override IEnumerable<DsdlField> Fields => Message.Fields;
+        public UavcanTypeMeta Meta { get; set; }
 
-        public override string GetNormalizedLayout()
+        public string GetNormalizedLayout()
         {
             var sb = new StringBuilder();
             sb.Append(Meta.FullName);
             sb.Append("\n");
 
-            if (Message.IsUnion)
+            if (IsUnion)
                 sb.Append("\n@union\n");
 
-            sb.Append(string.Join("\n", Message.Fields.Select(x => x.GetNormalizedMemberDefinition())));
+            sb.Append(string.Join("\n", Fields.Select(x => x.GetNormalizedMemberDefinition())));
 
             return sb.ToString().Trim().Replace("\n\n\n", "\n").Replace("\n\n", "\n");
         }
 
         public override string GetNormalizedMemberDefinition() => Meta.FullName;
+
+        public override ulong? GetDataTypeSignature()
+        {
+            return SignatureUtilities.GetDataTypeSignature(GetNormalizedLayout(), Fields);
+        }
+
+        public override IReadOnlyList<DsdlField> Fields => _underlyingCompoundType.Fields;
+        public override IReadOnlyList<DsdlConstant> Constants => _underlyingCompoundType.Constants;
+        public override int MaxBitlen => _underlyingCompoundType.MaxBitlen;
+        public override int MinBitlen => _underlyingCompoundType.MinBitlen;
+        public override bool IsUnion => _underlyingCompoundType.IsUnion;
+        public override DsdlField TryGetField(string fieldName) => _underlyingCompoundType.TryGetField(fieldName);
     }
 }

@@ -20,18 +20,35 @@ namespace CanardSharp.Dsdl
             ContractResolver = new ContractResolver(schemeResolver);
         }
 
-        public T Deserialize<T>(byte[] buffer, int offset)
+        public T Deserialize<T>(byte[] buffer, int offset = 0)
         {
-            var type = typeof(T);
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            return (T)Deserialize(typeof(T), buffer, offset);
+        }
+
+        public object Deserialize(Type type, byte[] buffer, int offset = 0)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
             var contract = ContractResolver.ResolveContract(type);
             if (contract.DsdlType == null)
-                throw new ArgumentException("Cannot find DSDL scheme for provided type.", nameof(T));
+                throw new ArgumentException($"Cannot find DSDL scheme for provided type '{type.FullName}'.", nameof(type));
 
-            return (T)Deserialize(buffer, offset, contract.DsdlType, contract);
+            return Deserialize(buffer, offset, contract.DsdlType, contract);
         }
 
         public object Deserialize(byte[] buffer, int offset, DsdlType dsdlScheme, IContract contract = null)
         {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (dsdlScheme == null)
+                throw new ArgumentNullException(nameof(dsdlScheme));
+
             var stream = new BitStreamReader(buffer, startIndex: offset);
             var reader = new DsdlSerializerReader(this);
             return reader.Deserialize(stream, dsdlScheme, contract);
@@ -41,11 +58,34 @@ namespace CanardSharp.Dsdl
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
-            var type = typeof(T);
+            return Serialize(value, typeof(T), buffer, offset);
+        }
+
+        public int Serialize(object value, byte[] buffer, int offset = 0)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
+            return Serialize(value, value.GetType(), buffer, offset);
+        }
+
+        public int Serialize(object value, Type type, byte[] buffer, int offset = 0)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+
             var contract = ContractResolver.ResolveContract(type);
             if (contract.DsdlType == null)
-                throw new ArgumentException("Cannot find DSDL scheme for provided type.", nameof(T));
+                throw new ArgumentException($"Cannot find DSDL scheme for provided type '{type.FullName}'.", nameof(type));
 
             return Serialize(value, contract.DsdlType, buffer, offset);
         }
@@ -54,6 +94,8 @@ namespace CanardSharp.Dsdl
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
 
             var bytesList = new List<byte>();
             var stream = new BitStreamWriter(bytesList);
@@ -73,6 +115,14 @@ namespace CanardSharp.Dsdl
         public int GetMaxBufferLength<T>()
         {
             var type = typeof(T);
+            return GetMaxBufferLength(type);
+        }
+
+        public int GetMaxBufferLength(Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
             var contract = ContractResolver.ResolveContract(type);
             var uavcanType = contract.DsdlType;
             return (uavcanType.MaxBitlen + 7) / 8;

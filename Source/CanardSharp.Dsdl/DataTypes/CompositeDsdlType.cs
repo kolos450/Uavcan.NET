@@ -1,22 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace CanardSharp.Dsdl.DataTypes
 {
-    public class CompositeDsdlType : DsdlType
+    class CompositeDsdlType : CompositeDsdlTypeBase
     {
-        public bool IsUnion { get; set; }
+        bool _isUnion;
+        public override bool IsUnion => _isUnion;
+        public void SetIsUnion(bool value) => _isUnion = value;
+
 
         List<DsdlField> _fields = new List<DsdlField>();
-        public IReadOnlyList<DsdlField> Fields => _fields;
+        public override IReadOnlyList<DsdlField> Fields => _fields;
 
         List<DsdlConstant> _constants = new List<DsdlConstant>();
-        public IReadOnlyList<DsdlConstant> Constants => _constants;
+        public override IReadOnlyList<DsdlConstant> Constants => _constants;
 
         internal Dictionary<string, object> Members { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
-        internal void AddMember(DsdlMember member)
+        internal virtual void AddMember(DsdlMember member)
         {
             switch (member)
             {
@@ -55,12 +60,12 @@ namespace CanardSharp.Dsdl.DataTypes
             }
         }
 
-        public override string GetNormalizedMemberDefinition() =>
-            throw new NotSupportedException();
+        public override string GetNormalizedMemberDefinition()
+            => throw new NotSupportedException();
 
         public override ulong? GetDataTypeSignature() => null;
 
-        public DsdlField TryGetField(string fieldName)
+        public override DsdlField TryGetField(string fieldName)
         {
             if (fieldName == null)
                 throw new ArgumentNullException(nameof(fieldName));

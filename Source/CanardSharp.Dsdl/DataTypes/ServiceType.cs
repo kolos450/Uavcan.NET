@@ -5,18 +5,13 @@ using System.Text;
 
 namespace CanardSharp.Dsdl.DataTypes
 {
-    public class ServiceType : UavcanType
+    public class ServiceType : IUavcanType
     {
-        public CompositeDsdlType Request { get; set; }
-        public CompositeDsdlType Response { get; set; }
+        public UavcanTypeMeta Meta { get; set; }
+        public CompositeDsdlTypeBase Request { get; set; }
+        public CompositeDsdlTypeBase Response { get; set; }
 
-        public override int MaxBitlen => throw new NotSupportedException();
-
-        public override int MinBitlen => throw new NotSupportedException();
-
-        protected override IEnumerable<DsdlField> Fields => Request.Fields.Concat(Response.Fields);
-
-        public override string GetNormalizedLayout()
+        public string GetNormalizedLayout()
         {
             var sb = new StringBuilder();
             sb.Append(Meta.FullName);
@@ -33,6 +28,9 @@ namespace CanardSharp.Dsdl.DataTypes
             return sb.ToString().Trim().Replace("\n\n\n", "\n").Replace("\n\n", "\n");
         }
 
-        public override string GetNormalizedMemberDefinition() => Meta.FullName;
+        public ulong? GetDataTypeSignature()
+        {
+            return SignatureUtilities.GetDataTypeSignature(GetNormalizedLayout(), Request.Fields.Concat(Response.Fields));
+        }
     }
 }

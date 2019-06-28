@@ -21,7 +21,7 @@ namespace CanardSharp.Dsdl.Testing
             }
         }
 
-        public override UavcanType TryResolveType(string ns, string typeName)
+        public override IUavcanType TryResolveType(string ns, string typeName)
         {
             (UavcanTypeMeta Meta, string Definition) pair;
 

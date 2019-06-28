@@ -251,7 +251,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             return contract;
         }
 
-        void ValidateDsdlTypeCompatibility(ObjectContract contract, CompositeDsdlType scheme)
+        void ValidateDsdlTypeCompatibility(ObjectContract contract, CompositeDsdlTypeBase scheme)
         {
             if (scheme == null)
                 return;
@@ -266,7 +266,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             }
         }
 
-        CompositeDsdlType TryResolveDsdlType(Type type)
+        CompositeDsdlTypeBase TryResolveDsdlType(Type type)
         {
             string ns = null, name = null, suffix = null;
 
@@ -298,7 +298,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             switch (uavcanType)
             {
                 case MessageType t:
-                    return t.Message;
+                    return t;
                 case ServiceType t:
                     switch (suffix?.ToLower())
                     {
@@ -435,7 +435,7 @@ namespace CanardSharp.Dsdl.TypesInterop
         /// <param name="type">The type to create properties for.</param>
         /// /// <param name="memberSerialization">The member serialization mode for the type.</param>
         /// <returns>Properties for the given <see cref="JsonContract"/>.</returns>
-        protected virtual IList<DsdlProperty> CreateProperties(Type type, CompositeDsdlType scheme)
+        protected virtual IList<DsdlProperty> CreateProperties(Type type, CompositeDsdlTypeBase scheme)
         {
             List<MemberInfo> members = GetSerializableMembers(type);
             if (members == null)

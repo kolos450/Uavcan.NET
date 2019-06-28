@@ -118,7 +118,7 @@ namespace CanardSharp.Dsdl
             return null;
         }
 
-        public override UavcanType TryResolveType(string ns, string typeName)
+        public override IUavcanType TryResolveType(string ns, string typeName)
         {
             var definitionPath = TryLocateCompoundTypeDefiniton(ns, typeName);
             if (definitionPath == null)

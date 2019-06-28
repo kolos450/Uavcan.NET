@@ -37,7 +37,7 @@ namespace CanardSharp.Dsdl
                 throw new Exception($"Invalid type full name: '{value}'.");
         }
 
-        static void ValidateDTID(UavcanType type)
+        static void ValidateDTID(IUavcanType type)
         {
             if (type.Meta.DefaultDTID == null)
                 return;
@@ -51,12 +51,12 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        static void ValidateUnion(UavcanType type)
+        static void ValidateUnion(IUavcanType type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            void ValidateUnionCore(CompositeDsdlType ct)
+            void ValidateUnionCore(CompositeDsdlTypeBase ct)
             {
                 if (ct.IsUnion)
                 {
@@ -70,7 +70,7 @@ namespace CanardSharp.Dsdl
             switch (type)
             {
                 case MessageType mt:
-                    ValidateUnionCore(mt.Message);
+                    ValidateUnionCore(mt);
                     break;
                 case ServiceType st:
                     ValidateUnionCore(st.Request);
@@ -81,7 +81,7 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        public static UavcanType Parse(TextReader reader, UavcanTypeMeta meta, IUavcanTypeResolver typeResolver)
+        public static IUavcanType Parse(TextReader reader, UavcanTypeMeta meta, IUavcanTypeResolver typeResolver)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -90,7 +90,7 @@ namespace CanardSharp.Dsdl
             if (typeResolver == null)
                 throw new ArgumentNullException(nameof(typeResolver));
 
-            UavcanType result = null;
+            IUavcanType result = null;
             var compoundType = new CompositeDsdlType();
 
             int lineCounter = 0;
@@ -123,7 +123,7 @@ namespace CanardSharp.Dsdl
                     {
                         if (compoundType.IsUnion)
                             throw new Exception("Data structure has already been declared as union.");
-                        compoundType.IsUnion = true;
+                        compoundType.SetIsUnion(true);
                     }
                     else
                     {
@@ -139,10 +139,9 @@ namespace CanardSharp.Dsdl
 
             if (result == null)
             {
-                result = new MessageType
+                result = new MessageType(compoundType)
                 {
                     Meta = meta,
-                    Message = compoundType,
                 };
             }
             else if (result is ServiceType st)
@@ -326,7 +325,7 @@ namespace CanardSharp.Dsdl
                     case ServiceType _:
                         throw new Exception("A service type can not be nested into another compound type.");
                     case MessageType t:
-                        return t.Message;
+                        return t;
                     default:
                         throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
                 }

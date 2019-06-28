@@ -238,7 +238,6 @@ namespace CanardSharp.IO
 
         // maximum length of buffer to read in bits
         private uint _bufferLengthInBits = 0;
-        private int _bufferLengthInBytes = 0;
 
         // the index in the source buffer for the next byte to be read
         private int _byteArrayIndex = 0;

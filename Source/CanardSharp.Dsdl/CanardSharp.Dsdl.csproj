@@ -49,12 +49,15 @@
     <Compile Include="DataTypes\BooleanDsdlType.cs" />
     <Compile Include="DataTypes\CastMode.cs" />
     <Compile Include="DataTypes\CompositeDsdlType.cs" />
+    <Compile Include="DataTypes\CompositeDsdlTypeBase.cs" />
     <Compile Include="DataTypes\DsdlConstant.cs" />
     <Compile Include="DataTypes\DsdlField.cs" />
     <Compile Include="DataTypes\DsdlMember.cs" />
     <Compile Include="DataTypes\DsdlType.cs" />
     <Compile Include="DataTypes\FloatDsdlType.cs" />
+    <Compile Include="DataTypes\IUavcanType.cs" />
     <Compile Include="DataTypes\IntDsdlType.cs" />
+    <Compile Include="DataTypes\SignatureUtilities.cs" />
     <Compile Include="DataTypes\UIntDsdlType.cs" />
     <Compile Include="DsdlSerializer.cs" />
     <Compile Include="DsdlSerializerReader.cs" />
@@ -66,7 +69,6 @@
     <Compile Include="DataTypes\PrimitiveDsdlType.cs" />
     <Compile Include="DataTypes\ServiceType.cs" />
     <Compile Include="DataTypes\TypeLimits.cs" />
-    <Compile Include="DataTypes\UavcanType.cs" />
     <Compile Include="TypesInterop\ArrayContract.cs" />
     <Compile Include="TypesInterop\ContainerContract.cs" />
     <Compile Include="TypesInterop\ContractResolver.cs" />

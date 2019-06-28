@@ -107,30 +107,6 @@ namespace CanardSharp.Dsdl
             throw new InvalidOperationException();
         }
 
-        static sbyte ExtendSignBit(sbyte value, int bitLength)
-        {
-            if ((value & (1 << (bitLength - 1))) != 0)
-                value |= (sbyte)(0xFF & ~((1 << bitLength) - 1));
-
-            return value;
-        }
-
-        static short ExtendSignBit(short value, int bitLength)
-        {
-            if ((value & (1 << (bitLength - 1))) != 0)
-                value |= (short)(0xFFFF & ~((1 << bitLength) - 1));
-
-            return value;
-        }
-
-        static int ExtendSignBit(int value, int bitLength)
-        {
-            if ((value & (1 << (bitLength - 1))) != 0)
-                value |= (int)(0xFFFFFFFFU & ~((1 << bitLength) - 1));
-
-            return value;
-        }
-
         static long ExtendSignBit(long value, int bitLength)
         {
             if (bitLength < 64 && (value & (1L << (bitLength - 1))) != 0)

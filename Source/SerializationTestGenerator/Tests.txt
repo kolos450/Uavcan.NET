@@ -53,7 +53,8 @@ namespace uavcan.samples
     .{0}
     .{1}
     .{-1}
-    .{1.2E+10f}
+    .{1.2E+10f}@disableRoundtripTest
+    .{1.2E+2f}
     .{1.2E-2f}
 
 	type S06_float64

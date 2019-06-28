@@ -49,7 +49,26 @@ namespace CanardSharp.Dsdl.Testing.Serialization
                 var comparisonResult = _compareLogic.Compare(data, deserialized);
                 if (!comparisonResult.AreEqual)
                 {
-                    Assert.Fail(comparisonResult.DifferencesString);
+                    bool ignoreInequality = true;
+                    foreach (var diff in comparisonResult.Differences)
+                    {
+                        if (!ignoreInequality)
+                            break;
+
+                        if (diff.Object1 is float f1 && diff.Object2 is float f2)
+                        {
+                            var fdiff = Math.Abs(f1 - f2);
+                            if (fdiff > 0.0001)
+                                ignoreInequality = false;
+                        }
+                        else
+                        {
+                            ignoreInequality = false;
+                        }
+                    }
+
+                    if (!ignoreInequality)
+                        Assert.Fail(comparisonResult.DifferencesString);
                 }
             }
         }

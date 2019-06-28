@@ -1,0 +1,128 @@
+namespace uavcan.samples
+{
+	type S00_t_uint4
+	{
+		truncated uint4 val
+	}
+    .{0}
+    .{1}
+    .{15}
+    .{248}
+    .{255}
+
+	type S01_s_uint4
+	{
+		saturated uint4 val
+	}
+    .{0}
+    .{1}
+    .{15}
+    .{248}
+    .{255}
+
+	type S02_uint64
+	{
+		uint64 val
+	}
+    .{0}
+    .{1}
+    .{18446744073709551615}
+
+	type S03_int64
+	{
+		int64 val
+	}
+    .{0}
+    .{1}
+    .{-1}
+    .{-150}
+    .{-9223372036854775808}
+    .{9223372036854775807}
+
+	type S04_bool
+	{
+		bool val
+	}
+    .{true}
+    .{false}
+
+	type S05_float16
+	{
+		float16 val
+	}
+    .{0}
+    .{1}
+    .{-1}
+    .{1.2E+10f}
+    .{1.2E-2f}
+
+	type S06_float64
+	{
+		float64 val
+	}
+    .{0}
+    .{1.7976931348623157E+308}
+    .{-1.7976931348623157E+308}
+    .{0.1}
+
+	type S07_as4_uint8
+	{
+		uint8[4] val
+	}
+    .{[0,0,0,0]}
+    .{[0,1,2,3]}
+    .{[255,255,255,255]}
+    
+
+	type S08_ad4_uint8
+	{
+		uint8[<=4] val
+	}
+    .{[]}
+    .{[0]}
+    .{[0,0]}
+    .{[0,0,0]}
+    .{[0,0,0,0]}
+    .{[1]}
+    .{[1,1]}
+    .{[1,1,1]}
+    .{[1,1,1,1]}
+
+	type S09_as4_uint8_ad4_uint8
+	{
+		uint8[4] val0
+		uint8[<=4] val1
+	}
+    .{[1,1,1,1],[]}
+    .{[1,1,1,1],[1,1,1,1]}
+
+	type S10_ad4_uint8_as4_uint8
+	{
+		uint8[<=4] val0
+		uint8[4] val1
+	}
+    .{[],[1,1,1,1]}
+    .{[1,1,1,1],[1,1,1,1]}
+    
+	type S11_s_int24
+	{
+		saturated int24 val
+	}
+    .{0}
+    .{4194304}
+    .{-2097152}
+    .{134217743}
+    .{-134217744}
+    
+    type CmpTestA
+    {
+        int8 field
+    }
+    
+    type CmpTestA_A
+    {
+        int8 field
+        CmpTestA a
+    }
+    .{123, {7}}
+}

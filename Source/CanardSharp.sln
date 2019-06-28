@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CanardSharp.Harness", "Cana
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CanardSharp.Drivers.Slcan", "CanardSharp.Drivers.Slcan\CanardSharp.Drivers.Slcan.csproj", "{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializationTestGenerator", "SerializationTestGenerator\SerializationTestGenerator.csproj", "{991C2FD6-24A5-49D3-86D7-109397BDCBA8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{991C2FD6-24A5-49D3-86D7-109397BDCBA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{991C2FD6-24A5-49D3-86D7-109397BDCBA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{991C2FD6-24A5-49D3-86D7-109397BDCBA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{991C2FD6-24A5-49D3-86D7-109397BDCBA8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,6 +60,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{FEE2E789-1EAE-466B-A254-29EDAADF02EB} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
 		{39668E15-4FC1-429E-929B-CBC162274F5B} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
+		{991C2FD6-24A5-49D3-86D7-109397BDCBA8} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {ECD6CA83-2AC1-4F3F-9957-2805E8C39A99}

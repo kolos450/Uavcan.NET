@@ -1,0 +1,62 @@
+namespace uavcan.samples
+{
+    type S00_t_uint4
+    {
+        truncated uint4 val
+    }
+    type S01_s_uint4
+    {
+        saturated uint4 val
+    }
+    type S02_uint64
+    {
+        uint64 val
+    }
+    type S03_int64
+    {
+        int64 val
+    }
+    type S04_bool
+    {
+        bool val
+    }
+    type S05_float16
+    {
+        float16 val
+    }
+    type S06_float64
+    {
+        float64 val
+    }
+    type S07_as4_uint8
+    {
+        uint8[4] val
+    }
+    type S08_ad4_uint8
+    {
+        uint8[<=4] val
+    }
+    type S09_as4_uint8_ad4_uint8
+    {
+        uint8[4] val0
+        uint8[<=4] val1
+    }
+    type S10_ad4_uint8_as4_uint8
+    {
+        uint8[<=4] val0
+        uint8[4] val1
+    }
+    type S11_s_int24
+    {
+        saturated int24 val
+    }
+    type CmpTestA
+    {
+        int8 field
+    }
+    type CmpTestA_A
+    {
+        int8 field
+        CmpTestA a
+    }
+}

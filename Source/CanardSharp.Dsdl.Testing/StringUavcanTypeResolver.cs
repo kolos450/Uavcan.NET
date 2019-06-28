@@ -21,12 +21,7 @@ namespace CanardSharp.Dsdl.Testing
             }
         }
 
-        public UavcanType ResolveType(string ns, string typeName)
-        {
-            return TryResolveType(ns, typeName) ??
-                 throw new Exception($"Type definition not found: {typeName}.");
-        }
-        public UavcanType TryResolveType(string ns, string typeName)
+        public override UavcanType TryResolveType(string ns, string typeName)
         {
             (UavcanTypeMeta Meta, string Definition) pair;
 

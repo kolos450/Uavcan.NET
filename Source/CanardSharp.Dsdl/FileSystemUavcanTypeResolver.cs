@@ -118,13 +118,7 @@ namespace CanardSharp.Dsdl
             return null;
         }
 
-        public UavcanType ResolveType(string ns, string typeName)
-        {
-            return TryResolveType(ns, typeName) ??
-                 throw new Exception($"Type definition not found: {typeName}.");
-        }
-
-        public UavcanType TryResolveType(string ns, string typeName)
+        public override UavcanType TryResolveType(string ns, string typeName)
         {
             var definitionPath = TryLocateCompoundTypeDefiniton(ns, typeName);
             if (definitionPath == null)

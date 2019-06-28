@@ -321,9 +321,15 @@ namespace CanardSharp.Dsdl
                     throw new Exception("Cast mode specifier is not applicable for compound types.");
 
                 var nestedType = typeResolver.ResolveType(ns, attrTypeName);
-                if (nestedType is ServiceType)
-                    throw new Exception("A service type can not be nested into another compound type.");
-                return nestedType;
+                switch (nestedType)
+                {
+                    case ServiceType _:
+                        throw new Exception("A service type can not be nested into another compound type.");
+                    case MessageType t:
+                        return t.Message;
+                    default:
+                        throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
+                }
             }
         }
 

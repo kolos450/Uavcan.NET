@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CanardSharp.Dsdl.DataTypes
 {
-    class BooleanDsdlType : PrimitiveDsdlType
+    public class BooleanDsdlType : PrimitiveDsdlType
     {
         public BooleanDsdlType(CastMode castMode) : base(1, castMode)
         {

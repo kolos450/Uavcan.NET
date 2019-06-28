@@ -7,9 +7,14 @@ using System.Threading.Tasks;
 
 namespace CanardSharp.Dsdl
 {
-    public interface IUavcanTypeResolver
+    public abstract class IUavcanTypeResolver
     {
-        UavcanType ResolveType(string ns, string typeName);
-        UavcanType TryResolveType(string ns, string typeName);
+        public virtual UavcanType ResolveType(string ns, string typeName)
+        {
+            return TryResolveType(ns, typeName) ??
+                 throw new Exception($"Type definition not found: {typeName}.");
+        }
+
+        public abstract UavcanType TryResolveType(string ns, string typeName);
     }
 }

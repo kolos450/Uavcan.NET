@@ -188,10 +188,10 @@ namespace SerializationTestGenerator
 
                 case ArrayDsdlType adt:
                     var nestesNodes = node.FindChild("members");
-                    if(nestesNodes == null)
-                        return $"new {GetCSharpType(adt)} {{ }}";
+                    if (nestesNodes == null)
+                        return $"new {GetCSharpType(adt, false)} {{ }}";
                     var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ElementType, x));
-                    return $"new {GetCSharpType(adt)} {{ {string.Join(", ", arrayContent)} }}";
+                    return $"new {GetCSharpType(adt, false)} {{ {string.Join(", ", arrayContent)} }}";
 
                 case CompositeDsdlTypeBase cdt:
                     var t = _compoundTypesLookup[cdt];
@@ -225,7 +225,7 @@ namespace SerializationTestGenerator
         string BuildPythonSerializationScript(TestType t, TestCase tcase)
         {
             var initializer = BuildPythonInitializer(t, tcase.Tree);
-            
+
             return $@"import uavcan
 
 def bytes_from_bits(s):
@@ -411,7 +411,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
         {
             foreach (var m in type.Fields)
             {
-                var fieldType = GetCSharpType(m.Type);
+                var fieldType = GetCSharpType(m.Type, type.IsUnion);
                 if (fieldType != null)
                 {
                     yield return $"[DataMember(Name = \"{m.Name}\")]";
@@ -420,13 +420,31 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             }
         }
 
-        string GetCSharpType(DsdlType type)
+        string GetCSharpType(DsdlType type, bool nullable)
         {
             switch (type)
             {
                 case VoidDsdlType _:
                     return null;
 
+                case PrimitiveDsdlType t:
+                    return nullable ? GetCSharpType(t) + "?" : GetCSharpType(t);
+
+                case ArrayDsdlType t:
+                    return GetCSharpType(t.ElementType, nullable) + "[]";
+
+                case CompositeDsdlTypeBase t:
+                    return _compoundTypesLookup[t].CSharpName;
+
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        string GetCSharpType(PrimitiveDsdlType type)
+        {
+            switch (type)
+            {
                 case BooleanDsdlType _:
                     return "bool";
 
@@ -461,12 +479,6 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                         return "double";
                     else
                         throw new InvalidOperationException();
-
-                case ArrayDsdlType t:
-                    return GetCSharpType(t.ElementType) + "[]";
-
-                case CompositeDsdlTypeBase t:
-                    return _compoundTypesLookup[t].CSharpName;
 
                 default:
                     throw new InvalidOperationException();

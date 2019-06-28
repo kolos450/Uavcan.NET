@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SerializationTestGenerator
+namespace CanardSharp.Testing.Framework
 {
-    static class IOUtils
+    public static class IOUtils
     {
         public static void DirectoryCopy(string sourceDirName, string destDirName,
                                       bool copySubDirs)

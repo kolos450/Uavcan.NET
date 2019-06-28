@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{991C2FD6-24A5-49D3-86D7-109397BDCBA8}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>SerializationTestGenerator</RootNamespace>
-    <AssemblyName>SerializationTestGenerator</AssemblyName>
+    <ProjectGuid>{556FC114-3629-42B7-89CC-C55E078CBF44}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CanardSharp.Testing.Framework</RootNamespace>
+    <AssemblyName>CanardSharp.Testing.Framework</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -43,21 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="ApplicationLauncher.cs" />
+    <Compile Include="IOUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CanardSharp.Dsdl\CanardSharp.Dsdl.csproj">
-      <Project>{46eb0c5d-dfeb-4567-8928-63496ec618a3}</Project>
-      <Name>CanardSharp.Dsdl</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CanardSharp.Testing.Framework\CanardSharp.Testing.Framework.csproj">
-      <Project>{556fc114-3629-42b7-89cc-c55e078cbf44}</Project>
-      <Name>CanardSharp.Testing.Framework</Name>
-    </ProjectReference>
+    <Compile Include="TestSchemeFileGrammar.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Irony">

@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SerializationTestGenerator
+namespace CanardSharp.Testing.Framework
 {
-    class TestFileGrammar : Grammar
+    public class TestSchemeFileGrammar : Grammar
     {
         static NumberLiteral CreateNumberLiteral(string name)
         {
@@ -26,7 +26,7 @@ namespace SerializationTestGenerator
             return term;
         }
 
-        public TestFileGrammar()
+        public TestSchemeFileGrammar()
         {
             #region Lexical structure
             NumberLiteral Number = CreateNumberLiteral("Number");

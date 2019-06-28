@@ -181,7 +181,7 @@ namespace CanardSharp.Dsdl
 
         int ReadDynamicArraySize(BitStreamReader reader, ArrayDsdlType t)
         {
-            var bitLen = BitSerializer.IntBitLength(t.MaxSize);
+            var bitLen = BitSerializer.IntBitLength(t.MaxSize + 1);
             return (int)BitSerializer.ReadUInt(reader, bitLen);
         }
 

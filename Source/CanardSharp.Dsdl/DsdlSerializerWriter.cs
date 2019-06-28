@@ -482,7 +482,10 @@ namespace CanardSharp.Dsdl
                     if (resolvedProp == null)
                         throw new InvalidOperationException($"Cannot resove member '{containerContract.UnderlyingType.FullName}.{dsdlMember.Name}'.");
                     var rp = resolvedProp.Value;
-                    var tao = tailArrayOptimization && isLastMember && dsdlMember.Type is ArrayDsdlType;
+                    var tao = tailArrayOptimization &&
+                        isLastMember &&
+                        dsdlMember.Type is ArrayDsdlType adt &&
+                        adt.ItemType.MinBitlen >= 8;
                     SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type, tao);
                 }
             }

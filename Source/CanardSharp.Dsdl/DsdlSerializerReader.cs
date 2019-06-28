@@ -195,10 +195,29 @@ namespace CanardSharp.Dsdl
                     return BitSerializer.ReadIntTyped(reader, t.MaxBitlen);
                 case UIntDsdlType _:
                     return BitSerializer.ReadUIntTyped(reader, t.MaxBitlen);
-                case FloatDsdlType _:
-                    return BitSerializer.ReadFloatTyped(reader, t.MaxBitlen);
+                case FloatDsdlType fdt:
+                    return ReadFloatPrimitiveType(reader, fdt);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(t));
+            }
+        }
+
+        static object ReadFloatPrimitiveType(BitStreamReader reader, FloatDsdlType t)
+        {
+            switch (t.MaxBitlen)
+            {
+                case 16:
+                    var value = (ushort)BitSerializer.ReadUInt(reader, 16);
+                    return BitSerializer.UInt16ToFloat32(value);
+
+                case 32:
+                    return BitSerializer.ReadSingle(reader, 32);
+
+                case 64:
+                    return BitSerializer.ReadDouble(reader, 64);
+
+                default:
+                    throw new InvalidOperationException($"Unexpected float bit lenght: {t.MaxBitlen}.");
             }
         }
 

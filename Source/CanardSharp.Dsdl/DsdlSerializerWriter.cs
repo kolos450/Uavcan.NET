@@ -76,45 +76,94 @@ namespace CanardSharp.Dsdl
                     break;
                 case IntDsdlType idt:
                     var longValue = (long)ConvertUtils.ConvertOrCast(value, CultureInfo.CurrentCulture, typeof(long));
-                    longValue = ApplyIntegerCastMode(longValue, idt.CastMode, idt.MaxBitlen);
+                    longValue = ApplyIntegerCastMode(longValue, idt);
                     BitSerializer.Write(writer, longValue, t.MaxBitlen);
                     break;
                 case UIntDsdlType uidt:
                     var ulongValue = (ulong)ConvertUtils.ConvertOrCast(value, CultureInfo.CurrentCulture, typeof(ulong));
-                    ulongValue = ApplyIntegerCastMode(ulongValue, uidt.CastMode, uidt.MaxBitlen);
+                    ulongValue = ApplyIntegerCastMode(ulongValue, uidt);
                     BitSerializer.Write(writer, ulongValue, t.MaxBitlen);
                     break;
-                case FloatDsdlType _:
+                case FloatDsdlType fdt:
                     var doubleValue = (double)ConvertUtils.ConvertOrCast(value, CultureInfo.CurrentCulture, typeof(double));
-                    BitSerializer.Write(writer, doubleValue, t.MaxBitlen);
+                    WriteFloatPrimitive(writer, doubleValue, fdt);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(t));
             }
         }
 
-        static long ApplyIntegerCastMode(long value, CastMode castMode, int bitlen)
+        static void WriteFloatPrimitive(BitStreamWriter writer, double value, FloatDsdlType type)
         {
-            var maxValue = bitlen == 64 ? unchecked((long)ulong.MaxValue) : (long)((1UL << bitlen) - 1);
+            var range = TypeLimits.GetFloatRange(type.MaxBitlen);
 
-            switch (castMode)
+            switch (type.CastMode)
             {
-                case CastMode.Truncated:
-                    return value & maxValue;
                 case CastMode.Saturated:
-                    if ((value & ~maxValue) == 0)
-                        return value;
-                    return maxValue;
+                    if (value > range.Maximum)
+                        value = range.Maximum;
+                    if (value < range.Minimum)
+                        value = range.Minimum;
+                    break;
+
+                case CastMode.Truncated:
+                    if (!double.IsNaN(value) && value > range.Maximum)
+                        value = double.PositiveInfinity;
+                    if (!double.IsNaN(value) && value < range.Maximum)
+                        value = double.NegativeInfinity;
+                    break;
+
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(castMode));
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            switch (type.MaxBitlen)
+            {
+                case 16:
+                    var val = BitSerializer.Float32ToUInt16((float)value);
+                    BitSerializer.Write(writer, val, 16);
+                    break;
+
+                case 32:
+                    BitSerializer.Write(writer, (float)value, 32);
+                    break;
+
+                case 64:
+                    BitSerializer.Write(writer, value, 64);
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected float bit lenght: {type.MaxBitlen}.");
             }
         }
 
-        static ulong ApplyIntegerCastMode(ulong value, CastMode castMode, int bitlen)
+        static long ApplyIntegerCastMode(long value, IntDsdlType type)
         {
-            var maxValue = (bitlen == 64) ? ulong.MaxValue : (1UL << bitlen) - 1;
+            var maxValue = type.MaxBitlen == 64 ? unchecked((long)ulong.MaxValue) : (long)((1UL << type.MaxBitlen) - 1);
 
-            switch (castMode)
+            switch (type.CastMode)
+            {
+                case CastMode.Truncated:
+                    return value & maxValue;
+                case CastMode.Saturated:
+                    if ((value & ~maxValue) == 0)
+                        return value;
+                    var range = TypeLimits.GetIntRange(type.MaxBitlen);
+                    if (value < range.Minimum)
+                        return range.Minimum;
+                    else if (value > range.Maximum)
+                        return range.Maximum;
+                    throw new InvalidOperationException();
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type.CastMode));
+            }
+        }
+
+        static ulong ApplyIntegerCastMode(ulong value, UIntDsdlType type)
+        {
+            var maxValue = (type.MaxBitlen == 64) ? ulong.MaxValue : (1UL << type.MaxBitlen) - 1;
+
+            switch (type.CastMode)
             {
                 case CastMode.Truncated:
                     return value & maxValue;
@@ -123,7 +172,7 @@ namespace CanardSharp.Dsdl
                         return value;
                     return maxValue;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(castMode));
+                    throw new ArgumentOutOfRangeException(nameof(type.CastMode));
             }
         }
 

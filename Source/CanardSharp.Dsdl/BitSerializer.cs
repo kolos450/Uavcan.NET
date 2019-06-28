@@ -3,6 +3,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,7 +19,9 @@ namespace CanardSharp.Dsdl
             Read(bitStream, b => ExtendSignBit(LittleEndianBitConverter.ToInt64(b), bitLength), bitLength);
         public static ulong ReadUInt(BitStreamReader bitStream, int bitLength) =>
             Read(bitStream, b => LittleEndianBitConverter.ToUInt64(b), bitLength);
-        public static double ReadFloat(BitStreamReader bitStream, int bitLength) =>
+        public static float ReadSingle(BitStreamReader bitStream, int bitLength) =>
+            Read(bitStream, b => LittleEndianBitConverter.ToSingle(b), bitLength);
+        public static double ReadDouble(BitStreamReader bitStream, int bitLength) =>
             Read(bitStream, b => LittleEndianBitConverter.ToDouble(b), bitLength);
 
         public static object ReadIntTyped(BitStreamReader bitStream, int bitLength)
@@ -42,14 +45,6 @@ namespace CanardSharp.Dsdl
                 return (ushort)value;
             if (bitLength <= 32)
                 return (uint)value;
-            return value;
-        }
-
-        public static object ReadFloatTyped(BitStreamReader bitStream, int bitLength)
-        {
-            var value = ReadFloat(bitStream, bitLength);
-            if (bitLength <= 32)
-                return (float)value;
             return value;
         }
 
@@ -138,7 +133,7 @@ namespace CanardSharp.Dsdl
 
         static long ExtendSignBit(long value, int bitLength)
         {
-            if ((value & (1L << (bitLength - 1))) != 0)
+            if (bitLength < 64 && (value & (1L << (bitLength - 1))) != 0)
                 value |= (long)(0xFFFFFFFFFFFFFFFFUL & ~((1UL << bitLength) - 1));
 
             return value;
@@ -178,8 +173,8 @@ namespace CanardSharp.Dsdl
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
         public static void Write(BitStreamWriter destination, ulong value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
-        //public void Write(BitStreamWriter destination, float value, byte bitLength) =>
-        //    Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
+        public static void Write(BitStreamWriter destination, float value, int bitLength) =>
+            Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
         public static void Write(BitStreamWriter destination, double value, int bitLength) =>
             Write(destination, b => LittleEndianBitConverter.FillBytes(value, b), bitLength);
 
@@ -223,6 +218,56 @@ namespace CanardSharp.Dsdl
                 destination.Write(source[sourceOffset++], currentBitLen);
                 bitLength -= currentBitLen;
             }
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct Float32IntegerUnion
+        {
+            [FieldOffset(0)] public uint I;
+            [FieldOffset(0)] public float F;
+        }
+
+        public static float UInt16ToFloat32(ushort value)
+        {
+            var magic = new Float32IntegerUnion { I = (254 - 15) << 23 };
+            var was_inf_nan = new Float32IntegerUnion { I = (127 + 16) << 23 };
+
+            var union = new Float32IntegerUnion { I = ((uint)value & 0x7FFF) << 13 }; // exponent/mantissa bits
+            union.F *= magic.F;                                                       // exponent adjust
+            if (union.F >= was_inf_nan.F)                                             // make sure Inf/NaN survive
+                union.I |= 255 << 23;
+            union.I |= ((uint)value & 0x8000) << 16;                                  // sign bit
+
+            return union.F;
+        }
+
+        public static ushort Float32ToUInt16(float value)
+        {
+            var f32infty = new Float32IntegerUnion { I = 255 << 23 };
+            var f16infty = new Float32IntegerUnion { I = 31 << 23 };
+            var magic = new Float32IntegerUnion { I = 15 << 23 };
+            var inval = new Float32IntegerUnion { F = value };
+            var sign_mask = 0x80000000;
+            var round_mask = ~0xFFFU;
+
+            var sign = inval.I & sign_mask;
+            inval.I ^= sign;
+
+            ushort @out;
+            if (inval.I >= f32infty.I)                           // Inf or NaN (all exponent bits set)
+            {
+                @out = (ushort)(inval.I > f32infty.I ? 0x7FFFu : 0x7C00u);
+            }
+            else
+            {
+                inval.I &= round_mask;
+                inval.F *= magic.F;
+                inval.I -= round_mask;
+                if (inval.I > f16infty.I)
+                    inval.I = f16infty.I;                        // Clamp to signed infinity if overflowed
+                @out = (ushort)((inval.I >> 13) & 0xFFFF);       // Take the bits!
+            }
+            return (ushort)(@out | (sign >> 16) & 0xFFFF);
         }
     }
 }

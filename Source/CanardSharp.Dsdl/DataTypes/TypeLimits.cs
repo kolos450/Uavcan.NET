@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CanardSharp.Dsdl.DataTypes
 {
-    static class TypeLimits
+    public static class TypeLimits
     {
         public static Range<ulong> GetUIntRange(int bitlen)
         {

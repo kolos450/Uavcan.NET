@@ -12,7 +12,9 @@ namespace CanardSharp.Dsdl.DataTypes
         {
             if (bitlen < 1 || bitlen > 64)
                 throw new Exception($"Invalid bit length for integer type: {bitlen}.");
-            return Range.Create(0U, (ulong)(1UL << bitlen) - 1);
+            if (bitlen == 64)
+                return Range.Create(0U, ulong.MaxValue);
+            return Range.Create(0U, (1UL << bitlen) - 1);
         }
 
         public static Range<long> GetIntRange(int bitlen)

@@ -146,14 +146,12 @@ namespace CanardSharp.Dsdl
                 case CastMode.Truncated:
                     return value & maxValue;
                 case CastMode.Saturated:
-                    if ((value & ~maxValue) == 0)
-                        return value;
                     var range = TypeLimits.GetIntRange(type.MaxBitlen);
                     if (value < range.Minimum)
                         return range.Minimum;
                     else if (value > range.Maximum)
                         return range.Maximum;
-                    throw new InvalidOperationException();
+                    return value;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type.CastMode));
             }
@@ -367,7 +365,7 @@ namespace CanardSharp.Dsdl
 
         void WriteDynamicArraySize(BitStreamWriter writer, int count, ArrayDsdlType arrayDsdlType)
         {
-            var bitLen = BitSerializer.IntBitLength(arrayDsdlType.MaxSize);
+            var bitLen = BitSerializer.IntBitLength(arrayDsdlType.MaxSize + 1);
             BitSerializer.Write(writer, count, bitLen);
         }
 
@@ -375,11 +373,11 @@ namespace CanardSharp.Dsdl
         {
             switch (schemeType)
             {
-                case PrimitiveDsdlType dt:
+                case PrimitiveDsdlType _:
                     if (!(actualContract is PrimitiveContract))
                         return false;
                     break;
-                case ArrayDsdlType dt:
+                case ArrayDsdlType _:
                     if (!(actualContract is ArrayContract))
                         return false;
                     break;

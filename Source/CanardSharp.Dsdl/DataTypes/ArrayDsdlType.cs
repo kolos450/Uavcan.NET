@@ -8,11 +8,11 @@ namespace CanardSharp.Dsdl.DataTypes
 {
     public class ArrayDsdlType : DsdlType
     {
-        DsdlType _valueType;
+        DsdlType _elementType;
         ArrayDsdlTypeMode _mode;
         int _maxSize;
 
-        public DsdlType ItemType => _valueType;
+        public DsdlType ElementType => _elementType;
         public ArrayDsdlTypeMode Mode => _mode;
         public int MaxSize => _maxSize;
 
@@ -21,7 +21,7 @@ namespace CanardSharp.Dsdl.DataTypes
             if (maxSize <= 0)
                 throw new ArgumentException("Array size must be positive.", nameof(maxSize));
 
-            _valueType = valueType;
+            _elementType = valueType;
             _mode = mode;
             _maxSize = maxSize;
         }
@@ -33,9 +33,9 @@ namespace CanardSharp.Dsdl.DataTypes
                 switch (_mode)
                 {
                     case ArrayDsdlTypeMode.Dynamic:
-                        return _maxSize * _valueType.MaxBitlen + _maxSize.GetBitLength();
+                        return _maxSize * _elementType.MaxBitlen + _maxSize.GetBitLength();
                     case ArrayDsdlTypeMode.Static:
-                        return _maxSize * _valueType.MaxBitlen;
+                        return _maxSize * _elementType.MaxBitlen;
                     default:
                         throw new ArgumentException();
                 }
@@ -51,7 +51,7 @@ namespace CanardSharp.Dsdl.DataTypes
                     case ArrayDsdlTypeMode.Dynamic:
                         return 0;
                     case ArrayDsdlTypeMode.Static:
-                        return _maxSize * _valueType.MinBitlen;
+                        return _maxSize * _elementType.MinBitlen;
                     default:
                         throw new ArgumentException();
                 }
@@ -63,9 +63,9 @@ namespace CanardSharp.Dsdl.DataTypes
             switch (_mode)
             {
                 case ArrayDsdlTypeMode.Dynamic:
-                    return $"{_valueType}[<={_maxSize}]";
+                    return $"{_elementType}[<={_maxSize}]";
                 case ArrayDsdlTypeMode.Static:
-                    return $"{_valueType}[{_maxSize}]";
+                    return $"{_elementType}[{_maxSize}]";
                 default:
                     throw new ArgumentException();
             }
@@ -73,9 +73,14 @@ namespace CanardSharp.Dsdl.DataTypes
 
         public bool IsStringLike =>
             _mode == ArrayDsdlTypeMode.Dynamic &&
-            _valueType is PrimitiveDsdlType &&
-            _valueType.MaxBitlen == 8;
+            _elementType is PrimitiveDsdlType &&
+            _elementType.MaxBitlen == 8;
 
-        public override ulong? GetDataTypeSignature() => _valueType.GetDataTypeSignature();
+        public override ulong? GetDataTypeSignature() => _elementType.GetDataTypeSignature();
+
+        internal void SetElementType(DsdlType type)
+        {
+            _elementType = type;
+        }
     }
 }

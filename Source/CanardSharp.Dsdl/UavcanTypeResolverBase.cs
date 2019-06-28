@@ -33,7 +33,8 @@ namespace CanardSharp.Dsdl
                 type = TryResolveTypeCore(ns, typeName);
 
                 _lookup[fullName] = type;
-                DsdlParser.ResolveNestedTypes(type, this);
+                if(type != null)
+                    DsdlParser.ResolveNestedTypes(type, this);
             }
 
             return type;

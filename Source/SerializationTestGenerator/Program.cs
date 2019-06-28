@@ -174,7 +174,8 @@ namespace SerializationTestGenerator
                 var field = nonVoidFields[i];
                 var node = parseTreeNode.ChildNodes[i];
 
-                yield return $"{field.Name} = " + BuildTestMethodMemberElement(field.Type, node);
+                if (node.FindTokenAndGetText() != "null")
+                    yield return $"{field.Name} = " + BuildTestMethodMemberElement(field.Type, node);
             }
         }
 
@@ -187,7 +188,9 @@ namespace SerializationTestGenerator
 
                 case ArrayDsdlType adt:
                     var nestesNodes = node.FindChild("members");
-                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ItemType, x));
+                    if(nestesNodes == null)
+                        return $"new {GetCSharpType(adt)} {{ }}";
+                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ElementType, x));
                     return $"new {GetCSharpType(adt)} {{ {string.Join(", ", arrayContent)} }}";
 
                 case CompositeDsdlTypeBase cdt:
@@ -222,7 +225,7 @@ namespace SerializationTestGenerator
         string BuildPythonSerializationScript(TestType t, TestCase tcase)
         {
             var initializer = BuildPythonInitializer(t, tcase.Tree);
-
+            
             return $@"import uavcan
 
 def bytes_from_bits(s):
@@ -259,7 +262,8 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 var field = nonVoidFields[i];
                 var node = parseTreeNode.ChildNodes[i];
 
-                yield return $"{field.Name} = " + BuildPythonInitializerMemberElement(field.Type, node);
+                if (node.FindTokenAndGetText() != "null")
+                    yield return $"{field.Name} = " + BuildPythonInitializerMemberElement(field.Type, node);
             }
         }
 
@@ -290,7 +294,9 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
 
                 case ArrayDsdlType adt:
                     var nestesNodes = node.FindChild("members");
-                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildPythonInitializerMemberElement(adt.ItemType, x));
+                    if (nestesNodes == null)
+                        return "[]";
+                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildPythonInitializerMemberElement(adt.ElementType, x));
                     return $"[{string.Join(", ", arrayContent)}]";
 
                 case CompositeDsdlTypeBase cdt:
@@ -457,7 +463,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                         throw new InvalidOperationException();
 
                 case ArrayDsdlType t:
-                    return GetCSharpType(t.ItemType) + "[]";
+                    return GetCSharpType(t.ElementType) + "[]";
 
                 case CompositeDsdlTypeBase t:
                     return _compoundTypesLookup[t].CSharpName;
@@ -572,7 +578,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             {
                 foreach (var i in _lookup.Values)
                 {
-                    TryResolveType(i);
+                    TryResolveType(i.Namespace, i.Name);
                 }
             }
         }

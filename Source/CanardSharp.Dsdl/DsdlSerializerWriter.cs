@@ -351,11 +351,11 @@ namespace CanardSharp.Dsdl
                 if (!CheckForCircularReference(value, null, valueContract))
                     continue;
 
-                if (!CheckDsdlTypeCompatibility(arrayDsdlType.ItemType, valueContract))
+                if (!CheckDsdlTypeCompatibility(arrayDsdlType.ElementType, valueContract))
                     throw new InvalidOperationException(
                         $"DSDL type mismatch for enumerated item '{contract.UnderlyingType.FullName}.{valueContract.UnderlyingType}'.");
 
-                SerializeValue(writer, value, valueContract, null, contract, member, arrayDsdlType.ItemType);
+                SerializeValue(writer, value, valueContract, null, contract, member, arrayDsdlType.ElementType);
             }
 
             //writer.WriteEndArray();
@@ -485,7 +485,7 @@ namespace CanardSharp.Dsdl
                     var tao = tailArrayOptimization &&
                         isLastMember &&
                         dsdlMember.Type is ArrayDsdlType adt &&
-                        adt.ItemType.MinBitlen >= 8;
+                        adt.ElementType.MinBitlen >= 8;
                     SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type, tao);
                 }
             }

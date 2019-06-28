@@ -151,7 +151,7 @@ namespace CanardSharp.Dsdl
                 var result = new ArrayList();
                 while (reader.LengthInBytes - reader.CurrentIndex > 1)
                 {
-                    result.Add(CreateUnknownObject(reader, t.ItemType));
+                    result.Add(CreateUnknownObject(reader, t.ElementType));
                 }
                 return result;
             }
@@ -160,7 +160,7 @@ namespace CanardSharp.Dsdl
                 var arraySize = ReadDynamicArraySize(reader, t);
                 var result = new object[arraySize];
                 for (int i = 0; i < arraySize; i++)
-                    result[i] = CreateUnknownObject(reader, t.ItemType);
+                    result[i] = CreateUnknownObject(reader, t.ElementType);
                 return result;
             }
         }
@@ -169,7 +169,7 @@ namespace CanardSharp.Dsdl
         {
             var result = new object[t.MaxSize];
             for (int i = 0; i < t.MaxSize; i++)
-                result[i] = CreateUnknownObject(reader, t.ItemType);
+                result[i] = CreateUnknownObject(reader, t.ElementType);
             return result;
         }
 
@@ -677,7 +677,7 @@ namespace CanardSharp.Dsdl
 
             object ReadArrayItem()
             {
-                return CreateValueInternal(reader, contract.ItemContract, null, contract, containerProperty, null, scheme.ItemType, contract.CollectionItemType);
+                return CreateValueInternal(reader, contract.ItemContract, null, contract, containerProperty, null, scheme.ElementType, contract.CollectionItemType);
             }
 
             switch (scheme.Mode)
@@ -691,7 +691,7 @@ namespace CanardSharp.Dsdl
 
                 case ArrayDsdlTypeMode.Dynamic:
                     {
-                        if (tailArrayOptimization && scheme.ItemType.MinBitlen >= 8)
+                        if (tailArrayOptimization && scheme.ElementType.MinBitlen >= 8)
                         {
                             while (reader.LengthInBytes - reader.CurrentIndex > 1)
                                 list.Add(ReadArrayItem());

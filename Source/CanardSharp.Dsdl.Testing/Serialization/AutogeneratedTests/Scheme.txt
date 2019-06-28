@@ -67,4 +67,60 @@ namespace uavcan.samples
         int8 field
         CmpTestA a
     }
+    type TAO1
+    {
+        uint8 foo
+        uint8[<9] array
+    }
+    type TAO2
+    {
+        float16 foo
+        uint7[<=8] array
+    }
+    type TAO3
+    {
+        uint8[<=8] array
+        float16 bar
+    }
+    type TAO4
+    {
+        bool[<=42] array
+    }
+    type TAO5
+    {
+        TAO4[<=42] array
+    }
+    type TAO6
+    {
+        TAO1[<=2] array
+    }
+    type TAO7
+    {
+        TAO1[<=2] array
+        float16 baz
+    }
+    type TAO8
+    {
+        int4 fooz
+        float64[<=64] array
+    }
+    type TAO9
+    {
+        TAO8[<=12] array
+    }
+    type Union1
+    {
+        @union                  # In this case, the union tag requires 2 bits
+        uint16 FOO = 42         # A regular constant attribute
+        uint16 a                # Index 0
+        uint8 b                 # Index 1
+        float64 c               # Index 2
+        uint32 BAR = 42         # Another regular constant
+    }
+    type Void1
+    {
+        void1
+        int8 i
+        void10
+    }
 }

@@ -99,6 +99,11 @@ namespace CanardSharp.Dsdl
 
         public static void ResolveNestedTypes(IUavcanType type, IUavcanTypeResolver typeResolver)
         {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+            if (typeResolver == null)
+                throw new ArgumentNullException(nameof(typeResolver));
+
             switch (type)
             {
                 case MessageType t:
@@ -120,17 +125,26 @@ namespace CanardSharp.Dsdl
                 if (f.Type is DsdlTypeReference reference)
                 {
                     var nestedType = typeResolver.ResolveType(reference.Namespace, reference.Name);
-                    switch (nestedType)
-                    {
-                        case ServiceType _:
-                            throw new Exception("A service type can not be nested into another compound type.");
-                        case MessageType messageType:
-                            f.Type = messageType;
-                            break;
-                        default:
-                            throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
-                    }
+                    f.Type = CastNestedType(nestedType);
                 }
+                else if (f.Type is ArrayDsdlType adt && adt.ElementType is DsdlTypeReference elementTypeReference)
+                {
+                    var nestedType = typeResolver.ResolveType(elementTypeReference.Namespace, elementTypeReference.Name);
+                    adt.SetElementType(CastNestedType(nestedType));
+                }
+            }
+        }
+
+        static DsdlType CastNestedType(IUavcanType nestedType)
+        {
+            switch (nestedType)
+            {
+                case ServiceType _:
+                    throw new Exception("A service type can not be nested into another compound type.");
+                case MessageType messageType:
+                    return messageType;
+                default:
+                    throw new InvalidOperationException($"Unknown DSDL type: '{nestedType}'.");
             }
         }
 
@@ -373,17 +387,13 @@ namespace CanardSharp.Dsdl
                         return new IntDsdlType(size, castMode);
                     case "float":
                         return new FloatDsdlType(size, castMode);
-                    default:
-                        throw new Exception($"Unknown primitive type {name}.");
                 }
             }
-            else
-            {
-                if (castMode != CastMode.Saturated)
-                    throw new Exception("Cast mode specifier is not applicable for compound types.");
 
-                return new DsdlTypeReference(ns, attrTypeName);
-            }
+            if (castMode != CastMode.Saturated)
+                throw new Exception("Cast mode specifier is not applicable for compound types.");
+
+            return new DsdlTypeReference(ns, attrTypeName);
         }
 
         static string SkipComment(string line)

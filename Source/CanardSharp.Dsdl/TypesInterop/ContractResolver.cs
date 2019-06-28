@@ -180,21 +180,27 @@ namespace CanardSharp.Dsdl.TypesInterop
         {
             switch (ConvertUtils.GetTypeCode(t))
             {
-                case PrimitiveTypeCode.Boolean:
                 case PrimitiveTypeCode.Char:
-                case PrimitiveTypeCode.Byte:
-                case PrimitiveTypeCode.SByte:
-                case PrimitiveTypeCode.Int16:
-                case PrimitiveTypeCode.UInt16:
-                case PrimitiveTypeCode.Int32:
-                case PrimitiveTypeCode.UInt32:
-                case PrimitiveTypeCode.Int64:
-                case PrimitiveTypeCode.UInt64:
-                case PrimitiveTypeCode.Single:
-                case PrimitiveTypeCode.Double:
-                    return true;
-                default:
+                case PrimitiveTypeCode.CharNullable:
+                case PrimitiveTypeCode.DateTime:
+                case PrimitiveTypeCode.DateTimeNullable:
+                case PrimitiveTypeCode.DateTimeOffset:
+                case PrimitiveTypeCode.DateTimeOffsetNullable:
+                case PrimitiveTypeCode.DBNull:
+                case PrimitiveTypeCode.Decimal:
+                case PrimitiveTypeCode.DecimalNullable:
+                case PrimitiveTypeCode.Empty:
+                case PrimitiveTypeCode.Guid:
+                case PrimitiveTypeCode.GuidNullable:
+                case PrimitiveTypeCode.Object:
+                case PrimitiveTypeCode.String:
+                case PrimitiveTypeCode.TimeSpan:
+                case PrimitiveTypeCode.TimeSpanNullable:
+                case PrimitiveTypeCode.Uri:
+                case PrimitiveTypeCode.Bytes:
                     return false;
+                default:
+                    return true;
             }
         }
 

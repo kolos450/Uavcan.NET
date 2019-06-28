@@ -285,8 +285,7 @@ namespace CanardSharp.Dsdl
             memberValue = property.ValueProvider.GetValue(value);
             if (memberValue == null)
             {
-                throw new SerializationException(
-                    $"Cannot write a null value for property '{contract.UnderlyingType.FullName}.{property.PropertyName}'.");
+                return false;
             }
 
             if (property.PropertyContract == null)

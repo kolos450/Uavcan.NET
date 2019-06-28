@@ -74,7 +74,7 @@ namespace CanardSharp.Dsdl.DataTypes
             if (fieldName == null)
                 return null;
 
-            return fields.FirstOrDefault(x => x.Name.Equals(fieldName, StringComparison.Ordinal));
+            return fields.FirstOrDefault(x => fieldName.Equals(x.Name, StringComparison.Ordinal));
         }
     }
 }

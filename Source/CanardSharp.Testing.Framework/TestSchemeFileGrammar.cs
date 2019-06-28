@@ -75,7 +75,7 @@ namespace CanardSharp.Testing.Framework
             var directive = new NonTerminal("directive");
             var directives_opt = new NonTerminal("directives_opt");
 
-            var type_body_content = new FreeTextLiteral("type_body_content", FreeTextOptions.None, "}");
+            var type_body_content = new FreeTextLiteral("type_body_content", FreeTextOptions.AllowEmpty, "}");
             #endregion
 
             #region operators, punctuation and delimiters

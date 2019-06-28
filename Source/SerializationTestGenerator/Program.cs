@@ -165,6 +165,9 @@ namespace SerializationTestGenerator
 
         IEnumerable<string> BuildTestMethodMembers(IReadOnlyList<DsdlField> fields, ParseTreeNode parseTreeNode)
         {
+            if (parseTreeNode == null)
+                yield break;
+
             var nonVoidFields = fields.Where(x => !(x.Type is VoidDsdlType)).ToList();
             if (nonVoidFields.Count != parseTreeNode.ChildNodes.Count)
                 throw new InvalidOperationException($"Invalid members count at position {parseTreeNode.Span.Location}");
@@ -174,9 +177,21 @@ namespace SerializationTestGenerator
                 var field = nonVoidFields[i];
                 var node = parseTreeNode.ChildNodes[i];
 
-                if (node.FindTokenAndGetText() != "null")
+                if (!IsNullNode(node))
                     yield return $"{field.Name} = " + BuildTestMethodMemberElement(field.Type, node);
             }
+        }
+
+        static bool IsNullNode(ParseTreeNode node)
+        {
+            if (node.Term.Name != "member")
+                return false;
+            if (node.ChildNodes.Count != 1)
+                return false;
+            if (node.ChildNodes[0].Token?.Text != "null")
+                return false;
+
+            return true;
         }
 
         string BuildTestMethodMemberElement(DsdlType type, ParseTreeNode node)
@@ -253,6 +268,9 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
 
         IEnumerable<string> BuildPythonInitializerMembers(IReadOnlyList<DsdlField> fields, ParseTreeNode parseTreeNode)
         {
+            if (parseTreeNode == null)
+                yield break;
+
             var nonVoidFields = fields.Where(x => !(x.Type is VoidDsdlType)).ToList();
             if (nonVoidFields.Count != parseTreeNode.ChildNodes.Count)
                 throw new InvalidOperationException($"Invalid members count at position {parseTreeNode.Span.Location}");
@@ -262,7 +280,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 var field = nonVoidFields[i];
                 var node = parseTreeNode.ChildNodes[i];
 
-                if (node.FindTokenAndGetText() != "null")
+                if (!IsNullNode(node))
                     yield return $"{field.Name} = " + BuildPythonInitializerMemberElement(field.Type, node);
             }
         }
@@ -431,7 +449,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     return nullable ? GetCSharpType(t) + "?" : GetCSharpType(t);
 
                 case ArrayDsdlType t:
-                    return GetCSharpType(t.ElementType, nullable) + "[]";
+                    return GetCSharpType(t.ElementType, false) + "[]";
 
                 case CompositeDsdlTypeBase t:
                     return _compoundTypesLookup[t].CSharpName;
@@ -656,7 +674,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     var typeBody = node.FindChild("type_body_content").FindTokenAndGetText();
                     var typeTests = node.FindChild("type_test_cases_opt");
                     var testCases = CreateTestCases(typeTests);
-                    CreateType(string.Join(".", _namespacesStack), typeName, typeBody, testCases);
+                    CreateType(string.Join(".", _namespacesStack.Reverse()), typeName, typeBody, testCases);
                     break;
                 default:
                     throw new InvalidOperationException();

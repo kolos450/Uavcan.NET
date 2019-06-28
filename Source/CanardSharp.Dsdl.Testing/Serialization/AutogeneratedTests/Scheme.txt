@@ -124,3 +124,35 @@ namespace uavcan.samples
         void10
     }
 }
+namespace uavcan.samples.getsettest
+{
+    type Empty
+    {
+        
+    }
+    type NumericValue
+    {
+        @union
+        Empty empty
+        int64   integer_value
+        float32 real_value
+    }
+    type Value
+    {
+        @union
+        Empty empty
+        int64        integer_value
+        float32      real_value
+        uint8        boolean_value
+        uint8[<=128] string_value
+    }
+    type GetSet
+    {
+        void5
+        Value value
+        void5
+        NumericValue max_value
+        void6
+        uint8[<=92] name
+    }
+}

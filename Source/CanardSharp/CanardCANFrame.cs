@@ -19,7 +19,7 @@ namespace CanardSharp
          */
         public CanId Id;
         public byte[] Data;
-        public byte DataLength;
+        public int DataLength;
 
         public int CompareTo(CanardCANFrame other)
         {

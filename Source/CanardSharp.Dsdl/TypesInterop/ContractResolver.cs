@@ -240,9 +240,10 @@ namespace CanardSharp.Dsdl.TypesInterop
             InitializeContract(contract);
 
             var scheme = TryResolveDsdlType(objectType);
-            contract.DsdlType = scheme;
+            contract.DsdlType = scheme.ConcreteType;
+            contract.UavcanType = scheme.RootType;
 
-            contract.Properties.AddRange(CreateProperties(contract.NonNullableUnderlyingType, scheme));
+            contract.Properties.AddRange(CreateProperties(contract.NonNullableUnderlyingType, scheme.ConcreteType));
 
             if (contract.IsInstantiable)
             {
@@ -252,7 +253,7 @@ namespace CanardSharp.Dsdl.TypesInterop
                 }
             }
 
-            ValidateDsdlTypeCompatibility(contract, scheme);
+            ValidateDsdlTypeCompatibility(contract, scheme.ConcreteType);
 
             return contract;
         }
@@ -272,7 +273,7 @@ namespace CanardSharp.Dsdl.TypesInterop
             }
         }
 
-        CompositeDsdlTypeBase TryResolveDsdlType(Type type)
+        (IUavcanType RootType, CompositeDsdlTypeBase ConcreteType) TryResolveDsdlType(Type type)
         {
             string ns = null, name = null, suffix = null;
 
@@ -304,19 +305,19 @@ namespace CanardSharp.Dsdl.TypesInterop
             switch (uavcanType)
             {
                 case MessageType t:
-                    return t;
+                    return (uavcanType, t);
                 case ServiceType t:
                     switch (suffix?.ToLower())
                     {
                         case "request":
-                            return t.Request;
+                            return (uavcanType, t.Request);
                         case "response":
-                            return t.Response;
+                            return (uavcanType, t.Response);
                         default:
                             throw new InvalidOperationException($"{ns}.{name} is service. Please specify :request or :response suffix explicitly.");
                     }
                 default:
-                    return null;
+                    return default;
             }
         }
 

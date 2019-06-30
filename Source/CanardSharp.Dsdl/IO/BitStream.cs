@@ -86,16 +86,16 @@ namespace CanardSharp.IO
         /// </summary>
         /// <param name="buffer">Buffer of bytes</param>
         /// <param name="startIndex">The index to start reading at</param>
-        public BitStreamReader(byte[] buffer, int startIndex)
+        public BitStreamReader(byte[] buffer, int startIndex, int length)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
-            if (startIndex < 0 || startIndex > buffer.Length)
+            if (startIndex < 0 || startIndex + length > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
 
             _byteArray = buffer;
             _byteArrayIndex = startIndex;
-            _bufferLengthInBits = (uint)(buffer.Length - startIndex) * Native.BitsPerByte;
+            _bufferLengthInBits = (uint)length * Native.BitsPerByte;
 
             LengthInBytes = buffer.Length;
         }

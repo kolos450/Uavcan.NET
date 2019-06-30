@@ -23,12 +23,5 @@ namespace CanardSharp
 
         /// Refer to canardCleanupStaleTransfers() for details.
         public const uint CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC = 1000000U;
-
-        /// Transfer priority definitions
-        public const int CANARD_TRANSFER_PRIORITY_HIGHEST = 0;
-        public const int CANARD_TRANSFER_PRIORITY_HIGH = 8;
-        public const int CANARD_TRANSFER_PRIORITY_MEDIUM = 16;
-        public const int CANARD_TRANSFER_PRIORITY_LOW = 24;
-        public const int CANARD_TRANSFER_PRIORITY_LOWEST = 31;
     }
 }

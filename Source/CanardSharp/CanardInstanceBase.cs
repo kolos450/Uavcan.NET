@@ -13,9 +13,12 @@ namespace CanardSharp
      * This is the core structure that keeps all of the states and allocated resources of the library instance.
      * The application should never access any of the fields directly! Instead, API functions should be used.
      */
-    public abstract class CanardInstance
+    public abstract class CanardInstanceBase
     {
-        public byte node_id = Constants.CANARD_BROADCAST_NODE_ID;                                ///< Local node ID; may be zero if the node is anonymous
+        /// <summary>
+        /// Local node ID; may be zero if the node is anonymous.
+        /// </summary>
+        public byte node_id = Constants.CANARD_BROADCAST_NODE_ID;
 
         LinkedList<CanardRxState> _rxStates = new LinkedList<CanardRxState>(); ///< RX transfer states
         PriorityQueue<CanardCANFrame> _txQueue = new PriorityQueue<CanardCANFrame>();
@@ -35,14 +38,6 @@ namespace CanardSharp
                                             byte source_node_id);            ///< Source node ID or Broadcast (0)
 
         /**
-         * This function will be invoked by the library every time a transfer is successfully received.
-         * If the application needs to send another transfer from this callback, it is highly recommended
-         * to call canardReleaseRxTransferPayload() first, so that the memory that was used for the block
-         * buffer can be released and re-used by the TX queue.
-         */
-        public abstract void CanardOnTransferReception(CanardRxTransfer transfer);         ///< Ptr to temporary transfer object
-
-        /**
          * Initializes a library instance.
          * Local node ID will be set to zero, i.e. the node will be anonymous.
          *
@@ -50,7 +45,7 @@ namespace CanardSharp
          * recommended way to detect the required pool size is to measure the peak pool usage after a stress-test. Refer to
          * the function canardGetPoolAllocatorStatistics().
          */
-        public CanardInstance()
+        public CanardInstanceBase()
         {
         }
 
@@ -78,145 +73,137 @@ namespace CanardSharp
         }
 
         /**
-             * Sends a broadcast transfer.
-             * If the node is in passive mode, only single frame transfers will be allowed (they will be transmitted as anonymous).
-             *
-             * For anonymous transfers, maximum data type ID is limited to 3 (see specification for details).
-             *
-             * Please refer to the specification for more details about data type signatures. Signature for any data type can be
-             * obtained in many ways; for example, using the command line tool distributed with Libcanard (see the repository).
-             *
-             * Pointer to the Transfer ID should point to a persistent variable (e.g. static or heap allocated, not on the stack);
-             * it will be updated by the library after every transmission. The Transfer ID value cannot be shared between
-             * transfers that have different descriptors! More on this in the transport layer specification.
-             *
-             * Returns the number of frames enqueued, or negative error code.
-             */
-        short canardBroadcast(ulong data_type_signature,   ///< See above
-                        ushort data_type_id,          ///< Refer to the specification
-                        ref byte inout_transfer_id,     ///< Pointer to a persistent variable containing the transfer ID
-                        byte priority,               ///< Refer to definitions CANARD_TRANSFER_PRIORITY_*
+         * Sends a broadcast transfer.
+         * If the node is in passive mode, only single frame transfers will be allowed (they will be transmitted as anonymous).
+         *
+         * For anonymous transfers, maximum data type ID is limited to 3 (see specification for details).
+         *
+         * Please refer to the specification for more details about data type signatures. Signature for any data type can be
+         * obtained in many ways; for example, using the command line tool distributed with Libcanard (see the repository).
+         *
+         * Pointer to the Transfer ID should point to a persistent variable (e.g. static or heap allocated, not on the stack);
+         * it will be updated by the library after every transmission. The Transfer ID value cannot be shared between
+         * transfers that have different descriptors! More on this in the transport layer specification.
+         *
+         * Returns the number of frames enqueued, or negative error code.
+         */
+        public short Broadcast(ulong dataTypeSignature,   ///< See above
+                        int dataTypeId,          ///< Refer to the specification
+                        ref byte transferId,     ///< Pointer to a persistent variable containing the transfer ID
+                        CanardPriority priority,               ///< Refer to definitions CANARD_TRANSFER_PRIORITY_*
                         byte[] payload,            ///< Transfer payload
-                        int payload_offset,
-                        ushort payload_len)          ///< Length of the above, in bytes
+                        int payloadOffset,
+                        int payloadLen)          ///< Length of the above, in bytes
         {
-            if (payload == null && payload_len > 0)
-            {
+            if (payload == null && payloadLen > 0)
                 throw new ArgumentException(nameof(payload));
-            }
-            if (priority > Constants.CANARD_TRANSFER_PRIORITY_LOWEST)
-            {
+            if (priority > CanardPriority.Lowest)
                 throw new ArgumentException(nameof(priority));
-            }
 
             uint can_id;
             ushort crc = CRC.InitialValue;
 
             if (NodeID == 0)
             {
-                if (payload_len > 7)
+                if (payloadLen > 7)
                 {
                     throw new Exception("NODE_ID_NOT_SET");
                 }
 
                 const ushort DTIDMask = (ushort)(1U << Constants.ANON_MSG_DATA_TYPE_ID_BIT_LEN) - 1;
 
-                if ((data_type_id & DTIDMask) != data_type_id)
+                if ((dataTypeId & DTIDMask) != dataTypeId)
                 {
-                    throw new ArgumentException(nameof(data_type_id));
+                    throw new ArgumentException(nameof(dataTypeId));
                 }
 
                 // anonymous transfer, random discriminator
-                ushort discriminator = (ushort)((CRC.Add(CRC.InitialValue, payload, payload_offset, payload_len)) & 0x7FFEU);
+                ushort discriminator = (ushort)((CRC.Add(CRC.InitialValue, payload, payloadOffset, payloadLen)) & 0x7FFEU);
                 can_id = ((uint)priority << 24) | ((uint)discriminator << 9) |
-                         ((uint)(data_type_id & DTIDMask) << 8) | NodeID;
+                         ((uint)(dataTypeId & DTIDMask) << 8) | NodeID;
             }
             else
             {
-                can_id = ((uint)priority << 24) | ((uint)data_type_id << 8) | NodeID;
+                can_id = ((uint)priority << 24) | ((uint)dataTypeId << 8) | NodeID;
 
-                if (payload_len > 7)
+                if (payloadLen > 7)
                 {
-                    crc = CRC.AddSignature(crc, data_type_signature);
-                    crc = CRC.Add(crc, payload, payload_offset, payload_len);
+                    crc = CRC.AddSignature(crc, dataTypeSignature);
+                    crc = CRC.Add(crc, payload, payloadOffset, payloadLen);
                 }
             }
 
-            short result = enqueueTxFrames(can_id, inout_transfer_id, crc, payload, payload_offset, payload_len);
+            short result = EnqueueTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
 
-            incrementTransferID(ref inout_transfer_id);
+            IncrementTransferID(ref transferId);
 
             return result;
         }
 
         /**
-             * Sends a request or a response transfer.
-             * Fails if the node is in passive mode.
-             *
-             * Please refer to the specification for more details about data type signatures. Signature for any data type can be
-             * obtained in many ways; for example, using the command line tool distributed with Libcanard (see the repository).
-             *
-             * For Request transfers, the pointer to the Transfer ID should point to a persistent variable (e.g. static or heap
-             * allocated, not on the stack); it will be updated by the library after every request. The Transfer ID value
-             * cannot be shared between requests that have different descriptors! More on this in the transport layer
-             * specification.
-             *
-             * For Response transfers, the pointer to the Transfer ID will be treated as const (i.e. read-only), and normally it
-             * should point to the transfer_id field of the structure CanardRxTransfer.
-             *
-             * Returns the number of frames enqueued, or negative error code.
-             */
-        short canardRequestOrRespond(byte destination_node_id,     ///< Node ID of the server/client
-                               ulong data_type_signature,    ///< See above
-                               byte data_type_id,            ///< Refer to the specification
-                               ref byte inout_transfer_id,      ///< Pointer to a persistent variable with transfer ID
-                               byte priority,                ///< Refer to definitions CANARD_TRANSFER_PRIORITY_*
+         * Sends a request or a response transfer.
+         * Fails if the node is in passive mode.
+         *
+         * Please refer to the specification for more details about data type signatures. Signature for any data type can be
+         * obtained in many ways; for example, using the command line tool distributed with Libcanard (see the repository).
+         *
+         * For Request transfers, the pointer to the Transfer ID should point to a persistent variable (e.g. static or heap
+         * allocated, not on the stack); it will be updated by the library after every request. The Transfer ID value
+         * cannot be shared between requests that have different descriptors! More on this in the transport layer
+         * specification.
+         *
+         * For Response transfers, the pointer to the Transfer ID will be treated as const (i.e. read-only), and normally it
+         * should point to the transfer_id field of the structure CanardRxTransfer.
+         *
+         * Returns the number of frames enqueued, or negative error code.
+         */
+        public short RequestOrRespond(int destinationNodeId,     ///< Node ID of the server/client
+                               ulong dataTypeSignature,    ///< See above
+                               int dataTypeId,            ///< Refer to the specification
+                               ref byte transferId,      ///< Pointer to a persistent variable with transfer ID
+                               CanardPriority priority,                ///< Refer to definitions CANARD_TRANSFER_PRIORITY_*
                                CanardRequestResponse kind,      ///< Refer to CanardRequestResponse
                                byte[] payload,             ///< Transfer payload
-                               int payload_offset,
-                               ushort payload_len)           ///< Length of the above, in bytes
+                               int payloadOffset,
+                               int payloadLen)           ///< Length of the above, in bytes
         {
-            if (payload == null && payload_len > 0)
-            {
+            if ((destinationNodeId < Constants.CANARD_MIN_NODE_ID) || (destinationNodeId > Constants.CANARD_MAX_NODE_ID))
+                throw new ArgumentOutOfRangeException(nameof(destinationNodeId));
+            if (payload == null && payloadLen > 0)
                 throw new ArgumentException(nameof(payload));
-            }
-            if (priority > Constants.CANARD_TRANSFER_PRIORITY_LOWEST)
-            {
+            if (priority > CanardPriority.Lowest)
                 throw new ArgumentException(nameof(priority));
-            }
             if (NodeID == 0)
-            {
                 throw new InvalidOperationException("NODE_ID_NOT_SET");
-            }
 
-            uint can_id = ((uint)priority << 24) | ((uint)data_type_id << 16) |
-                                    ((uint)kind << 15) | ((uint)destination_node_id << 8) |
+            uint can_id = ((uint)priority << 24) | ((uint)dataTypeId << 16) |
+                                    ((uint)kind << 15) | ((uint)destinationNodeId << 8) |
                                     (1U << 7) | NodeID;
             ushort crc = CRC.InitialValue;
 
-            if (payload_len > 7)
+            if (payloadLen > 7)
             {
-                crc = CRC.AddSignature(crc, data_type_signature);
-                crc = CRC.Add(crc, payload, payload_offset, payload_len);
+                crc = CRC.AddSignature(crc, dataTypeSignature);
+                crc = CRC.Add(crc, payload, payloadOffset, payloadLen);
             }
 
-            short result = enqueueTxFrames(can_id, inout_transfer_id, crc, payload, payload_offset, payload_len);
+            short result = EnqueueTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
 
             if (kind == CanardRequestResponse.CanardRequest)                      // Response Transfer ID must not be altered
             {
-                incrementTransferID(ref inout_transfer_id);
+                IncrementTransferID(ref transferId);
             }
 
             return result;
         }
 
         /**
-             * Returns a pointer to the top priority frame in the TX queue.
-             * Returns null if the TX queue is empty.
-             * The application will call this function after canardBroadcast() or canardRequestOrRespond() to transmit generated
-             * frames over the CAN bus.
-             */
-        CanardCANFrame canardPeekTxQueue()
+         * Returns a pointer to the top priority frame in the TX queue.
+         * Returns null if the TX queue is empty.
+         * The application will call this function after canardBroadcast() or canardRequestOrRespond() to transmit generated
+         * frames over the CAN bus.
+         */
+        protected CanardCANFrame PeekTxQueue()
         {
             if (_txQueue.Count > 0)
                 return _txQueue.Peek();
@@ -229,7 +216,7 @@ namespace CanardSharp
          * Calling canardBroadcast() or canardRequestOrRespond() between canardPeekTxQueue() and canardPopTxQueue()
          * is NOT allowed, because it may change the frame at the top of the TX queue.
          */
-        void canardPopTxQueue()
+        protected void PopTxQueue()
         {
             _txQueue.Dequeue();
         }
@@ -240,7 +227,7 @@ namespace CanardSharp
          *
          * Return value will report any errors in decoding packets.
          */
-        void canardHandleRxFrame(CanardCANFrame frame, ulong timestamp_usec)
+        protected CanardRxTransfer HandleRxFrame(CanardCANFrame frame, ulong timestamp_usec)
         {
             var transferType = frame.Id.TransferType;
             byte destination_node_id = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
@@ -263,7 +250,7 @@ namespace CanardSharp
                 throw new Exception("RX_WRONG_ADDRESS");
             }
 
-            byte priority = frame.Id.Priority;
+            var priority = frame.Id.Priority;
             byte source_node_id = frame.Id.SourceId;
             var data_type_id = frame.Id.DataType;
             var transfer_descriptor = new TransferDescriptor(data_type_id, transferType, source_node_id, destination_node_id);
@@ -275,7 +262,7 @@ namespace CanardSharp
             if (frameInfo.IsStartOfTransfer)
             {
                 if (!CanardShouldAcceptTransfer(out var data_type_signature, data_type_id, transferType, source_node_id))
-                    return;
+                    return null;
 
                 rx_state = GetOrCreateRxState(transfer_descriptor);
                 rx_state.DataTypeDescriptor = new DataTypeDescriptor(data_type_id, data_type_signature);
@@ -290,7 +277,7 @@ namespace CanardSharp
             bool tid_timed_out = (timestamp_usec - rx_state.TimestampUsec) > Constants.TRANSFER_TIMEOUT_USEC;
             bool first_frame = frameInfo.IsStartOfTransfer;
             bool not_previous_tid =
-                computeTransferIDForwardDistance(rx_state.TransferId, frameInfo.TransferId) > 1;
+                ComputeTransferIDForwardDistance(rx_state.TransferId, frameInfo.TransferId) > 1;
 
             bool need_restart =
                     (not_initialized) ||
@@ -320,16 +307,14 @@ namespace CanardSharp
                     Payload = payload,
                     TimestampUsec = timestamp_usec,
                     DataTypeId = data_type_id,
-                    TransferType = (byte)transferType,
+                    TransferType = transferType,
                     TransferId = frameInfo.TransferId,
                     Priority = priority,
                     SourceNodeId = source_node_id
                 };
 
-                CanardOnTransferReception(rx_transfer);
-
-                rx_state.prepareForNextTransfer();
-                return;
+                rx_state.PrepareForNextTransfer();
+                return rx_transfer;
             }
 
             if (frameInfo.ToggleBit != rx_state.NextToggle)
@@ -362,7 +347,7 @@ namespace CanardSharp
                     TimestampUsec = timestamp_usec,
                     Payload = rx_state.Payload,
                     DataTypeId = data_type_id,
-                    TransferType = (byte)transferType,
+                    TransferType = transferType,
                     TransferId = frameInfo.TransferId,
                     Priority = priority,
                     SourceNodeId = source_node_id
@@ -370,21 +355,18 @@ namespace CanardSharp
 
                 // CRC validation
                 var actualCrc = rx_state.CalculateCrc();
-                if (actualCrc == rx_state.PayloadCrc)
-                {
-                    CanardOnTransferReception(rx_transfer);
-                }
 
                 // Making sure the payload is released even if the application didn't bother with it
-                rx_state.prepareForNextTransfer();
+                rx_state.PrepareForNextTransfer();
 
                 if (actualCrc != rx_state.PayloadCrc)
                     throw new Exception("RX_BAD_CRC");
 
-                return;
+                return rx_transfer;
             }
 
             rx_state.NextToggle = !rx_state.NextToggle;
+            return null;
         }
 
         bool TryGetRxState(TransferDescriptor transfer_descriptor, out CanardRxState rx_state)
@@ -408,7 +390,7 @@ namespace CanardSharp
         * This function must be invoked by the application periodically, about once a second.
         * Also refer to the constant CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC.
         */
-        public void canardCleanupStaleTransfers(ulong current_time_usec)
+        public void CleanupStaleTransfers(ulong current_time_usec)
         {
             List<LinkedListNode<CanardRxState>> toRemove = null;
 
@@ -434,12 +416,12 @@ namespace CanardSharp
             }
         }
 
-        short enqueueTxFrames(uint can_id,
+        short EnqueueTxFrames(uint can_id,
                                                 byte transfer_id,
                                                 ushort crc,
                                             byte[] payload,
                                             int payload_offset,
-                                        ushort payload_len)
+                                        int payload_len)
         {
             Debug.Assert((can_id & (uint)CanIdFlags.Mask) == 0);            // Flags must be cleared
 
@@ -523,7 +505,7 @@ namespace CanardSharp
             return state;
         }
 
-        void incrementTransferID(ref byte transfer_id)
+        static void IncrementTransferID(ref byte transfer_id)
         {
             transfer_id++;
             if (transfer_id >= 32)
@@ -532,7 +514,7 @@ namespace CanardSharp
             }
         }
 
-        short computeTransferIDForwardDistance(byte a, byte b)
+        static short ComputeTransferIDForwardDistance(byte a, byte b)
         {
             short d = (short)(b - a);
             if (d < 0)

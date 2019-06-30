@@ -15,7 +15,7 @@ namespace CanardSharp
 
         public ushort PayloadCrc;
 
-        public void prepareForNextTransfer()
+        public void PrepareForNextTransfer()
         {
             _singlePayloadBuffer = null;
             _payloadBuffers = null;

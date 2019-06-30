@@ -42,7 +42,7 @@ namespace CanardSharp.Dsdl.Testing.Serialization
 
             Assert.IsTrue(expectedBytes.SequenceEqual(buffer), "Serialized payload mismatch.");
 
-            var deserialized = serializer.Deserialize(data.GetType(), buffer);
+            var deserialized = serializer.Deserialize(data.GetType(), buffer, 0, buffer.Length);
 
             if (doRoundtripTest)
             {

@@ -59,6 +59,7 @@ namespace CanardSharp.Dsdl.TypesInterop
         public bool DefaultCreatorNonPublic { get; set; }
 
         public DsdlType DsdlType { get; set; }
+        public IUavcanType UavcanType { get; set; }
 
         internal IContract(Type underlyingType)
         {

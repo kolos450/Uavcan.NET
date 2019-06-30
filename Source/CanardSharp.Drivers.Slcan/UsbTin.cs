@@ -1,8 +1,8 @@
-﻿using System;
+﻿using RJCP.IO.Ports;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -15,10 +15,12 @@ namespace CanardSharp.Drivers.Slcan
     /// </summary>
     public class UsbTin : IDisposable
     {
+        Encoding _encoding = System.Text.Encoding.ASCII;
+
         /// <summary>
         /// Serial port (virtual) to which USBtin is connected.
         /// </summary>
-        protected SerialPort _serialPort;
+        protected SerialPortStream _serialPort;
 
         /// <summary>
         /// Characters coming from USBtin are collected in this StringBuilder.
@@ -79,6 +81,13 @@ namespace CanardSharp.Drivers.Slcan
         /// </remarks>
         public string SerialNumber => _serialNumber;
 
+        Task _readerTask;
+        Task _eventsTask;
+        CancellationTokenSource _backgroundTasksCancellationTokenSource;
+        SemaphoreSlim _sendAsyncSemaphore = new SemaphoreSlim(1, 1);
+        SemaphoreSlim _rxQueueSemaphore = new SemaphoreSlim(0, 1);
+        ConcurrentQueue<CanMessage> _rxQueue = new ConcurrentQueue<CanMessage>();
+
         /// <summary>
         /// Connect to USBtin on given port.
         /// Opens the serial port, clears pending characters and send close command
@@ -88,10 +97,12 @@ namespace CanardSharp.Drivers.Slcan
         public void Connect(string portName)
         {
             // Create serial port object.
-            _serialPort = new SerialPort(portName, 115200, Parity.None, 8, StopBits.One);
+            _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One);
 
-            _serialPort.ReadTimeout = TIMEOUT;
+            _serialPort.ReadTimeout = SerialPortStream.InfiniteTimeout;
             _serialPort.WriteTimeout = TIMEOUT;
+            _serialPort.RtsEnable = true;
+            _serialPort.DtrEnable = true;
 
             _serialPort.Open();
 
@@ -117,6 +128,49 @@ namespace CanardSharp.Drivers.Slcan
 
             // Reset overflow error flags.
             Transmit("W2D00");
+
+            _backgroundTasksCancellationTokenSource = new CancellationTokenSource();
+            _readerTask = ReadSerialBytesAsync(_backgroundTasksCancellationTokenSource.Token);
+            _eventsTask = RaiseEvents(_backgroundTasksCancellationTokenSource.Token);
+        }
+
+        async Task RaiseEvents(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await _rxQueueSemaphore.WaitAsync(ct).ConfigureAwait(false);
+                if (ct.IsCancellationRequested)
+                    return;
+
+                while (_rxQueue.TryDequeue(out var message))
+                {
+                    MessageReceived?.Invoke(this, new CanMessageReceivedEventArgs { Message = message });
+                }
+            }
+        }
+
+        async Task ReadSerialBytesAsync(CancellationToken ct)
+        {
+            var bytesToRead = 1024;
+            var receiveBuffer = new byte[bytesToRead];
+
+            while ((!ct.IsCancellationRequested) && (_serialPort.IsOpen))
+            {
+                int numBytesRead = 0;
+                try
+                {
+                    numBytesRead = await _serialPort.ReadAsync(receiveBuffer, 0, bytesToRead, ct).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                { }
+                catch (OperationCanceledException)
+                { }
+
+                if (numBytesRead > 0)
+                {
+                    await ProcessReceivedDataAsync(receiveBuffer, 0, numBytesRead).ConfigureAwait(false);
+                }
+            }
         }
 
         /// <summary>
@@ -124,7 +178,14 @@ namespace CanardSharp.Drivers.Slcan
         /// </summary>
         public void Disconnect()
         {
-            _serialPort?.Close();
+            CloseCanChannel();
+
+            if (_serialPort != null)
+            {
+                _serialPort.Close();
+                _serialPort.Dispose();
+                _serialPort = null;
+            }
         }
 
         /// <summary>
@@ -209,16 +270,14 @@ namespace CanardSharp.Drivers.Slcan
                     throw new ArgumentException(nameof(mode));
             }
             Transmit(modeCh + "");
-
-            // Register serial port event listener.
-            _serialPort.DataReceived += SerialPort_DataReceived;
         }
 
-        void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        async Task ProcessReceivedDataAsync(byte[] buffer, int offset, int length)
         {
-            var buffer = _serialPort.ReadExisting();
-            foreach (var b in buffer)
+            for (int i = 0; i < length; i++)
             {
+                var b = buffer[offset + i];
+
                 if ((b == '\r') && _incomingMessage.Length > 0)
                 {
                     var message = _incomingMessage.ToString();
@@ -231,14 +290,19 @@ namespace CanardSharp.Drivers.Slcan
                         var canmsg = new CanMessage(message);
 
                         // Give the CAN message to the listeners.
-                        MessageReceived?.Invoke(this, new CanMessageReceivedEventArgs { Message = canmsg });
+                        _rxQueue.Enqueue(canmsg);
+                        try
+                        {
+                            _rxQueueSemaphore.Release();
+                        }
+                        catch (SemaphoreFullException) { }
                     }
                     else if ((cmd == 'z') || (cmd == 'Z'))
                     {
                         // Remove first message from transmit fifo and send next one.
                         _fifoTX.TryDequeue(out _);
 
-                        SendFirstTXFifoMessage();
+                        await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
                     }
 
                     _incomingMessage.Clear();
@@ -247,11 +311,11 @@ namespace CanardSharp.Drivers.Slcan
                 else if (b == 0x07)
                 {
                     // Resend first element from tx fifo.
-                    SendFirstTXFifoMessage();
+                    await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
                 }
                 else if (b != '\r')
                 {
-                    _incomingMessage.Append(b);
+                    _incomingMessage.Append((char)b);
                 }
             }
         }
@@ -261,8 +325,29 @@ namespace CanardSharp.Drivers.Slcan
          */
         public void CloseCanChannel()
         {
-            _serialPort.DataReceived -= SerialPort_DataReceived;
-            _serialPort.Write("C\r");
+            if (_backgroundTasksCancellationTokenSource != null)
+            {
+                _backgroundTasksCancellationTokenSource.Cancel();
+                _backgroundTasksCancellationTokenSource.Dispose();
+                _backgroundTasksCancellationTokenSource = null;
+            }
+
+            if (_readerTask != null)
+            {
+                _readerTask.GetAwaiter().GetResult();
+                _readerTask = null;
+            }
+
+            if (_eventsTask != null)
+            {
+                _eventsTask.GetAwaiter().GetResult();
+                _eventsTask = null;
+            }
+
+            if (_serialPort?.IsOpen == true)
+            {
+                _serialPort.Write("C\r");
+            }
 
             _firmwareVersion = null;
             _hardwareVersion = null;
@@ -302,7 +387,7 @@ namespace CanardSharp.Drivers.Slcan
         /// </summary>
         /// <param name="cmd">Command</param>
         /// <returns>Response from USBtin</returns>
-        public string Transmit(string cmd)
+        protected string Transmit(string cmd)
         {
             string cmdline = cmd + "\r";
             _serialPort.Write(cmdline);
@@ -310,36 +395,38 @@ namespace CanardSharp.Drivers.Slcan
             return ReadResponse();
         }
 
-        public void Dispose()
-        {
-            if (_serialPort != null)
-            {
-                _serialPort.Dispose();
-                _serialPort = null;
-            }
-        }
-
         /// <summary>
         /// Send first message in tx fifo.
         /// </summary>
-        protected void SendFirstTXFifoMessage()
+        protected Task SendFirstTXFifoMessageAsync()
         {
             if (_fifoTX.TryPeek(out var message))
             {
-                _serialPort.Write(message.ToString() + "\r");
+                var bytes = _encoding.GetBytes(message.ToString() + "\r");
+                return _serialPort.WriteAsync(bytes, 0, bytes.Length);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Send given can message.
         /// </summary>
         /// <param name="canmsg">Can message to send</param>
-        public void Send(CanMessage canmsg)
+        public async Task SendAsync(CanMessage canmsg)
         {
-            _fifoTX.Enqueue(canmsg);
+            await _sendAsyncSemaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                _fifoTX.Enqueue(canmsg);
 
-            if (_fifoTX.Count() == 1)
-                SendFirstTXFifoMessage();
+                if (_fifoTX.Count() == 1)
+                    await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _sendAsyncSemaphore.Release();
+            }
         }
 
         /// <summary>
@@ -475,6 +562,49 @@ namespace CanardSharp.Drivers.Slcan
                     fcidx++;
                 }
             }
+        }
+
+        bool disposedValue = false;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    Disconnect();
+
+                    if (_rxQueueSemaphore != null)
+                    {
+                        _rxQueueSemaphore.Dispose();
+                        _rxQueueSemaphore = null;
+                    }
+
+                    if (_sendAsyncSemaphore != null)
+                    {
+                        _sendAsyncSemaphore.Dispose();
+                        _sendAsyncSemaphore = null;
+                    }
+
+                    if (_serialPort != null)
+                    {
+                        _serialPort.Dispose();
+                        _serialPort = null;
+                    }
+
+                    if (_backgroundTasksCancellationTokenSource != null)
+                    {
+                        _backgroundTasksCancellationTokenSource.Dispose();
+                        _backgroundTasksCancellationTokenSource = null;
+                    }
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
         }
     }
 }

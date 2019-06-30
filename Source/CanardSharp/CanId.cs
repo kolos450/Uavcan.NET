@@ -22,7 +22,7 @@ namespace CanardSharp
         bool IsServiceNotMessage => ((Value >> 7) & 0x1) == 1;
         bool IsRequestNotResponse => ((Value >> 15) & 0x1) == 1;
         public byte DestinationId => (byte)((Value >> 8) & 0x7FU);
-        public byte Priority => (byte)((Value >> 24) & 0x1FU);
+        public CanardPriority Priority => (CanardPriority)((Value >> 24) & 0x1FU);
         public uint MessageType => (Value >> 8) & 0xFFFFU;
         public uint ServiceType => (Value >> 16) & 0xFFU;
         public CanIdFlags Flags => (CanIdFlags)(Value & (uint)CanIdFlags.Mask);

@@ -12,7 +12,7 @@ namespace CanardSharp.Dsdl
     public class DsdlSerializer
     {
         internal readonly IUavcanTypeResolver SchemeResolver;
-        internal readonly ContractResolver ContractResolver;
+        public readonly ContractResolver ContractResolver;
 
         public DsdlSerializer(IUavcanTypeResolver schemeResolver)
         {
@@ -20,15 +20,15 @@ namespace CanardSharp.Dsdl
             ContractResolver = new ContractResolver(schemeResolver);
         }
 
-        public T Deserialize<T>(byte[] buffer, int offset = 0)
+        public T Deserialize<T>(byte[] buffer, int offset, int length)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
 
-            return (T)Deserialize(typeof(T), buffer, offset);
+            return (T)Deserialize(typeof(T), buffer, offset, length);
         }
 
-        public object Deserialize(Type type, byte[] buffer, int offset = 0)
+        public object Deserialize(Type type, byte[] buffer, int offset, int length)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -39,17 +39,17 @@ namespace CanardSharp.Dsdl
             if (contract.DsdlType == null)
                 throw new ArgumentException($"Cannot find DSDL scheme for provided type '{type.FullName}'.", nameof(type));
 
-            return Deserialize(buffer, offset, contract.DsdlType, contract);
+            return Deserialize(buffer, offset, length, contract.DsdlType, contract);
         }
 
-        public object Deserialize(byte[] buffer, int offset, DsdlType dsdlScheme, IContract contract = null)
+        public object Deserialize(byte[] buffer, int offset, int length, DsdlType dsdlScheme, IContract contract = null)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer));
             if (dsdlScheme == null)
                 throw new ArgumentNullException(nameof(dsdlScheme));
 
-            var stream = new BitStreamReader(buffer, startIndex: offset);
+            var stream = new BitStreamReader(buffer, offset, length);
             var reader = new DsdlSerializerReader(this);
             return reader.Deserialize(stream, dsdlScheme, contract);
         }

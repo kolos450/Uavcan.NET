@@ -11,7 +11,7 @@ namespace CanardSharp
     /// </summary>
     public enum CanardRequestResponse
     {
-        CanardResponse,
-        CanardRequest
+        CanardResponse = 0,
+        CanardRequest = 1
     }
 }

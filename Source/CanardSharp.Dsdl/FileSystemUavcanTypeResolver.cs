@@ -1,6 +1,7 @@
 ﻿using CanardSharp.Dsdl.DataTypes;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -32,6 +33,8 @@ namespace CanardSharp.Dsdl
             {
                 _rootNamespace = Path.GetFileName(Path.GetDirectoryName(_root));
             }
+
+            ExploreTypes();
         }
 
         public UavcanTypeMeta ParseMeta(string path)
@@ -131,6 +134,37 @@ namespace CanardSharp.Dsdl
             {
                 return DsdlParser.Parse(reader, meta);
             }
+        }
+
+        Dictionary<int, UavcanTypeMeta> _idToMetaLookup;
+
+        void ExploreTypes()
+        {
+            _idToMetaLookup = new Dictionary<int, UavcanTypeMeta>();
+
+            var definitions = Directory.EnumerateFiles(_root, "*." + DsdlExtension, SearchOption.AllDirectories);
+            foreach (var path in definitions)
+            {
+                try
+                {
+                    var meta = ParseMeta(path);
+                    if (meta.DefaultDTID != null)
+                    {
+                        _idToMetaLookup[meta.DefaultDTID.Value] = meta;
+                    }
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+        }
+
+        public IUavcanType TryResolveType(int dataTypeId)
+        {
+            if (!_idToMetaLookup.TryGetValue(dataTypeId, out var meta))
+                return null;
+            return TryResolveType(meta.Namespace, meta.Name);
         }
     }
 }

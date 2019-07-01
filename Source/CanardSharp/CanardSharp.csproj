@@ -46,15 +46,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CanardInstanceBase.cs" />
     <Compile Include="CanardPriority.cs" />
     <Compile Include="CanardRequestResponse.cs" />
     <Compile Include="CanardRxState.cs" />
     <Compile Include="CanardTransferType.cs" />
     <Compile Include="CanFrameExtensions.cs" />
     <Compile Include="CanFrameInfo.cs" />
+    <Compile Include="CanFramesGenerator.cs" />
+    <Compile Include="CanFramesProcessor.cs" />
     <Compile Include="CanIdInfo.cs" />
-    <Compile Include="Constants.cs" />
+    <Compile Include="CanardConstants.cs" />
     <Compile Include="CRC.cs" />
     <Compile Include="DataTypeDescriptor.cs" />
     <Compile Include="CanardRxTransfer.cs" />

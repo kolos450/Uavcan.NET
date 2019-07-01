@@ -54,9 +54,9 @@ namespace CanardSharp
                 if (TransferType == CanardTransferType.CanardTransferTypeBroadcast)
                 {
                     var dtid = MessageType;
-                    if (SourceId == Constants.CANARD_BROADCAST_NODE_ID)
+                    if (SourceId == CanardConstants.BroadcastNodeId)
                     {
-                        dtid &= (1U << Constants.ANON_MSG_DATA_TYPE_ID_BIT_LEN) - 1U;
+                        dtid &= (1U << CanardConstants.AnonymousMessageDataTypeIdBitLen) - 1U;
                     }
                     return dtid;
                 }

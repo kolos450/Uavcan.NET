@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace CanardApp.IO
 {
-    class CanardInstance : CanardInstanceBase, IDisposable
+    class CanardInstance : IDisposable
     {
         readonly string _portName;
         readonly int _bitRate;
@@ -24,6 +24,7 @@ namespace CanardApp.IO
         UsbTin _usbTin;
         FileSystemUavcanTypeResolver _typeResolver;
         DsdlSerializer _serializer;
+        CanFramesProcessor _framesProcessor;
 
         ConcurrentDictionary<long, ResponseTicket> _responseTickets = new ConcurrentDictionary<long, ResponseTicket>();
 
@@ -37,6 +38,7 @@ namespace CanardApp.IO
 
             _typeResolver = new FileSystemUavcanTypeResolver(@"C:\Sources\libuavcan\dsdl\kplc");
             _serializer = new DsdlSerializer(_typeResolver);
+            _framesProcessor = new CanFramesProcessor(CanardShouldAcceptTransfer);
 
             _usbTin = new UsbTin();
             _usbTin.Connect(portName);
@@ -47,17 +49,13 @@ namespace CanardApp.IO
             _usbTin.MessageReceived += _usbTin_MessageReceived;
         }
 
-        const ulong CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC = 1000000U;
+
         ulong previousCleanupTime = 0;
 
         void _usbTin_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
-
-            if (nowUs - previousCleanupTime >= CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC)
-                CleanupStaleTransfers(nowUs);
-
-            var transfer = HandleRxFrame(e.Message, nowUs);
+            var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs);
             if (transfer == null)
                 return;
 
@@ -74,6 +72,31 @@ namespace CanardApp.IO
                     break;
                 default:
                     throw new InvalidOperationException();
+            }
+        }
+
+        byte _nodeId = CanardConstants.BroadcastNodeId;
+
+        /// <summary>
+        /// Node ID of the local node.
+        /// </summary>
+        /// <remarks>
+        /// Getter returns zero (broadcast) if the node ID is not set, i.e. if the local node is anonymous.
+        /// Node ID can be assigned only once.
+        /// </remarks>
+        public byte NodeID
+        {
+            get => _nodeId;
+
+            set
+            {
+                if (_nodeId != CanardConstants.BroadcastNodeId)
+                    throw new InvalidOperationException("Node ID can be assigned only once.");
+
+                if ((value < CanardConstants.MinNodeId) || (value > CanardConstants.MaxNodeId))
+                    throw new ArgumentOutOfRangeException(nameof(value));
+
+                _nodeId = value;
             }
         }
 
@@ -146,18 +169,21 @@ namespace CanardApp.IO
             }
         }
 
-        public override bool CanardShouldAcceptTransfer(out ulong out_data_type_signature, uint data_type_id, CanardTransferType transfer_type, byte source_node_id)
+        bool CanardShouldAcceptTransfer(out ulong dataTypeSignature, uint dataTypeId, CanardTransferType transferType, byte sourceNodeId, byte destinationNodeId)
         {
-            out_data_type_signature = 0;
+            dataTypeSignature = 0;
 
-            var type = _typeResolver.TryResolveType((int)data_type_id);
+            if (transferType != CanardTransferType.CanardTransferTypeBroadcast && destinationNodeId != NodeID)
+                return false;
+
+            var type = _typeResolver.TryResolveType((int)dataTypeId);
             if (type == null)
                 return false;
 
             var signature = type.GetDataTypeSignature()
                 ?? throw new InvalidOperationException($"Cannot get data type signature for '{type}'.");
 
-            out_data_type_signature = signature;
+            dataTypeSignature = signature;
 
             return true;
         }
@@ -220,9 +246,10 @@ namespace CanardApp.IO
 
                 var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
 
-                var frames = Broadcast(valueType.GetDataTypeSignature().Value,
+                var frames = CanFramesGenerator.Broadcast(valueType.GetDataTypeSignature().Value,
                     valueType.Meta.DefaultDTID.Value,
-                    ref transferId,
+                    transferId,
+                    NodeID,
                     priority,
                     buffer,
                     0,
@@ -232,7 +259,7 @@ namespace CanardApp.IO
 
                 SendFrames(frames);
 
-                _transferIdRegistry[transferDescriptor] = transferId;
+                _transferIdRegistry[transferDescriptor] = ++transferId;
             }
             finally
             {
@@ -270,10 +297,11 @@ namespace CanardApp.IO
                     destinationNodeId);
 
                 var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
-                var frames = RequestOrRespond(destinationNodeId,
+                var frames = CanFramesGenerator.RequestOrRespond(destinationNodeId,
                         valueType.GetDataTypeSignature().Value,
                         valueType.Meta.DefaultDTID.Value,
-                        ref transferId,
+                        transferId,
+                        NodeID,
                         priority,
                         CanardRequestResponse.CanardRequest,
                         buffer,
@@ -283,7 +311,7 @@ namespace CanardApp.IO
                 //Report(frames, destinationNodeId, value, valueType, priority);
                 SendFrames(frames);
 
-                _transferIdRegistry[transferDescriptor] = transferId;
+                _transferIdRegistry[transferDescriptor] = (byte)(transferId + 1);
 
                 ticket = new ResponseTicket();
                 var responseTickedId = transferDescriptor | (transferId << 32);
@@ -341,10 +369,11 @@ namespace CanardApp.IO
                 int payloadLen = _serializer.Serialize(value, dsdlType, buffer);
                 var transferId = request.TransferId;
 
-                var frames = RequestOrRespond(destinationNodeId,
+                var frames = CanFramesGenerator.RequestOrRespond(destinationNodeId,
                     uavcanType.GetDataTypeSignature().Value,
                     uavcanType.Meta.DefaultDTID.Value,
-                    ref transferId,
+                    transferId,
+                    NodeID,
                     priority,
                     CanardRequestResponse.CanardResponse,
                     buffer,

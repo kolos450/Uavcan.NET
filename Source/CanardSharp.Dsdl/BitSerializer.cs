@@ -115,7 +115,7 @@ namespace CanardSharp.Dsdl
             return value;
         }
 
-        static ArrayPool<byte> _arrayPool = ArrayPool<byte>.Create();
+        readonly static ArrayPool<byte> _arrayPool = ArrayPool<byte>.Create();
 
         static void Write(BitStreamWriter destination, Action<byte[]> bytesFiller, int bitLength)
         {

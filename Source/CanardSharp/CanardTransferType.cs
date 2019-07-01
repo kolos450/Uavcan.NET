@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace CanardSharp
 {
-    /**
-         * Transfer types are defined by the UAVCAN specification.
-         */
+    /// <summary>
+    /// Transfer types are defined by the UAVCAN specification.
+    /// </summary>
     public enum CanardTransferType
     {
         CanardTransferTypeResponse = 0,

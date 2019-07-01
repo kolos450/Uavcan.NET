@@ -20,9 +20,6 @@ namespace CanardSharp
 
         public CanIdFlags Flags => (CanIdFlags)(Value & (uint)CanIdFlags.Mask);
 
-        /**
-         * Returns true if priority of self is higher than other.
-         */
         public int CompareTo(CanId value)
         {
             uint self = Value;

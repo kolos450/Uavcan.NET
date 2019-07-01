@@ -16,7 +16,7 @@ namespace CanardSharp.Drivers.Slcan
     /// </summary>
     public class UsbTin : IDisposable
     {
-        Encoding _encoding = Encoding.ASCII;
+        readonly Encoding _encoding = Encoding.ASCII;
 
         /// <summary>
         /// Serial port (virtual) to which USBtin is connected.
@@ -109,12 +109,13 @@ namespace CanardSharp.Drivers.Slcan
         public void Connect(string portName)
         {
             // Create serial port object.
-            _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One);
-
-            _serialPort.ReadTimeout = SerialPortStream.InfiniteTimeout;
-            _serialPort.WriteTimeout = TIMEOUT;
-            _serialPort.RtsEnable = true;
-            _serialPort.DtrEnable = true;
+            _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One)
+            {
+                ReadTimeout = SerialPortStream.InfiniteTimeout,
+                WriteTimeout = TIMEOUT,
+                RtsEnable = true,
+                DtrEnable = true
+            };
 
             _serialPort.Open();
 
@@ -646,6 +647,12 @@ namespace CanardSharp.Drivers.Slcan
                 if (disposing)
                 {
                     Disconnect();
+
+                    if (_txSemaphore != null)
+                    {
+                        _txSemaphore.Dispose();
+                        _txSemaphore = null;
+                    }
 
                     if (_eventsSemaphore != null)
                     {

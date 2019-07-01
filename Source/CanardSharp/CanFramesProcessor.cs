@@ -10,24 +10,24 @@ namespace CanardSharp
     {
         const ulong StaleTransferCleanupIntervalUsec = 1000000U;
 
-        LinkedList<CanardRxState> _rxStates = new LinkedList<CanardRxState>();
+        readonly LinkedList<CanardRxState> _rxStates = new LinkedList<CanardRxState>();
 
-        /**
-         * The application must implement this function and supply a pointer to it to the library during initialization.
-         * The library calls this function to determine whether the transfer should be received.
-         *
-         * If the application returns true, the value pointed to by 'out_data_type_signature' must be initialized with the
-         * correct data type signature, otherwise transfer reception will fail with CRC mismatch error. Please refer to the
-         * specification for more details about data type signatures. Signature for any data type can be obtained in many
-         * ways; for example, using the command line tool distributed with Libcanard (see the repository).
-         */
-        public delegate bool CanardShouldAcceptTransferDelegate(out ulong out_data_type_signature,  ///< Must be set by the application!
-                                            uint data_type_id,              ///< Refer to the specification
-                                            CanardTransferType transfer_type,   ///< Refer to CanardTransferType
-                                            byte source_node_id,                ///< Source node ID or Broadcast (0)
-                                            byte destination_node_id);
+        /// <summary>
+        /// The processor calls this function to determine whether the transfer should be received.
+        /// </summary>
+        /// <remarks>
+        /// If the function returns true, the value pointed to by <paramref name="dataTypeSignature" /> must be initialized with the
+        /// correct data type signature, otherwise transfer reception will fail with CRC mismatch error. Please refer to the
+        /// specification for more details about data type signatures.
+        /// </remarks>
+        public delegate bool CanardShouldAcceptTransferDelegate(
+            out ulong dataTypeSignature,
+            uint dataTypeId,
+            CanardTransferType transferType,
+            byte sourceNodeId,
+            byte destinationNodeId);
 
-        CanardShouldAcceptTransferDelegate _shouldAcceptTransferDelegate;
+        readonly CanardShouldAcceptTransferDelegate _shouldAcceptTransferDelegate;
 
         public CanFramesProcessor(CanardShouldAcceptTransferDelegate shouldAcceptTransferDelegate)
         {
@@ -36,25 +36,24 @@ namespace CanardSharp
             _shouldAcceptTransferDelegate = shouldAcceptTransferDelegate;
         }
 
-        /**
-         * Processes a received CAN frame with a timestamp.
-         * The application will call this function when it receives a new frame from the CAN bus.
-         *
-         * Return value will report any errors in decoding packets.
-         */
+        /// <summary>
+        /// Processes a received CAN frame with a timestamp.
+        /// </summary>
+        /// <remarks>
+        /// The application will call this function when it receives a new frame from the CAN bus.
+        /// </remarks>
         public CanardRxTransfer HandleRxFrame(
             CanFrame frame,
-            ulong timestamp_usec)
+            ulong timestampUsec)
         {
             if (frame == null)
                 throw new ArgumentNullException(nameof(frame));
 
-            CleanupStaleTransfers(timestamp_usec);
-
+            CleanupStaleTransfers(timestampUsec);
 
             var canIdInfo = new CanIdInfo(frame.Id);
             var transferType = canIdInfo.TransferType;
-            byte destination_node_id = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
+            byte destinationNodeId = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
                                                 CanardConstants.BroadcastNodeId :
                                                 canIdInfo.DestinationId;
 
@@ -70,47 +69,47 @@ namespace CanardSharp
             }
 
             var priority = canIdInfo.Priority;
-            byte source_node_id = canIdInfo.SourceId;
-            var data_type_id = canIdInfo.DataType;
-            var transfer_descriptor = new TransferDescriptor(data_type_id, transferType, source_node_id, destination_node_id);
+            byte sourceNodeId = canIdInfo.SourceId;
+            var dataTypeId = canIdInfo.DataType;
+            var transferDescriptor = new TransferDescriptor(dataTypeId, transferType, sourceNodeId, destinationNodeId);
 
             var frameInfo = frame.GetFrameInfo();
 
-            CanardRxState rx_state;
+            CanardRxState rxState;
 
             if (frameInfo.IsStartOfTransfer)
             {
-                if (!_shouldAcceptTransferDelegate(out var data_type_signature, data_type_id, transferType, source_node_id, destination_node_id))
+                if (!_shouldAcceptTransferDelegate(out var dataTypeSignature, dataTypeId, transferType, sourceNodeId, destinationNodeId))
                     return null;
 
-                rx_state = GetOrCreateRxState(transfer_descriptor);
-                rx_state.DataTypeDescriptor = new DataTypeDescriptor(data_type_id, data_type_signature);
+                rxState = GetOrCreateRxState(transferDescriptor);
+                rxState.DataTypeDescriptor = new DataTypeDescriptor(dataTypeId, dataTypeSignature);
             }
-            else if (!TryGetRxState(transfer_descriptor, out rx_state))
+            else if (!TryGetRxState(transferDescriptor, out rxState))
             {
-                throw new Exception($"Missed RX start for {transfer_descriptor}.");
+                throw new Exception($"Missed RX start for {transferDescriptor}.");
             }
 
             // Resolving the state flags:
-            bool not_initialized = rx_state.TimestampUsec == 0;
-            bool tid_timed_out = (timestamp_usec - rx_state.TimestampUsec) > CanardConstants.TransferTimeoutUsec;
-            bool first_frame = frameInfo.IsStartOfTransfer;
-            bool not_previous_tid =
-                ComputeTransferIDForwardDistance(rx_state.TransferId, frameInfo.TransferId) > 1;
+            bool notInitialized = rxState.TimestampUsec == 0;
+            bool tidTimedOut = (timestampUsec - rxState.TimestampUsec) > CanardConstants.TransferTimeoutUsec;
+            bool firstFrame = frameInfo.IsStartOfTransfer;
+            bool notPreviousTid =
+                ComputeTransferIDForwardDistance(rxState.TransferId, frameInfo.TransferId) > 1;
 
-            bool need_restart =
-                    (not_initialized) ||
-                    (tid_timed_out) ||
-                    (first_frame && not_previous_tid);
+            bool needRestart =
+                    (notInitialized) ||
+                    (tidTimedOut) ||
+                    (firstFrame && notPreviousTid);
 
-            if (need_restart)
+            if (needRestart)
             {
-                rx_state.TransferId = frameInfo.TransferId;
-                rx_state.NextToggle = false;
-                rx_state.Payload = null;
+                rxState.TransferId = frameInfo.TransferId;
+                rxState.NextToggle = false;
+                rxState.Payload = null;
                 if (!frameInfo.IsStartOfTransfer)
                 {
-                    rx_state.TransferId++;
+                    rxState.TransferId++;
                     throw new Exception("RX_MISSED_START");
                 }
             }
@@ -120,83 +119,85 @@ namespace CanardSharp
                 var payload = new byte[frame.DataLength - 1];
                 Buffer.BlockCopy(frame.Data, 0, payload, 0, payload.Length);
 
-                rx_state.TimestampUsec = timestamp_usec;
-                var rx_transfer = new CanardRxTransfer
+                rxState.TimestampUsec = timestampUsec;
+                var rxTransfer = new CanardRxTransfer
                 {
                     Payload = payload,
-                    TimestampUsec = timestamp_usec,
-                    DataTypeId = data_type_id,
+                    TimestampUsec = timestampUsec,
+                    DataTypeId = dataTypeId,
                     TransferType = transferType,
                     TransferId = frameInfo.TransferId,
                     Priority = priority,
-                    SourceNodeId = source_node_id
+                    SourceNodeId = sourceNodeId
                 };
 
-                rx_state.PrepareForNextTransfer();
-                return rx_transfer;
+                rxState.PrepareForNextTransfer();
+                return rxTransfer;
             }
 
-            if (frameInfo.ToggleBit != rx_state.NextToggle)
+            if (frameInfo.ToggleBit != rxState.NextToggle)
                 throw new Exception("RX_WRONG_TOGGLE");
 
-            if (frameInfo.TransferId != rx_state.TransferId)
+            if (frameInfo.TransferId != rxState.TransferId)
                 throw new Exception("RX_UNEXPECTED_TID");
 
-            if (frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)      // Beginning of multi frame transfer
+            // Beginning of multi frame transfer.
+            if (frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)
             {
                 if (frame.DataLength <= 3)
                     throw new Exception("RX_SHORT_FRAME");
 
-                // take off the crc and store the payload
-                rx_state.TimestampUsec = timestamp_usec;
-                rx_state.AddPayload(frame.Data, 2, frame.DataLength - 3);
+                // Take off the crc and store the payload.
+                rxState.TimestampUsec = timestampUsec;
+                rxState.AddPayload(frame.Data, 2, frame.DataLength - 3);
 
-                rx_state.PayloadCrc = (ushort)((frame.Data[0]) | (ushort)(frame.Data[1] << 8));
+                rxState.PayloadCrc = (ushort)((frame.Data[0]) | (ushort)(frame.Data[1] << 8));
             }
-            else if (!frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)    // Middle of a multi-frame transfer
+            // Middle of a multi-frame transfer.
+            else if (!frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)
             {
-                rx_state.AddPayload(frame.Data, 0, frame.DataLength - 1);
+                rxState.AddPayload(frame.Data, 0, frame.DataLength - 1);
             }
-            else                                                                            // End of a multi-frame transfer
+            // End of a multi-frame transfer.
+            else
             {
-                rx_state.AddPayload(frame.Data, 0, frame.DataLength - 1);
+                rxState.AddPayload(frame.Data, 0, frame.DataLength - 1);
 
-                var rx_transfer = new CanardRxTransfer
+                var rxTransfer = new CanardRxTransfer
                 {
-                    TimestampUsec = timestamp_usec,
-                    Payload = rx_state.Payload,
-                    DataTypeId = data_type_id,
+                    TimestampUsec = timestampUsec,
+                    Payload = rxState.Payload,
+                    DataTypeId = dataTypeId,
                     TransferType = transferType,
                     TransferId = frameInfo.TransferId,
                     Priority = priority,
-                    SourceNodeId = source_node_id
+                    SourceNodeId = sourceNodeId
                 };
 
                 // CRC validation
-                var actualCrc = rx_state.CalculateCrc();
+                var actualCrc = rxState.CalculateCrc();
 
-                // Making sure the payload is released even if the application didn't bother with it
-                rx_state.PrepareForNextTransfer();
+                rxState.PrepareForNextTransfer();
 
-                if (actualCrc != rx_state.PayloadCrc)
+                if (actualCrc != rxState.PayloadCrc)
                     throw new Exception("RX_BAD_CRC");
 
-                return rx_transfer;
+                return rxTransfer;
             }
 
-            rx_state.NextToggle = !rx_state.NextToggle;
+            rxState.NextToggle = !rxState.NextToggle;
             return null;
         }
 
-        bool TryGetRxState(TransferDescriptor transfer_descriptor, out CanardRxState rx_state)
+        bool TryGetRxState(TransferDescriptor transferDescriptor, out CanardRxState rxState)
         {
-            rx_state = null;
+            rxState = null;
 
             foreach (var i in _rxStates)
             {
-                if (i.TransferDescriptor == transfer_descriptor)
+                if (i.TransferDescriptor == transferDescriptor)
                 {
-                    rx_state = i;
+                    rxState = i;
                     return true;
                 }
             }
@@ -204,12 +205,12 @@ namespace CanardSharp
             return false;
         }
 
-        CanardRxState GetOrCreateRxState(TransferDescriptor transfer_descriptor)
+        CanardRxState GetOrCreateRxState(TransferDescriptor transferDescriptor)
         {
-            var state = _rxStates.FirstOrDefault(x => x.TransferDescriptor == transfer_descriptor);
+            var state = _rxStates.FirstOrDefault(x => x.TransferDescriptor == transferDescriptor);
             if (state != null)
                 return state;
-            state = new CanardRxState { TransferDescriptor = transfer_descriptor };
+            state = new CanardRxState { TransferDescriptor = transferDescriptor };
             _rxStates.AddFirst(state);
             return state;
         }
@@ -226,23 +227,22 @@ namespace CanardSharp
 
         ulong _previousCleanupStaleTransfersTimestamp = 0;
 
-        /**
-        * Traverses the list of transfers and removes those that were last updated more than timeout_usec microseconds ago.
-        * This function must be invoked by the application periodically, about once a second.
-        * Also refer to the constant CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC.
-        */
-        void CleanupStaleTransfers(ulong current_time_usec)
+        /// <summary>
+        /// Traverses the list of transfers and removes those that were last updated more than <paramref name="currentTimeUsec"/> microseconds ago.
+        /// This function must be invoked by the application periodically, about once a second.
+        /// </summary>
+        void CleanupStaleTransfers(ulong currentTimeUsec)
         {
-            if (current_time_usec - _previousCleanupStaleTransfersTimestamp < StaleTransferCleanupIntervalUsec)
+            if (currentTimeUsec - _previousCleanupStaleTransfersTimestamp < StaleTransferCleanupIntervalUsec)
                 return;
-            _previousCleanupStaleTransfersTimestamp = current_time_usec;
+            _previousCleanupStaleTransfersTimestamp = currentTimeUsec;
 
             List<LinkedListNode<CanardRxState>> toRemove = null;
 
             var current = _rxStates.First;
             while (current != null)
             {
-                if ((current_time_usec - current.Value.TimestampUsec) > CanardConstants.TransferTimeoutUsec)
+                if ((currentTimeUsec - current.Value.TimestampUsec) > CanardConstants.TransferTimeoutUsec)
                 {
                     if (toRemove == null)
                         toRemove = new List<LinkedListNode<CanardRxState>>();

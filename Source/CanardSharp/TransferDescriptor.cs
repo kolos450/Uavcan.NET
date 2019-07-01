@@ -8,10 +8,10 @@ namespace CanardSharp
 {
     public readonly struct TransferDescriptor : IEquatable<TransferDescriptor>
     {
-        public TransferDescriptor(uint data_type_id, CanardTransferType transfer_type, uint src_node_id, uint dst_node_id)
+        public TransferDescriptor(uint dataTypeId, CanardTransferType transferType, uint srcNodeId, uint dstNodeId)
         {
-            Value = (((uint)(data_type_id)) | (((uint)(transfer_type)) << 16) |
-                (((uint)(src_node_id)) << 18) | (((uint)(dst_node_id)) << 25));
+            Value = (((uint)(dataTypeId)) | (((uint)(transferType)) << 16) |
+                (((uint)(srcNodeId)) << 18) | (((uint)(dstNodeId)) << 25));
         }
 
         public readonly uint Value;

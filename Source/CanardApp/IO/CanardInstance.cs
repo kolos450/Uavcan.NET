@@ -46,13 +46,10 @@ namespace CanardApp.IO
 
             Logger.Info($"Connected to {portName}, bit rate = {bitRate}.");
 
-            _usbTin.MessageReceived += _usbTin_MessageReceived;
+            _usbTin.MessageReceived += UsbTin_MessageReceived;
         }
 
-
-        ulong previousCleanupTime = 0;
-
-        void _usbTin_MessageReceived(object sender, CanMessageEventArgs e)
+        void UsbTin_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
             var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs);
@@ -267,7 +264,7 @@ namespace CanardApp.IO
             }
         }
 
-        ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
+        readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
 
         public Task<TransferReceivedArgs> SendServiceRequest(
             int destinationNodeId,
@@ -340,8 +337,7 @@ namespace CanardApp.IO
         T GetUavcanType<T>(object value) where T : class, IUavcanType
         {
             var contract = _serializer.ContractResolver.ResolveContract(value.GetType());
-            var valueType = contract.UavcanType as T;
-            if (valueType == null)
+            if (!(contract.UavcanType is T valueType))
                 throw new ArgumentException($"Cannot resolve Uavcan type for '{value.GetType().FullName}'.", nameof(value));
             if (valueType.Meta?.DefaultDTID == null)
                 throw new ArgumentException(

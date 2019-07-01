@@ -10,7 +10,8 @@ namespace CanardSharp.Dsdl
 {
     public abstract class UavcanTypeResolverBase : IUavcanTypeResolver
     {
-        ConcurrentDictionary<string, IUavcanType> _lookup = new ConcurrentDictionary<string, IUavcanType>(StringComparer.Ordinal);
+        ConcurrentDictionary<string, IUavcanType> _fullNameToType = new ConcurrentDictionary<string, IUavcanType>(StringComparer.Ordinal);
+        ConcurrentDictionary<int, IUavcanType> _dtidToType = new ConcurrentDictionary<int, IUavcanType>();
 
         public IUavcanType ResolveType(string ns, string typeName)
         {
@@ -21,25 +22,40 @@ namespace CanardSharp.Dsdl
         public IUavcanType TryResolveType(string ns, string typeName)
         {
             var key = ns + "." + typeName;
-            if (_lookup.TryGetValue(key, out var type))
+            if (_fullNameToType.TryGetValue(key, out var type))
                 return type;
 
-            lock (_lookup)
+            lock (_fullNameToType)
             {
                 var fullName = ns + "." + typeName;
-                if (_lookup.TryGetValue(fullName, out type))
+                if (_fullNameToType.TryGetValue(fullName, out type))
                     return type;
 
                 type = TryResolveTypeCore(ns, typeName);
 
-                _lookup[fullName] = type;
-                if(type != null)
+                _fullNameToType[fullName] = type;
+                if (type != null)
                     DsdlParser.ResolveNestedTypes(type, this);
             }
 
             return type;
         }
 
+        public IUavcanType ResolveType(int dtid)
+        {
+            return TryResolveType(dtid) ??
+                 throw new Exception($"Type definition not found, ID = {dtid}.");
+        }
+
+        public IUavcanType TryResolveType(int dtid)
+        {
+            var name = TryResolveTypeName(dtid);
+            if (name == default)
+                return null;
+            return TryResolveType(name.Namespace, name.Name);
+        }
+
         protected abstract IUavcanType TryResolveTypeCore(string ns, string typeName);
+        protected abstract (string Namespace, string Name) TryResolveTypeName(int dataTypeId);
     }
 }

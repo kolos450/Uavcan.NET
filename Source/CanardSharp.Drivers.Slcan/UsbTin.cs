@@ -14,7 +14,7 @@ namespace CanardSharp.Drivers.Slcan
     /// <summary>
     /// Represents an USBtin device.
     /// </summary>
-    public class UsbTin : IDisposable
+    public class UsbTin : ICanDriver, IDisposable
     {
         readonly Encoding _encoding = Encoding.ASCII;
 

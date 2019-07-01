@@ -1,6 +1,9 @@
-﻿using CanardApp.IO;
+﻿using CanardApp.Engine;
+using CanardSharp;
+using CanardSharp.Drivers.Slcan;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +14,9 @@ namespace CanardApp
     class CanardAppContext : ApplicationContext
     {
         CanardInstance _CanardInstance;
+
+        [Import]
+        TypeResolvingService _typeResolvingService = null;
 
         public CanardAppContext()
         {
@@ -23,7 +29,11 @@ namespace CanardApp
             if (sender is ConnectionDialog connectionDialog
                 && connectionDialog.DialogResult == DialogResult.OK)
             {
-                _CanardInstance = new CanardInstance(connectionDialog.PortName, connectionDialog.BitRate);
+                var usbTin = new UsbTin();
+                usbTin.Connect(connectionDialog.PortName);
+                usbTin.OpenCanChannel(connectionDialog.BitRate, UsbTinOpenMode.Active);
+
+                _CanardInstance = new CanardInstance(usbTin, _typeResolvingService);
                 MainForm = new MainForm(_CanardInstance);
                 MainForm.Show();
             }

@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CanardInstance.cs" />
     <Compile Include="CanardPriority.cs" />
     <Compile Include="CanardRequestResponse.cs" />
     <Compile Include="CanardRxState.cs" />
@@ -58,13 +59,16 @@
     <Compile Include="CanFramesProcessor.cs" />
     <Compile Include="CanIdInfo.cs" />
     <Compile Include="CanardConstants.cs" />
+    <Compile Include="CollectionExtensions.cs" />
     <Compile Include="CRC.cs" />
     <Compile Include="DataTypeDescriptor.cs" />
     <Compile Include="CanardRxTransfer.cs" />
     <Compile Include="LittleEndianBitConverter.cs" />
     <Compile Include="PortIdRanges.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResponseTicket.cs" />
     <Compile Include="TransferDescriptor.cs" />
+    <Compile Include="TransferReceivedArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

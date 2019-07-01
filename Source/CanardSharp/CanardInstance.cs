@@ -1,5 +1,5 @@
 ﻿using CanardSharp;
-using CanardSharp.Drivers.Slcan;
+using CanardSharp.Drivers;
 using CanardSharp.Dsdl;
 using CanardSharp.Dsdl.DataTypes;
 using System;
@@ -12,17 +12,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CanardApp.IO
+namespace CanardSharp
 {
-    class CanardInstance : IDisposable
+    public class CanardInstance : IDisposable
     {
-        readonly string _portName;
-        readonly int _bitRate;
         readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         readonly DateTime _stopwatchOffset = DateTime.Now;
 
-        UsbTin _usbTin;
-        FileSystemUavcanTypeResolver _typeResolver;
+        ICanDriver _canDriver;
+        IUavcanTypeResolver _typeResolver;
         DsdlSerializer _serializer;
         CanFramesProcessor _framesProcessor;
 
@@ -31,25 +29,18 @@ namespace CanardApp.IO
         public IUavcanTypeResolver TypeResolver => _typeResolver;
         public DsdlSerializer Serializer => _serializer;
 
-        public CanardInstance(string portName, int bitRate)
+        public CanardInstance(ICanDriver canDriver, IUavcanTypeResolver typeResolver)
         {
-            _portName = portName;
-            _bitRate = bitRate;
-
-            _typeResolver = new FileSystemUavcanTypeResolver(@"C:\Sources\pyuavcan\uavcan\dsdl_files\uavcan");
-            _serializer = new DsdlSerializer(_typeResolver);
+            _typeResolver = typeResolver;
+            _serializer = new DsdlSerializer(typeResolver);
             _framesProcessor = new CanFramesProcessor(CanardShouldAcceptTransfer);
 
-            _usbTin = new UsbTin();
-            _usbTin.Connect(portName);
-            _usbTin.OpenCanChannel(bitRate, UsbTinOpenMode.Active);
+            _canDriver = canDriver;
 
-            Logger.Info($"Connected to {portName}, bit rate = {bitRate}.");
-
-            _usbTin.MessageReceived += UsbTin_MessageReceived;
+            _canDriver.MessageReceived += CanDriver_MessageReceived;
         }
 
-        void UsbTin_MessageReceived(object sender, CanMessageEventArgs e)
+        void CanDriver_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
             var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs).Transfer;
@@ -187,10 +178,10 @@ namespace CanardApp.IO
 
         public void Dispose()
         {
-            if (_usbTin != null)
+            if (_canDriver != null)
             {
-                _usbTin.Dispose();
-                _usbTin = null;
+                _canDriver.Dispose();
+                _canDriver = null;
             }
             if (_responseTickets != null)
             {
@@ -327,7 +318,7 @@ namespace CanardApp.IO
         {
             foreach (var frame in frames)
             {
-                _usbTin.Send(frame);
+                _canDriver.Send(frame);
             }
         }
 

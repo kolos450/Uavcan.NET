@@ -43,7 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CanFrameConverter.cs" />
-    <Compile Include="CanMessageEventArgs.cs" />
     <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="FilterChain.cs" />
     <Compile Include="FilterMask.cs" />

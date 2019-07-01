@@ -44,6 +44,8 @@
     <Compile Include="CanFrame.cs" />
     <Compile Include="CanId.cs" />
     <Compile Include="CanIdFlags.cs" />
+    <Compile Include="Drivers\CanMessageEventArgs.cs" />
+    <Compile Include="Drivers\ICanDriver.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

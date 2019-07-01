@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CanardApp.IO
+namespace CanardSharp
 {
-    class TransferReceivedArgs : EventArgs
+    public class TransferReceivedArgs : EventArgs
     {
         public IUavcanType Type { get; set; }
         public Lazy<object> Content { get; set; }

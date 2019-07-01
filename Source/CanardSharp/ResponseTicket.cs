@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CanardApp.IO
+namespace CanardSharp
 {
-    sealed class ResponseTicket : IDisposable
+    public sealed class ResponseTicket : IDisposable
     {
         SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         CancellationTokenSource _cts = new CancellationTokenSource();

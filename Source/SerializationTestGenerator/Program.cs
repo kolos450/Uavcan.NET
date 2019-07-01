@@ -611,6 +611,11 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     TryResolveType(i.Namespace, i.Name);
                 }
             }
+
+            protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
+            {
+                return default;
+            }
         }
 
         void CollectTestTypes(ParseTreeNode node)

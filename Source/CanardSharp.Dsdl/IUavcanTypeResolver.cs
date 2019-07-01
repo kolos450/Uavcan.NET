@@ -12,5 +12,9 @@ namespace CanardSharp.Dsdl
         IUavcanType ResolveType(string ns, string typeName);
 
         IUavcanType TryResolveType(string ns, string typeName);
+
+        IUavcanType ResolveType(int dataTypeId);
+
+        IUavcanType TryResolveType(int dataTypeId);
     }
 }

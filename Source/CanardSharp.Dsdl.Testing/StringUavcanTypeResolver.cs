@@ -34,5 +34,10 @@ namespace CanardSharp.Dsdl.Testing
                 return DsdlParser.Parse(reader, pair.Meta);
             }
         }
+
+        protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
+        {
+            return default;
+        }
     }
 }

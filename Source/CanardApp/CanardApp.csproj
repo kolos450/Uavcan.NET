@@ -67,8 +67,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="DefaultDsdlDefinitionsDirectoryProvider.cs" />
     <Compile Include="ICanardToolProvider.cs" />
     <Compile Include="IDsdlDefinitionsDirectoryProvider.cs" />
+    <Compile Include="Engine\TypeResolvingService.cs" />
     <Compile Include="ShellService.cs" />
     <Compile Include="Tools\BusMonitorWindow.xaml.cs">
       <DependentUpon>BusMonitorWindow.xaml</DependentUpon>
@@ -83,16 +85,12 @@
       <DependentUpon>AboutBox.cs</DependentUpon>
     </Compile>
     <Compile Include="CanardAppContext.cs" />
-    <Compile Include="CollectionExtensions.cs" />
-    <Compile Include="IO\CanardInstance.cs" />
     <Compile Include="ConnectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ConnectionDialog.Designer.cs">
       <DependentUpon>ConnectionDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="IO\ResponseTicket.cs" />
-    <Compile Include="IO\TransferReceivedArgs.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

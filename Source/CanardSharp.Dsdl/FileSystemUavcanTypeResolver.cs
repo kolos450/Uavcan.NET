@@ -160,11 +160,11 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        public IUavcanType TryResolveType(int dataTypeId)
+        protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
         {
             if (!_idToMetaLookup.TryGetValue(dataTypeId, out var meta))
-                return null;
-            return TryResolveType(meta.Namespace, meta.Name);
+                return default;
+            return (meta.Namespace, meta.Name);
         }
     }
 }

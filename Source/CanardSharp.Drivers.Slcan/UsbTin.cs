@@ -141,10 +141,6 @@ namespace CanardSharp.Drivers.Slcan
 
             // Reset overflow error flags.
             Transmit("W2D00");
-
-            _backgroundTasksCancellationTokenSource = new CancellationTokenSource();
-            _readerTask = ReadSerialBytesAsync(_backgroundTasksCancellationTokenSource.Token);
-            _eventsTask = RaiseEvents(_backgroundTasksCancellationTokenSource.Token);
         }
 
         async Task RaiseEvents(CancellationToken ct)
@@ -341,6 +337,10 @@ namespace CanardSharp.Drivers.Slcan
                     throw new ArgumentException(nameof(mode));
             }
             Transmit(modeCh + "");
+
+            _backgroundTasksCancellationTokenSource = new CancellationTokenSource();
+            _readerTask = ReadSerialBytesAsync(_backgroundTasksCancellationTokenSource.Token);
+            _eventsTask = RaiseEvents(_backgroundTasksCancellationTokenSource.Token);
         }
 
         void ProcessReceivedData(byte[] buffer, int offset, int length)
@@ -403,13 +403,21 @@ namespace CanardSharp.Drivers.Slcan
 
             if (_readerTask != null)
             {
-                _readerTask.GetAwaiter().GetResult();
+                try
+                {
+                    _readerTask.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException) { }
                 _readerTask = null;
             }
 
             if (_eventsTask != null)
             {
-                _eventsTask.GetAwaiter().GetResult();
+                try
+                {
+                    _eventsTask.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException) { }
                 _eventsTask = null;
             }
 

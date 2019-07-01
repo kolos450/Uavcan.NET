@@ -53,6 +53,8 @@
     <Compile Include="CanFrameExtensions.cs" />
     <Compile Include="CanFrameInfo.cs" />
     <Compile Include="CanFramesGenerator.cs" />
+    <Compile Include="CanFramesProcessingException.cs" />
+    <Compile Include="CanFramesProcessingResult.cs" />
     <Compile Include="CanFramesProcessor.cs" />
     <Compile Include="CanIdInfo.cs" />
     <Compile Include="CanardConstants.cs" />

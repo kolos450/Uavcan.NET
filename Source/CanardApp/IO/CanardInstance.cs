@@ -36,7 +36,7 @@ namespace CanardApp.IO
             _portName = portName;
             _bitRate = bitRate;
 
-            _typeResolver = new FileSystemUavcanTypeResolver(@"C:\Sources\libuavcan\dsdl\kplc");
+            _typeResolver = new FileSystemUavcanTypeResolver(@"C:\Sources\pyuavcan\uavcan\dsdl_files\uavcan");
             _serializer = new DsdlSerializer(_typeResolver);
             _framesProcessor = new CanFramesProcessor(CanardShouldAcceptTransfer);
 
@@ -52,7 +52,7 @@ namespace CanardApp.IO
         void UsbTin_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
-            var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs);
+            var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs).Transfer;
             if (transfer == null)
                 return;
 

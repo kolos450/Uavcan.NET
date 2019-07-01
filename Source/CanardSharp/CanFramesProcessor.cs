@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace CanardSharp
         /// <remarks>
         /// The application will call this function when it receives a new frame from the CAN bus.
         /// </remarks>
-        public CanardRxTransfer HandleRxFrame(
+        public CanFramesProcessingResult HandleRxFrame(
             CanFrame frame,
             ulong timestampUsec)
         {
@@ -65,7 +66,7 @@ namespace CanardSharp
                 canIdFlags.HasFlag(CanIdFlags.ERR) ||
                 (frame.DataLength < 1))
             {
-                throw new Exception("RX_INCOMPATIBLE_PACKET");
+                throw new CanFramesProcessingException("RX_INCOMPATIBLE_PACKET", frame);
             }
 
             var priority = canIdInfo.Priority;
@@ -80,22 +81,21 @@ namespace CanardSharp
             if (frameInfo.IsStartOfTransfer)
             {
                 if (!_shouldAcceptTransferDelegate(out var dataTypeSignature, dataTypeId, transferType, sourceNodeId, destinationNodeId))
-                    return null;
+                    return default;
 
                 rxState = GetOrCreateRxState(transferDescriptor);
                 rxState.DataTypeDescriptor = new DataTypeDescriptor(dataTypeId, dataTypeSignature);
             }
             else if (!TryGetRxState(transferDescriptor, out rxState))
             {
-                throw new Exception($"Missed RX start for {transferDescriptor}.");
+                throw new CanFramesProcessingException($"Missed RX start for {transferDescriptor}.", frame);
             }
 
             // Resolving the state flags:
             bool notInitialized = rxState.TimestampUsec == 0;
             bool tidTimedOut = (timestampUsec - rxState.TimestampUsec) > CanardConstants.TransferTimeoutUsec;
             bool firstFrame = frameInfo.IsStartOfTransfer;
-            bool notPreviousTid =
-                ComputeTransferIDForwardDistance(rxState.TransferId, frameInfo.TransferId) > 1;
+            bool notPreviousTid = ComputeTransferIDForwardDistance(rxState.TransferId, frameInfo.TransferId) > 1;
 
             bool needRestart =
                     (notInitialized) ||
@@ -104,13 +104,12 @@ namespace CanardSharp
 
             if (needRestart)
             {
+                rxState.Restart();
                 rxState.TransferId = frameInfo.TransferId;
-                rxState.NextToggle = false;
-                rxState.Payload = null;
                 if (!frameInfo.IsStartOfTransfer)
                 {
                     rxState.TransferId++;
-                    throw new Exception("RX_MISSED_START");
+                    throw new CanFramesProcessingException("RX_MISSED_START", frame);
                 }
             }
 
@@ -132,61 +131,54 @@ namespace CanardSharp
                 };
 
                 rxState.PrepareForNextTransfer();
-                return rxTransfer;
+                return new CanFramesProcessingResult(rxTransfer, new[] { frame });
             }
 
+            rxState.Frames.Add(frame);
+
             if (frameInfo.ToggleBit != rxState.NextToggle)
-                throw new Exception("RX_WRONG_TOGGLE");
+                throw new CanFramesProcessingException("RX_WRONG_TOGGLE", rxState.Frames);
 
             if (frameInfo.TransferId != rxState.TransferId)
-                throw new Exception("RX_UNEXPECTED_TID");
+                throw new CanFramesProcessingException("RX_UNEXPECTED_TID", rxState.Frames);
 
             // Beginning of multi frame transfer.
             if (frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)
             {
-                if (frame.DataLength <= 3)
-                    throw new Exception("RX_SHORT_FRAME");
-
                 // Take off the crc and store the payload.
                 rxState.TimestampUsec = timestampUsec;
-                rxState.AddPayload(frame.Data, 2, frame.DataLength - 3);
-
-                rxState.PayloadCrc = (ushort)((frame.Data[0]) | (ushort)(frame.Data[1] << 8));
             }
             // Middle of a multi-frame transfer.
             else if (!frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)
-            {
-                rxState.AddPayload(frame.Data, 0, frame.DataLength - 1);
-            }
+            { }
             // End of a multi-frame transfer.
             else
             {
-                rxState.AddPayload(frame.Data, 0, frame.DataLength - 1);
-
-                var rxTransfer = new CanardRxTransfer
+                try
                 {
-                    TimestampUsec = timestampUsec,
-                    Payload = rxState.Payload,
-                    DataTypeId = dataTypeId,
-                    TransferType = transferType,
-                    TransferId = frameInfo.TransferId,
-                    Priority = priority,
-                    SourceNodeId = sourceNodeId
-                };
+                    var transferPayload = rxState.BuildTransferPayload();
 
-                // CRC validation
-                var actualCrc = rxState.CalculateCrc();
+                    var rxTransfer = new CanardRxTransfer
+                    {
+                        TimestampUsec = timestampUsec,
+                        Payload = transferPayload,
+                        DataTypeId = dataTypeId,
+                        TransferType = transferType,
+                        TransferId = frameInfo.TransferId,
+                        Priority = priority,
+                        SourceNodeId = sourceNodeId
+                    };
 
-                rxState.PrepareForNextTransfer();
-
-                if (actualCrc != rxState.PayloadCrc)
-                    throw new Exception("RX_BAD_CRC");
-
-                return rxTransfer;
+                    return new CanFramesProcessingResult(rxTransfer, rxState.Frames);
+                }
+                finally
+                {
+                    rxState.PrepareForNextTransfer();
+                }
             }
 
             rxState.NextToggle = !rxState.NextToggle;
-            return null;
+            return default;
         }
 
         bool TryGetRxState(TransferDescriptor transferDescriptor, out CanardRxState rxState)

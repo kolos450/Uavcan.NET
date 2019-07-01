@@ -252,8 +252,6 @@ namespace CanardApp.IO
                     0,
                     payloadLen);
 
-                //Report(frames, 0, value, valueType, priority);
-
                 SendFrames(frames);
 
                 _transferIdRegistry[transferDescriptor] = ++transferId;
@@ -305,7 +303,6 @@ namespace CanardApp.IO
                         0,
                         payloadLen);
 
-                //Report(frames, destinationNodeId, value, valueType, priority);
                 SendFrames(frames);
 
                 _transferIdRegistry[transferDescriptor] = (byte)(transferId + 1);
@@ -376,8 +373,6 @@ namespace CanardApp.IO
                     0,
                     payloadLen);
 
-                //Report(frames, destinationNodeId, value, valueType, priority);
-
                 SendFrames(frames);
             }
             finally
@@ -385,7 +380,5 @@ namespace CanardApp.IO
                 _arrayPool.Return(buffer);
             }
         }
-
-
     }
 }

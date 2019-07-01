@@ -50,10 +50,14 @@ namespace CanardApp.IO
         const ulong CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC = 1000000U;
         ulong previousCleanupTime = 0;
 
-        void _usbTin_MessageReceived(object sender, CanMessageReceivedEventArgs e)
+        void _usbTin_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
-            var transfer = HandleRxMessage(e.Message, nowUs);
+
+            if (nowUs - previousCleanupTime >= CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC)
+                CleanupStaleTransfers(nowUs);
+
+            var transfer = HandleRxFrame(e.Message, nowUs);
             if (transfer == null)
                 return;
 
@@ -142,14 +146,6 @@ namespace CanardApp.IO
             }
         }
 
-        CanardRxTransfer HandleRxMessage(CanMessage msg, ulong nowUs)
-        {
-            if (nowUs - previousCleanupTime >= CANARD_RECOMMENDED_STALE_TRANSFER_CLEANUP_INTERVAL_USEC)
-                CleanupStaleTransfers(nowUs);
-
-            return HandleRxFrame(ConvertMessage(msg), nowUs);
-        }
-
         public override bool CanardShouldAcceptTransfer(out ulong out_data_type_signature, uint data_type_id, CanardTransferType transfer_type, byte source_node_id)
         {
             out_data_type_signature = 0;
@@ -185,36 +181,6 @@ namespace CanardApp.IO
             }
         }
 
-        async Task SendFramesAsync()
-        {
-            var msg = PeekTxQueue();
-            while (msg != null)
-            {
-                var usbTinMsg = ConvertMessage(msg);
-                await _usbTin.SendAsync(usbTinMsg).ConfigureAwait(false);
-
-                PopTxQueue();
-                msg = PeekTxQueue();
-            }
-        }
-
-        CanMessage ConvertMessage(CanardCANFrame msg)
-        {
-            var buffer = new byte[msg.DataLength];
-            Buffer.BlockCopy(msg.Data, 0, buffer, 0, buffer.Length);
-            return new CanMessage((int)msg.Id.Value, buffer);
-        }
-
-        CanardCANFrame ConvertMessage(CanMessage msg)
-        {
-            return new CanardCANFrame
-            {
-                Id = new CanId((uint)msg.Id),
-                Data = msg.Data,
-                DataLength = msg.Data.Length
-            };
-        }
-
         static int GetTransferDescriptor(CanardTransferType transferType, int dataTypeId, int sourceNodeId, int destinationNodeId)
         {
             return (((int)transferType) << 30) |
@@ -228,7 +194,7 @@ namespace CanardApp.IO
         public event EventHandler<TransferReceivedArgs> MessageReceived;
         public event EventHandler<TransferReceivedArgs> RequestReceived;
 
-        public Task SendBroadcastMessage(
+        public void SendBroadcastMessage(
             object value,
             MessageType valueType = null,
             CanardPriority priority = CanardPriority.Medium)
@@ -253,22 +219,20 @@ namespace CanardApp.IO
                     0);
 
                 var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
-                try
-                {
-                    Broadcast(valueType.GetDataTypeSignature().Value,
-                        valueType.Meta.DefaultDTID.Value,
-                        ref transferId,
-                        priority,
-                        buffer,
-                        0,
-                        payloadLen);
-                }
-                finally
-                {
-                    _transferIdRegistry[transferDescriptor] = transferId;
-                }
 
-                return SendFramesAsync();
+                var frames = Broadcast(valueType.GetDataTypeSignature().Value,
+                    valueType.Meta.DefaultDTID.Value,
+                    ref transferId,
+                    priority,
+                    buffer,
+                    0,
+                    payloadLen);
+
+                //Report(frames, 0, value, valueType, priority);
+
+                SendFrames(frames);
+
+                _transferIdRegistry[transferDescriptor] = transferId;
             }
             finally
             {
@@ -278,7 +242,7 @@ namespace CanardApp.IO
 
         ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
 
-        public async Task<TransferReceivedArgs> SendServiceRequest(
+        public Task<TransferReceivedArgs> SendServiceRequest(
             int destinationNodeId,
             object value,
             ServiceType valueType = null,
@@ -306,9 +270,7 @@ namespace CanardApp.IO
                     destinationNodeId);
 
                 var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
-                try
-                {
-                    RequestOrRespond(destinationNodeId,
+                var frames = RequestOrRespond(destinationNodeId,
                         valueType.GetDataTypeSignature().Value,
                         valueType.Meta.DefaultDTID.Value,
                         ref transferId,
@@ -317,13 +279,11 @@ namespace CanardApp.IO
                         buffer,
                         0,
                         payloadLen);
-                }
-                finally
-                {
-                    _transferIdRegistry[transferDescriptor] = transferId;
-                }
 
-                await SendFramesAsync().ConfigureAwait(false);
+                //Report(frames, destinationNodeId, value, valueType, priority);
+                SendFrames(frames);
+
+                _transferIdRegistry[transferDescriptor] = transferId;
 
                 ticket = new ResponseTicket();
                 var responseTickedId = transferDescriptor | (transferId << 32);
@@ -338,7 +298,15 @@ namespace CanardApp.IO
                 _arrayPool.Return(buffer);
             }
 
-            return await ticket.WaitForResponse(ct).ConfigureAwait(false);
+            return ticket.WaitForResponse(ct);
+        }
+
+        void SendFrames(IEnumerable<CanFrame> frames)
+        {
+            foreach (var frame in frames)
+            {
+                _usbTin.Send(frame);
+            }
         }
 
         T GetUavcanType<T>(object value) where T : class, IUavcanType
@@ -353,7 +321,7 @@ namespace CanardApp.IO
             return valueType;
         }
 
-        public Task SendServiceResponse(
+        public void SendServiceResponse(
             int destinationNodeId,
             object value,
             TransferReceivedArgs request,
@@ -373,7 +341,7 @@ namespace CanardApp.IO
                 int payloadLen = _serializer.Serialize(value, dsdlType, buffer);
                 var transferId = request.TransferId;
 
-                RequestOrRespond(destinationNodeId,
+                var frames = RequestOrRespond(destinationNodeId,
                     uavcanType.GetDataTypeSignature().Value,
                     uavcanType.Meta.DefaultDTID.Value,
                     ref transferId,
@@ -383,12 +351,16 @@ namespace CanardApp.IO
                     0,
                     payloadLen);
 
-                return SendFramesAsync();
+                //Report(frames, destinationNodeId, value, valueType, priority);
+
+                SendFrames(frames);
             }
             finally
             {
                 _arrayPool.Return(buffer);
             }
         }
+
+
     }
 }

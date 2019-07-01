@@ -18,53 +18,7 @@ namespace CanardSharp
             Value = value;
         }
 
-        public byte SourceId => (byte)((Value >> 0) & 0x7FU);
-        bool IsServiceNotMessage => ((Value >> 7) & 0x1) == 1;
-        bool IsRequestNotResponse => ((Value >> 15) & 0x1) == 1;
-        public byte DestinationId => (byte)((Value >> 8) & 0x7FU);
-        public CanardPriority Priority => (CanardPriority)((Value >> 24) & 0x1FU);
-        public uint MessageType => (Value >> 8) & 0xFFFFU;
-        public uint ServiceType => (Value >> 16) & 0xFFU;
         public CanIdFlags Flags => (CanIdFlags)(Value & (uint)CanIdFlags.Mask);
-
-        public CanardTransferType TransferType
-        {
-            get
-            {
-                if (!IsServiceNotMessage)
-                {
-                    return CanardTransferType.CanardTransferTypeBroadcast;
-                }
-                else if (IsRequestNotResponse)
-                {
-                    return CanardTransferType.CanardTransferTypeRequest;
-                }
-                else
-                {
-                    return CanardTransferType.CanardTransferTypeResponse;
-                }
-            }
-        }
-
-        public uint DataType
-        {
-            get
-            {
-                if (TransferType == CanardTransferType.CanardTransferTypeBroadcast)
-                {
-                    var dtid = MessageType;
-                    if (SourceId == Constants.CANARD_BROADCAST_NODE_ID)
-                    {
-                        dtid &= (1U << Constants.ANON_MSG_DATA_TYPE_ID_BIT_LEN) - 1U;
-                    }
-                    return dtid;
-                }
-                else
-                {
-                    return ServiceType;
-                }
-            }
-        }
 
         /**
          * Returns true if priority of self is higher than other.

@@ -112,6 +112,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CanardSharp.Contracts\CanardSharp.Contracts.csproj">
+      <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
+      <Name>CanardSharp.Contracts</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CanardSharp.Drivers.Slcan\CanardSharp.Drivers.Slcan.csproj">
       <Project>{a9f1aa7d-70e3-473f-b1f3-f52a3faf67e2}</Project>
       <Name>CanardSharp.Drivers.Slcan</Name>

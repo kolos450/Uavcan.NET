@@ -1,5 +1,4 @@
-﻿using CanardSharp.Collections;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +20,6 @@ namespace CanardSharp
         public byte node_id = Constants.CANARD_BROADCAST_NODE_ID;
 
         LinkedList<CanardRxState> _rxStates = new LinkedList<CanardRxState>(); ///< RX transfer states
-        PriorityQueue<CanardCANFrame> _txQueue = new PriorityQueue<CanardCANFrame>();
 
         /**
          * The application must implement this function and supply a pointer to it to the library during initialization.
@@ -87,7 +85,7 @@ namespace CanardSharp
          *
          * Returns the number of frames enqueued, or negative error code.
          */
-        public short Broadcast(ulong dataTypeSignature,   ///< See above
+        public IEnumerable<CanFrame> Broadcast(ulong dataTypeSignature,   ///< See above
                         int dataTypeId,          ///< Refer to the specification
                         ref byte transferId,     ///< Pointer to a persistent variable containing the transfer ID
                         CanardPriority priority,               ///< Refer to definitions CANARD_TRANSFER_PRIORITY_*
@@ -133,11 +131,9 @@ namespace CanardSharp
                 }
             }
 
-            short result = EnqueueTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
-
+            var frames = CreateTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
             IncrementTransferID(ref transferId);
-
-            return result;
+            return frames;
         }
 
         /**
@@ -157,7 +153,7 @@ namespace CanardSharp
          *
          * Returns the number of frames enqueued, or negative error code.
          */
-        public short RequestOrRespond(int destinationNodeId,     ///< Node ID of the server/client
+        public IEnumerable<CanFrame> RequestOrRespond(int destinationNodeId,     ///< Node ID of the server/client
                                ulong dataTypeSignature,    ///< See above
                                int dataTypeId,            ///< Refer to the specification
                                ref byte transferId,      ///< Pointer to a persistent variable with transfer ID
@@ -187,38 +183,14 @@ namespace CanardSharp
                 crc = CRC.Add(crc, payload, payloadOffset, payloadLen);
             }
 
-            short result = EnqueueTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
+            var frames = CreateTxFrames(can_id, transferId, crc, payload, payloadOffset, payloadLen);
 
-            if (kind == CanardRequestResponse.CanardRequest)                      // Response Transfer ID must not be altered
+            if (kind == CanardRequestResponse.CanardRequest) // Response Transfer ID must not be altered
             {
                 IncrementTransferID(ref transferId);
             }
 
-            return result;
-        }
-
-        /**
-         * Returns a pointer to the top priority frame in the TX queue.
-         * Returns null if the TX queue is empty.
-         * The application will call this function after canardBroadcast() or canardRequestOrRespond() to transmit generated
-         * frames over the CAN bus.
-         */
-        protected CanardCANFrame PeekTxQueue()
-        {
-            if (_txQueue.Count > 0)
-                return _txQueue.Peek();
-            return null;
-        }
-
-        /**
-         * Removes the top priority frame from the TX queue.
-         * The application will call this function after canardPeekTxQueue() once the obtained frame has been processed.
-         * Calling canardBroadcast() or canardRequestOrRespond() between canardPeekTxQueue() and canardPopTxQueue()
-         * is NOT allowed, because it may change the frame at the top of the TX queue.
-         */
-        protected void PopTxQueue()
-        {
-            _txQueue.Dequeue();
+            return frames;
         }
 
         /**
@@ -227,18 +199,20 @@ namespace CanardSharp
          *
          * Return value will report any errors in decoding packets.
          */
-        protected CanardRxTransfer HandleRxFrame(CanardCANFrame frame, ulong timestamp_usec)
+        protected CanardRxTransfer HandleRxFrame(CanFrame frame, ulong timestamp_usec)
         {
-            var transferType = frame.Id.TransferType;
+            var canIdInfo = new CanIdInfo(frame.Id);
+            var transferType = canIdInfo.TransferType;
             byte destination_node_id = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
                                                 Constants.CANARD_BROADCAST_NODE_ID :
-                                                frame.Id.DestinationId;
+                                                canIdInfo.DestinationId;
 
             // TODO: This function should maintain statistics of transfer errors and such.
 
-            if (!frame.Id.Flags.HasFlag(CanIdFlags.EFF) ||
-                frame.Id.Flags.HasFlag(CanIdFlags.RTR) ||
-                frame.Id.Flags.HasFlag(CanIdFlags.ERR) ||
+            var canIdFlags = frame.Id.Flags;
+            if (!canIdFlags.HasFlag(CanIdFlags.EFF) ||
+                canIdFlags.HasFlag(CanIdFlags.RTR) ||
+                canIdFlags.HasFlag(CanIdFlags.ERR) ||
                 (frame.DataLength < 1))
             {
                 throw new Exception("RX_INCOMPATIBLE_PACKET");
@@ -250,9 +224,9 @@ namespace CanardSharp
                 throw new Exception("RX_WRONG_ADDRESS");
             }
 
-            var priority = frame.Id.Priority;
-            byte source_node_id = frame.Id.SourceId;
-            var data_type_id = frame.Id.DataType;
+            var priority = canIdInfo.Priority;
+            byte source_node_id = canIdInfo.SourceId;
+            var data_type_id = canIdInfo.DataType;
             var transfer_descriptor = new TransferDescriptor(data_type_id, transferType, source_node_id, destination_node_id);
 
             var frameInfo = frame.GetFrameInfo();
@@ -416,7 +390,7 @@ namespace CanardSharp
             }
         }
 
-        short EnqueueTxFrames(uint can_id,
+        static IEnumerable<CanFrame> CreateTxFrames(uint can_id,
                                                 byte transfer_id,
                                                 ushort crc,
                                             byte[] payload,
@@ -428,21 +402,14 @@ namespace CanardSharp
             if ((payload_len > 0) && (payload == null))
                 throw new ArgumentException(nameof(payload));
 
-            short result = 0;
-
             if (payload_len < Constants.CANARD_CAN_FRAME_MAX_DATA_LEN)                        // Single frame transfer
             {
-                var frame = new CanardCANFrame
-                {
-                    Id = new CanId(can_id | (uint)CanIdFlags.EFF),
-                    Data = new byte[payload_len],
-                    DataLength = (byte)payload_len,
-                };
+                var data = new byte[payload_len];
+                Buffer.BlockCopy(payload, payload_offset, data, 0, payload_len);
 
-                Buffer.BlockCopy(payload, payload_offset, frame.Data, 0, payload_len);
-
-                _txQueue.Enqueue(frame);
-                result++;
+                yield return new CanFrame(
+                    new CanId(can_id | (uint)CanIdFlags.EFF),
+                    data, 0, data.Length);
             }
             else                                                                    // Multi frame transfer
             {
@@ -452,18 +419,14 @@ namespace CanardSharp
 
                 while (payload_len - data_index != 0)
                 {
-                    var frame = new CanardCANFrame
-                    {
-                        Id = new CanId(can_id | (uint)CanIdFlags.EFF),
-                        Data = new byte[8],
-                    };
+                    var data = new byte[8];
 
                     byte i;
                     if (data_index == 0)
                     {
                         // add crc
-                        frame.Data[0] = (byte)(crc);
-                        frame.Data[1] = (byte)(crc >> 8);
+                        data[0] = (byte)(crc);
+                        data[1] = (byte)(crc >> 8);
                         i = 2;
                     }
                     else
@@ -473,22 +436,22 @@ namespace CanardSharp
 
                     for (; i < (Constants.CANARD_CAN_FRAME_MAX_DATA_LEN - 1) && data_index < payload_len; i++, data_index++)
                     {
-                        frame.Data[i] = payload[data_index];
+                        data[i] = payload[data_index];
                     }
                     // tail byte
                     sot_eot = (data_index == payload_len) ? (byte)0x40 : sot_eot;
 
-                    frame.Data[i] = (byte)(sot_eot | ((uint)toggle << 5) | (uint)(transfer_id & 31));
-                    frame.DataLength = (byte)(i + 1);
-                    _txQueue.Enqueue(frame);
+                    data[i] = (byte)(sot_eot | ((uint)toggle << 5) | (uint)(transfer_id & 31));
+                    var dataLength = (byte)(i + 1);
 
-                    result++;
+                    yield return new CanFrame(
+                        new CanId(can_id | (uint)CanIdFlags.EFF),
+                        data, 0, dataLength);
+
                     toggle ^= 1;
                     sot_eot = 0;
                 }
             }
-
-            return result;
         }
 
         /**

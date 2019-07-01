@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CanardSharp.Collections
+namespace CanardSharp.Drivers.Slcan.Collections
 {
     internal sealed class PriorityQueue<T> where T : IComparable<T>
     {
@@ -119,6 +119,15 @@ namespace CanardSharp.Collections
             var result = Peek();
             RemoveAt(0);
             return result;
+        }
+
+        public bool TryDequeue(out T value)
+        {
+            value = default;
+            if (Count == 0)
+                return false;
+            value = Dequeue();
+            return true;
         }
 
         public void Enqueue(T item)

@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace CanardSharp.Drivers.Slcan
 {
-    public class CanMessageReceivedEventArgs : EventArgs
+    public class CanMessageEventArgs : EventArgs
     {
-        public CanMessage Message { get; set; }
+        public CanFrame Message { get; set; }
     }
 }

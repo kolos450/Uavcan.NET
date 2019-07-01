@@ -1,4 +1,5 @@
-﻿using RJCP.IO.Ports;
+﻿using CanardSharp.Drivers.Slcan.Collections;
+using RJCP.IO.Ports;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace CanardSharp.Drivers.Slcan
     /// </summary>
     public class UsbTin : IDisposable
     {
-        Encoding _encoding = System.Text.Encoding.ASCII;
+        Encoding _encoding = Encoding.ASCII;
 
         /// <summary>
         /// Serial port (virtual) to which USBtin is connected.
@@ -30,12 +31,9 @@ namespace CanardSharp.Drivers.Slcan
         /// <summary>
         /// Listener for CAN messages.
         /// </summary>
-        public event EventHandler<CanMessageReceivedEventArgs> MessageReceived;
+        public event EventHandler<CanMessageEventArgs> MessageReceived;
 
-        /// <summary>
-        /// Transmit fifo.
-        /// </summary>
-        protected ConcurrentQueue<CanMessage> _fifoTX = new ConcurrentQueue<CanMessage>();
+        public event EventHandler<CanMessageEventArgs> MessageTransmitted;
 
         /// <summary>
         /// USBtin firmware version.
@@ -84,9 +82,23 @@ namespace CanardSharp.Drivers.Slcan
         Task _readerTask;
         Task _eventsTask;
         CancellationTokenSource _backgroundTasksCancellationTokenSource;
-        SemaphoreSlim _sendAsyncSemaphore = new SemaphoreSlim(1, 1);
-        SemaphoreSlim _rxQueueSemaphore = new SemaphoreSlim(0, 1);
-        ConcurrentQueue<CanMessage> _rxQueue = new ConcurrentQueue<CanMessage>();
+        SemaphoreSlim _txSemaphore = new SemaphoreSlim(0, 1);
+        PriorityQueue<CanFrame> _txQueue = new PriorityQueue<CanFrame>();
+        CanFrame _txCurrentMessage = null;
+
+        SemaphoreSlim _eventsSemaphore = new SemaphoreSlim(0, 1);
+        ConcurrentQueue<CanFrame> _rxEventQueue = new ConcurrentQueue<CanFrame>();
+        ConcurrentQueue<CanFrame> _txEventQueue = new ConcurrentQueue<CanFrame>();
+
+        volatile TxState _txState = TxState.Initial;
+
+        enum TxState
+        {
+            Initial,
+            Normal,
+            Accepted,
+            Rejected
+        }
 
         /// <summary>
         /// Connect to USBtin on given port.
@@ -138,13 +150,18 @@ namespace CanardSharp.Drivers.Slcan
         {
             while (!ct.IsCancellationRequested)
             {
-                await _rxQueueSemaphore.WaitAsync(ct).ConfigureAwait(false);
+                await _eventsSemaphore.WaitAsync(ct).ConfigureAwait(false);
                 if (ct.IsCancellationRequested)
                     return;
 
-                while (_rxQueue.TryDequeue(out var message))
+                while (_rxEventQueue.TryDequeue(out var message))
                 {
-                    MessageReceived?.Invoke(this, new CanMessageReceivedEventArgs { Message = message });
+                    MessageReceived?.Invoke(this, new CanMessageEventArgs { Message = message });
+                }
+
+                while (_txEventQueue.TryDequeue(out var message))
+                {
+                    MessageTransmitted?.Invoke(this, new CanMessageEventArgs { Message = message });
                 }
             }
         }
@@ -154,21 +171,74 @@ namespace CanardSharp.Drivers.Slcan
             var bytesToRead = 1024;
             var receiveBuffer = new byte[bytesToRead];
 
+            Task<int> rxTask = null;
+            Task txTask = null;
             while ((!ct.IsCancellationRequested) && (_serialPort.IsOpen))
             {
-                int numBytesRead = 0;
-                try
-                {
-                    numBytesRead = await _serialPort.ReadAsync(receiveBuffer, 0, bytesToRead, ct).ConfigureAwait(false);
-                }
-                catch (TimeoutException)
-                { }
-                catch (OperationCanceledException)
-                { }
+                if (rxTask == null)
+                    rxTask = _serialPort.ReadAsync(receiveBuffer, 0, bytesToRead, ct);
+                if (txTask == null)
+                    txTask = _txSemaphore.WaitAsync(ct);
 
-                if (numBytesRead > 0)
+                var completedTask = await Task.WhenAny(rxTask, txTask).ConfigureAwait(false);
+
+                if (completedTask == rxTask)
                 {
-                    await ProcessReceivedDataAsync(receiveBuffer, 0, numBytesRead).ConfigureAwait(false);
+                    int numBytesRead = 0;
+                    try
+                    {
+                        numBytesRead = await rxTask.ConfigureAwait(false);
+                    }
+                    catch (TimeoutException)
+                    { }
+
+                    if (numBytesRead > 0)
+                        ProcessReceivedData(receiveBuffer, 0, numBytesRead);
+
+                    rxTask = null;
+                    continue;
+                }
+                else if (completedTask == txTask)
+                {
+                    switch (_txState)
+                    {
+                        case TxState.Initial:
+                        case TxState.Accepted:
+                            {
+                                _txState = TxState.Normal;
+                                CanFrame message = null;
+                                lock (_txQueue)
+                                {
+                                    _txQueue.TryDequeue(out message);
+                                }
+                                if (message != null)
+                                {
+                                    _txCurrentMessage = message;
+                                    await SendMessageAsync(message).ConfigureAwait(false);
+                                }
+                            }
+                            break;
+
+                        case TxState.Rejected:
+                            {
+                                _txState = TxState.Normal;
+                                var message = _txCurrentMessage;
+                                if (message == null)
+                                    throw new InvalidOperationException("Unexpected UsbTin response.");
+                                await SendMessageAsync(message).ConfigureAwait(false);
+                            }
+                            break;
+
+                        case TxState.Normal:
+                            break;
+                    }
+
+                    txTask = null;
+                    continue;
+                }
+                else
+                {
+                    throw new InvalidOperationException();
                 }
             }
         }
@@ -272,7 +342,7 @@ namespace CanardSharp.Drivers.Slcan
             Transmit(modeCh + "");
         }
 
-        async Task ProcessReceivedDataAsync(byte[] buffer, int offset, int length)
+        void ProcessReceivedData(byte[] buffer, int offset, int length)
         {
             for (int i = 0; i < length; i++)
             {
@@ -287,22 +357,19 @@ namespace CanardSharp.Drivers.Slcan
                     if (cmd == 't' || cmd == 'T' || cmd == 'r' || cmd == 'R')
                     {
                         // Create CAN message from message string.
-                        var canmsg = new CanMessage(message);
+                        var canmsg = CanFrameConverter.Parse(message);
 
                         // Give the CAN message to the listeners.
-                        _rxQueue.Enqueue(canmsg);
-                        try
-                        {
-                            _rxQueueSemaphore.Release();
-                        }
-                        catch (SemaphoreFullException) { }
+                        _rxEventQueue.Enqueue(canmsg);
+                        SignalEvents();
                     }
                     else if ((cmd == 'z') || (cmd == 'Z'))
                     {
-                        // Remove first message from transmit fifo and send next one.
-                        _fifoTX.TryDequeue(out _);
+                        _txEventQueue.Enqueue(_txCurrentMessage);
+                        SignalEvents();
 
-                        await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
+                        _txState = TxState.Accepted;
+                        SignalTx();
                     }
 
                     _incomingMessage.Clear();
@@ -311,7 +378,8 @@ namespace CanardSharp.Drivers.Slcan
                 else if (b == 0x07)
                 {
                     // Resend first element from tx fifo.
-                    await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
+                    _txState = TxState.Rejected;
+                    SignalTx();
                 }
                 else if (b != '\r')
                 {
@@ -320,9 +388,9 @@ namespace CanardSharp.Drivers.Slcan
             }
         }
 
-        /**
-         * Close CAN channel.
-         */
+        /// <summary>
+        /// Close CAN channel.
+        /// </summary>
         public void CloseCanChannel()
         {
             if (_backgroundTasksCancellationTokenSource != null)
@@ -395,38 +463,44 @@ namespace CanardSharp.Drivers.Slcan
             return ReadResponse();
         }
 
-        /// <summary>
-        /// Send first message in tx fifo.
-        /// </summary>
-        protected Task SendFirstTXFifoMessageAsync()
+        Task SendMessageAsync(CanFrame message)
         {
-            if (_fifoTX.TryPeek(out var message))
-            {
-                var bytes = _encoding.GetBytes(message.ToString() + "\r");
-                return _serialPort.WriteAsync(bytes, 0, bytes.Length);
-            }
-
-            return Task.CompletedTask;
+            var bytes = _encoding.GetBytes(CanFrameConverter.ToString(message) + "\r");
+            return _serialPort.WriteAsync(bytes, 0, bytes.Length);
         }
 
         /// <summary>
         /// Send given can message.
         /// </summary>
         /// <param name="canmsg">Can message to send</param>
-        public async Task SendAsync(CanMessage canmsg)
+        public void Send(CanFrame canmsg)
         {
-            await _sendAsyncSemaphore.WaitAsync().ConfigureAwait(false);
+            lock (_txQueue)
+            {
+                _txQueue.Enqueue(canmsg);
+            }
+
+            SignalTx();
+        }
+
+        void SignalTx()
+        {
             try
             {
-                _fifoTX.Enqueue(canmsg);
+                if (_txSemaphore.CurrentCount == 0)
+                    _txSemaphore.Release();
+            }
+            catch (SemaphoreFullException) { }
+        }
 
-                if (_fifoTX.Count() == 1)
-                    await SendFirstTXFifoMessageAsync().ConfigureAwait(false);
-            }
-            finally
+        void SignalEvents()
+        {
+            try
             {
-                _sendAsyncSemaphore.Release();
+                if (_eventsSemaphore.CurrentCount == 0)
+                    _eventsSemaphore.Release();
             }
+            catch (SemaphoreFullException) { }
         }
 
         /// <summary>
@@ -573,16 +647,10 @@ namespace CanardSharp.Drivers.Slcan
                 {
                     Disconnect();
 
-                    if (_rxQueueSemaphore != null)
+                    if (_eventsSemaphore != null)
                     {
-                        _rxQueueSemaphore.Dispose();
-                        _rxQueueSemaphore = null;
-                    }
-
-                    if (_sendAsyncSemaphore != null)
-                    {
-                        _sendAsyncSemaphore.Dispose();
-                        _sendAsyncSemaphore = null;
+                        _eventsSemaphore.Dispose();
+                        _eventsSemaphore = null;
                     }
 
                     if (_serialPort != null)

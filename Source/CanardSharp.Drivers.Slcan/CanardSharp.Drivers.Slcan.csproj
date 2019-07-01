@@ -42,8 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CanMessage.cs" />
-    <Compile Include="CanMessageReceivedEventArgs.cs" />
+    <Compile Include="CanFrameConverter.cs" />
+    <Compile Include="CanMessageEventArgs.cs" />
+    <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="FilterChain.cs" />
     <Compile Include="FilterMask.cs" />
     <Compile Include="FilterValue.cs" />
@@ -55,6 +56,12 @@
     <PackageReference Include="SerialPortStream">
       <Version>2.2.0</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CanardSharp.Contracts\CanardSharp.Contracts.csproj">
+      <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
+      <Name>CanardSharp.Contracts</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

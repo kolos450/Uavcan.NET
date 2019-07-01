@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{504820BF-A958-4679-B1D5-5B4BA9F340A6}</ProjectGuid>
+    <ProjectGuid>{5E61E183-3176-4E17-A383-C4A28D019011}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CanardSharp</RootNamespace>
-    <AssemblyName>CanardSharp</AssemblyName>
+    <AssemblyName>CanardSharp.Contracts</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,16 +23,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -46,40 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CanardInstanceBase.cs" />
-    <Compile Include="CanardPriority.cs" />
-    <Compile Include="CanardRequestResponse.cs" />
-    <Compile Include="CanardRxState.cs" />
-    <Compile Include="CanardTransferType.cs" />
-    <Compile Include="CanFrameExtensions.cs" />
-    <Compile Include="CanFrameInfo.cs" />
-    <Compile Include="CanIdInfo.cs" />
-    <Compile Include="Constants.cs" />
-    <Compile Include="CRC.cs" />
-    <Compile Include="DataTypeDescriptor.cs" />
-    <Compile Include="CanardRxTransfer.cs" />
-    <Compile Include="LittleEndianBitConverter.cs" />
-    <Compile Include="PortIdRanges.cs" />
+    <Compile Include="CanFrame.cs" />
+    <Compile Include="CanId.cs" />
+    <Compile Include="CanIdFlags.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TransferDescriptor.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CanardSharp.Contracts\CanardSharp.Contracts.csproj">
-      <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
-      <Name>CanardSharp.Contracts</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CanardSharp.Dsdl\CanardSharp.Dsdl.csproj">
-      <Project>{46eb0c5d-dfeb-4567-8928-63496ec618a3}</Project>
-      <Name>CanardSharp.Dsdl</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Buffers">
-      <Version>4.5.0</Version>
-    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

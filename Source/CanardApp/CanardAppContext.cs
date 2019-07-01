@@ -46,5 +46,13 @@ namespace CanardApp
 
             base.Dispose(disposing);
         }
+
+        //private void button1_Click(object sender, RoutedEventArgs e)
+        //{
+        //    Form1 form = new Form1();
+        //    WindowInteropHelper wih = new WindowInteropHelper(this);
+        //    wih.Owner = form.Handle;
+        //    form.ShowDialog();
+        //}
     }
 }

@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace CanardApp
 {
-    public interface ICanardToolProvider
+    sealed class ConnectionSettings
     {
-        string ToolTitle { get; }
-
-        void Execute();
+        public string InterfaceName { get; set; }
+        public int BitRate { get; set; }
     }
 }

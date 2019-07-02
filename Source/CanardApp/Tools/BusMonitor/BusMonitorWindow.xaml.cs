@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace CanardApp.Tools
+namespace CanardApp.Tools.BusMonitor
 {
     /// <summary>
     /// Interaction logic for BusMonitorWindow.xaml

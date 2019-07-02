@@ -24,7 +24,7 @@ namespace CanardApp.Engine
                 throw new InvalidOperationException($"Cannot resolve type with ID = {dataTypeId}.");
         }
 
-        [Import]
+        [ImportMany]
         IEnumerable<IDsdlDefinitionsDirectoryProvider> _directoryProviders = null;
 
         IEnumerable<IUavcanTypeResolver> _resolvers;

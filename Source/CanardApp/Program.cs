@@ -47,6 +47,7 @@ namespace CanardApp
 
             container.ComposeExportedValue<ExportProvider>(container);
             container.ComposeExportedValue<CompositionContainer>(container);
+            container.ComposeExportedValue<ICompositionService>(container);
             container.SatisfyImportsOnce(this);
         }
 

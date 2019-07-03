@@ -48,8 +48,13 @@ namespace DataTypeGenerator
         static string CreateCSharpName(IUavcanType t)
         {
             var name = t.Meta.Name;
-            name = name.Substring(0, 1).ToUpper() + name.Substring(1);
+            name = Capitalize(name);
             return name;
+        }
+
+        static string Capitalize(string name)
+        {
+            return name.Substring(0, 1).ToUpper() + name.Substring(1);
         }
 
         static Dictionary<object, string> _namesTypesLookup = new Dictionary<object, string>();
@@ -114,9 +119,15 @@ namespace DataTypeGenerator
                 if (fieldType != null)
                 {
                     yield return $"[DataMember(Name = \"{m.Name}\")]";
-                    yield return $"public {fieldType} {m.Name} {{ get; set; }}";
+                    yield return $"public {fieldType} {GetCSharpPropertyName(m.Name)} {{ get; set; }}";
                 }
             }
+        }
+
+        static object GetCSharpPropertyName(string name)
+        {
+            var parts = name.Split('_');
+            return string.Join("", parts.Select(Capitalize));
         }
 
         static string GetCSharpType(DsdlType type, bool nullable)

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -34,14 +35,21 @@ namespace CanardApp
             if (connectionSettings == null)
                 Shutdown();
 
-            var usbTin = new UsbTin();
-            usbTin.Connect(connectionSettings.InterfaceName);
-            usbTin.OpenCanChannel(connectionSettings.BitRate, UsbTinOpenMode.Active);
-
-            _CanardInstance = new CanardInstance(usbTin, _typeResolvingService);
-
-            ((MainWindow)MainWindow).Initialize(_CanardInstance);
             MainWindow.Show();
+
+            Task.Factory.StartNew(() =>
+            {
+                var usbTin = new UsbTin();
+                usbTin.Connect(connectionSettings.InterfaceName);
+                usbTin.OpenCanChannel(connectionSettings.BitRate, UsbTinOpenMode.Active);
+
+                _CanardInstance = new CanardInstance(usbTin, _typeResolvingService);
+
+                _mainWindow.Dispatcher.Invoke(() =>
+                {
+                    ((MainWindow)MainWindow).Initialize(_CanardInstance);
+                });
+            });
         }
 
         static ConnectionSettings GetConnectionSettings()

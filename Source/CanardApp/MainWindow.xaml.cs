@@ -56,7 +56,7 @@ namespace CanardApp
 
         public void Initialize(CanardInstance canardInstance)
         {
-
+            busyIndicator.IsBusy = false;
         }
 
         void MenuItem_File_Exit_Click(object sender, RoutedEventArgs e)

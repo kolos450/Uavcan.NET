@@ -21,17 +21,26 @@ namespace CanardSharp.Dsdl
 
         public IUavcanType TryResolveType(string ns, string typeName)
         {
-            var key = ns + "." + typeName;
-            if (_fullNameToType.TryGetValue(key, out var type))
+            var fullName = typeName.IndexOf('.') == -1 ?
+                ns + "." + typeName :
+                typeName;
+            if (_fullNameToType.TryGetValue(fullName, out var type))
                 return type;
 
             lock (_fullNameToType)
             {
-                var fullName = ns + "." + typeName;
                 if (_fullNameToType.TryGetValue(fullName, out type))
                     return type;
 
                 type = TryResolveTypeCore(ns, typeName);
+
+                if (!string.Equals(fullName, type.Meta.FullName, StringComparison.Ordinal))
+                {
+                    fullName = type.Meta.FullName;
+
+                    if (_fullNameToType.TryGetValue(fullName, out type))
+                        return type;
+                }
 
                 _fullNameToType[fullName] = type;
                 if (type != null)

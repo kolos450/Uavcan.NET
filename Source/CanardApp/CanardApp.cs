@@ -18,9 +18,12 @@ namespace CanardApp
         [Import]
         TypeResolvingService _typeResolvingService = null;
 
+        [Import]
+        MainWindow _mainWindow = null;
+
         public CanardApp()
         {
-            MainWindow = new MainWindow();
+            MainWindow = _mainWindow;
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             Startup += CanardApp_Startup;
         }

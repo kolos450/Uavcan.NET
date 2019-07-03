@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace CanardApp.Tools
 {
@@ -10,6 +11,6 @@ namespace CanardApp.Tools
     {
         string ToolTitle { get; }
 
-        void Execute();
+        UIElement GetUIElement();
     }
 }

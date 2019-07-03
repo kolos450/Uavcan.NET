@@ -10,19 +10,19 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace CanardApp.Tools.BusMonitor
+namespace CanardApp
 {
     /// <summary>
-    /// Interaction logic for BusMonitorWindow.xaml
+    /// Interaction logic for ToolWindow.xaml
     /// </summary>
-    public partial class BusMonitorWindow : Window
+    public partial class ToolWindow : Window
     {
-        public BusMonitorWindow()
+        public ToolWindow(UIElement element)
         {
             InitializeComponent();
+            ContentArea.Content = element;
         }
     }
 }

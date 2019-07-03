@@ -63,6 +63,12 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Tools\BusMonitor\BusMonitorControl.xaml.cs">
+      <DependentUpon>BusMonitorControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ToolWindow.xaml.cs">
+      <DependentUpon>ToolWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WpfWindowWrapper.cs" />
     <Page Include="ConnectionWindow.xaml">
       <SubType>Designer</SubType>
@@ -72,9 +78,9 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Tools\BusMonitor\BusMonitorWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
+    <Page Include="Tools\BusMonitor\BusMonitorControl.xaml">
       <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionWindow.xaml.cs">
@@ -90,10 +96,10 @@
     </Compile>
     <Compile Include="MarginSetter.cs" />
     <Compile Include="ShellService.cs" />
-    <Compile Include="Tools\BusMonitor\BusMonitorWindow.xaml.cs">
-      <DependentUpon>BusMonitorWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
+    <Page Include="ToolWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AboutBox.cs">

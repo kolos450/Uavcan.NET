@@ -1,6 +1,8 @@
-﻿using CanardSharp;
+﻿using CanardApp.Tools;
+using CanardSharp;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,11 +21,37 @@ namespace CanardApp
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    [Export]
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        [ImportingConstructor]
+        public MainWindow(
+            [ImportMany] IEnumerable<ICanardToolProvider> tools)
         {
             InitializeComponent();
+
+            foreach (var tool in tools)
+            {
+                var menuItem = new MenuItem
+                {
+                    Header = tool.ToolTitle,
+                };
+
+                miTools.Items.Add(menuItem);
+
+                menuItem.Click += (o, e) => RunTool(tool);
+            }
+        }
+
+        void RunTool(ICanardToolProvider tool)
+        {
+            var uiElement = tool.GetUIElement();
+            if (uiElement != null)
+            {
+                var toolWindow = new ToolWindow(uiElement);
+                toolWindow.Title = tool.ToolTitle;
+                toolWindow.Show();
+            }
         }
 
         public void Initialize(CanardInstance canardInstance)

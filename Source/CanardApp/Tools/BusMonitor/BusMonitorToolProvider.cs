@@ -4,6 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace CanardApp.Tools.BusMonitor
 {
@@ -12,8 +13,9 @@ namespace CanardApp.Tools.BusMonitor
     {
         public string ToolTitle => "Bus monitor";
 
-        public void Execute()
+        public UIElement GetUIElement()
         {
+            return new BusMonitorControl();
         }
     }
 }

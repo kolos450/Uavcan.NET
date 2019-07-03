@@ -98,7 +98,7 @@ namespace DataTypeGenerator
                     builder.AppendLine($"    [DataContract(Name = \"{t.Meta.Name}.Response\", Namespace = \"{t.Meta.Namespace}\")]");
                     builder.AppendLine($"    sealed class {csharpName}_Response");
                     builder.AppendLine("    {");
-                    foreach (var i in BuildCSharpMembers(st.Request))
+                    foreach (var i in BuildCSharpMembers(st.Response))
                         builder.AppendLine("        " + i);
                     builder.AppendLine("    }");
                     builder.AppendLine();

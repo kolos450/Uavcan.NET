@@ -409,7 +409,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                         builder.AppendLine($"    [DataContract(Name = \"{t.Name}.Response\", Namespace = \"{t.Namespace}\")]");
                         builder.AppendLine($"    sealed class {t.CSharpName}_Response");
                         builder.AppendLine("    {");
-                        foreach (var i in BuildCSharpMembers(st.Request))
+                        foreach (var i in BuildCSharpMembers(st.Response))
                             builder.AppendLine("        " + i);
                         builder.AppendLine("    }");
                         builder.AppendLine();

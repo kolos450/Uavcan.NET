@@ -47,6 +47,7 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -63,6 +64,21 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataTypes\Protocol\DataTypeKind.cs" />
+    <Compile Include="DataTypes\Protocol\Debug\LogLevel.cs" />
+    <Compile Include="DataTypes\Protocol\Debug\LogMessage.cs" />
+    <Compile Include="DataTypes\Protocol\GetDataTypeInfo.cs" />
+    <Compile Include="DataTypes\Protocol\GetNodeInfo.cs" />
+    <Compile Include="DataTypes\Protocol\HardwareVersion.cs" />
+    <Compile Include="DataTypes\Protocol\NodeStatus.cs" />
+    <Compile Include="DataTypes\Protocol\Panic.cs" />
+    <Compile Include="DataTypes\Protocol\Param\Empty.cs" />
+    <Compile Include="DataTypes\Protocol\Param\GetSet.cs" />
+    <Compile Include="DataTypes\Protocol\Param\NumericValue.cs" />
+    <Compile Include="DataTypes\Protocol\Param\Value.cs" />
+    <Compile Include="DataTypes\Protocol\RestartNode.cs" />
+    <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
+    <Compile Include="DataTypes\Timestamp.cs" />
     <Compile Include="Tools\BusMonitor\BusMonitorControl.xaml.cs">
       <DependentUpon>BusMonitorControl.xaml</DependentUpon>
     </Compile>

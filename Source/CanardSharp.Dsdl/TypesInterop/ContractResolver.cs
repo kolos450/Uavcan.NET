@@ -193,7 +193,6 @@ namespace CanardSharp.Dsdl.TypesInterop
                 case PrimitiveTypeCode.Guid:
                 case PrimitiveTypeCode.GuidNullable:
                 case PrimitiveTypeCode.Object:
-                case PrimitiveTypeCode.String:
                 case PrimitiveTypeCode.TimeSpan:
                 case PrimitiveTypeCode.TimeSpanNullable:
                 case PrimitiveTypeCode.Uri:

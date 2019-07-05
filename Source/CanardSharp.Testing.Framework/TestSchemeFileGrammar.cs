@@ -29,6 +29,7 @@ namespace CanardSharp.Testing.Framework
         public TestSchemeFileGrammar()
         {
             #region Lexical structure
+            StringLiteral StringLiteral = TerminalFactory.CreateCSharpString("StringLiteral");
             NumberLiteral Number = CreateNumberLiteral("Number");
             IdentifierTerminal identifier = TerminalFactory.CreateCSharpIdentifier("Identifier");
 
@@ -91,7 +92,7 @@ namespace CanardSharp.Testing.Framework
             this.AddTermsReportGroup("type declaration", "public", "private", "protected", "static", "internal", "sealed", "abstract", "partial",
                                                          "class");
             this.AddTermsReportGroup("member declaration", "virtual", "override", "readonly", "volatile", "extern");
-            this.AddTermsReportGroup("number", Number);
+            this.AddTermsReportGroup("constant", Number, StringLiteral);
             this.AddTermsReportGroup("constant", "true", "false", "null");
 
             this.AddTermsReportGroup("unary operator", "+", "-", "!", "~");
@@ -133,7 +134,7 @@ namespace CanardSharp.Testing.Framework
 
             nested_members.Rule = ("[" + members + "]") | ("{" + members + "}");
 
-            literal.Rule = Number | "true" | "false" | "null";
+            literal.Rule = Number | StringLiteral | "true" | "false" | "null";
 
             directive.Rule = "@" + identifier;
             directives_opt.Rule = MakeStarRule(directives_opt, null, directive);

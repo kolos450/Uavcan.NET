@@ -34,7 +34,8 @@ namespace CanardSharp.Dsdl
 
                 type = TryResolveTypeCore(ns, typeName);
 
-                if (!string.Equals(fullName, type.Meta.FullName, StringComparison.Ordinal))
+                if (type != null &&
+                    !string.Equals(fullName, type.Meta.FullName, StringComparison.Ordinal))
                 {
                     fullName = type.Meta.FullName;
 

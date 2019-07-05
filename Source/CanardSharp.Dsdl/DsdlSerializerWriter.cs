@@ -17,6 +17,7 @@ namespace CanardSharp.Dsdl
     {
         readonly Stack<object> _serializeStack = new Stack<object>();
         readonly DsdlSerializer _serializer;
+        readonly Encoding _encoding = Encoding.ASCII;
 
         public DsdlSerializerWriter(DsdlSerializer dsdlSerializer)
         {
@@ -26,16 +27,13 @@ namespace CanardSharp.Dsdl
         public void Serialize(BitStreamWriter stream, object value, DsdlType dsdlScheme)
         {
             var contract = _serializer.ContractResolver.ResolveContract(value.GetType());
-            SerializeValue(stream, value, contract, null, null, null, dsdlScheme, true);
+            SerializeValue(stream, value, contract, dsdlScheme, true);
         }
 
         private void SerializeValue(
             BitStreamWriter writer,
             object value,
             IContract valueContract,
-            DsdlProperty member,
-            ContainerContract containerContract,
-            DsdlProperty containerProperty,
             DsdlType derivedDsdlType,
             bool tailArrayOptimization = false)
         {
@@ -45,26 +43,48 @@ namespace CanardSharp.Dsdl
             switch (valueContract)
             {
                 case ObjectContract contract:
-                    SerializeObject(writer, value, contract, member, containerContract, containerProperty, derivedDsdlType, tailArrayOptimization);
+                    SerializeObject(writer, value, contract, derivedDsdlType, tailArrayOptimization);
                     break;
                 case ArrayContract contract:
                     if (contract.IsMultidimensionalArray)
                         throw new NotSupportedException("Multidimensional arrays are not supported.");
-                    SerializeList(writer, (IEnumerable)value, contract, member, containerContract, containerProperty, derivedDsdlType, tailArrayOptimization);
+                    SerializeList(writer, (IEnumerable)value, contract, contract.FinalItemContract, derivedDsdlType, tailArrayOptimization);
                     break;
                 case PrimitiveContract contract:
-                    SerializePrimitive(writer, value, contract, member, containerContract, containerProperty, derivedDsdlType);
+                    SerializePrimitive(writer, value, contract, derivedDsdlType, tailArrayOptimization);
                     break;
                 case DictionaryContract contract:
-                    SerializeDictionary(writer, (value is IDictionary dictionary) ? dictionary : contract.CreateWrapper(value), contract, member, containerContract, containerProperty, derivedDsdlType, tailArrayOptimization);
+                    SerializeDictionary(writer, (value is IDictionary dictionary) ? dictionary : contract.CreateWrapper(value), contract, derivedDsdlType, tailArrayOptimization);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(valueContract));
             }
         }
 
-        void SerializePrimitive(BitStreamWriter writer, object value, PrimitiveContract contract, DsdlProperty member, ContainerContract containerContract, DsdlProperty containerProperty, DsdlType derivedDsdlType)
+        static byte[] _emptyByteArray = new byte[0];
+
+        void SerializePrimitive(BitStreamWriter writer, object value, PrimitiveContract contract, DsdlType derivedDsdlType, bool tailArrayOptimization)
         {
+            if (contract.TypeCode == PrimitiveTypeCode.String &&
+                derivedDsdlType is ArrayDsdlType adt &&
+                adt.IsStringLike)
+            {
+                byte[] stringBytes;
+                if (value == null)
+                {
+                    stringBytes = _emptyByteArray;
+                }
+                else
+                {
+                    if (!(value is string stringValue))
+                        throw new ArgumentException("Cannot cast value to string.", nameof(value));
+                    stringBytes = _encoding.GetBytes(stringValue);
+                }
+
+                SerializeList(writer, stringBytes, contract, null, adt, tailArrayOptimization);
+                return;
+            }
+
             if (!(derivedDsdlType is PrimitiveDsdlType t))
                 throw new InvalidOperationException($"Primitive DSDL type expected for type '{contract.UnderlyingType.FullName}'.");
 
@@ -216,7 +236,7 @@ namespace CanardSharp.Dsdl
             };
         }
 
-        void SerializeObject(BitStreamWriter writer, object value, ObjectContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty, DsdlType derivedDsdlType, bool tailArrayOptimization)
+        void SerializeObject(BitStreamWriter writer, object value, ObjectContract contract, DsdlType derivedDsdlType, bool tailArrayOptimization)
         {
             var dsdlScheme = GetScheme<CompositeDsdlTypeBase>(contract, derivedDsdlType);
 
@@ -226,7 +246,6 @@ namespace CanardSharp.Dsdl
                 writer,
                 name => ResolveObjectProperty(value, contract, name),
                 contract,
-                member,
                 derivedDsdlType,
                 tailArrayOptimization);
 
@@ -308,10 +327,8 @@ namespace CanardSharp.Dsdl
         void SerializeList(
             BitStreamWriter writer,
             IEnumerable values,
-            ArrayContract contract,
-            DsdlProperty member,
-            ContainerContract collectionContract,
-            DsdlProperty containerProperty,
+            IContract contract,
+            IContract finalItemContract,
             DsdlType derivedDsdlType,
             bool tailArrayOptimization)
         {
@@ -349,7 +366,7 @@ namespace CanardSharp.Dsdl
             {
                 i++;
 
-                var valueContract = contract.FinalItemContract ??
+                var valueContract = finalItemContract ??
                     (value == null ? null : _serializer.ContractResolver.ResolveContract(value.GetType()));
 
                 if (!CheckForCircularReference(value, null, valueContract))
@@ -360,7 +377,7 @@ namespace CanardSharp.Dsdl
                         $"DSDL type mismatch for enumerated item '{contract.UnderlyingType.FullName}.{valueContract.UnderlyingType}'.");
 
                 var tao = i == arrayCount ? tailArrayOptimization : false;
-                SerializeValue(writer, value, valueContract, null, contract, member, arrayDsdlType.ElementType, tao);
+                SerializeValue(writer, value, valueContract, arrayDsdlType.ElementType, tao);
             }
 
             //writer.WriteEndArray();
@@ -381,6 +398,8 @@ namespace CanardSharp.Dsdl
                 case PrimitiveDsdlType _:
                     if (!(actualContract is PrimitiveContract))
                         return false;
+                    break;
+                case ArrayDsdlType adt when adt.IsStringLike && actualContract.UnderlyingType == typeof(string):
                     break;
                 case ArrayDsdlType _:
                     if (!(actualContract is ArrayContract))
@@ -414,7 +433,7 @@ namespace CanardSharp.Dsdl
             };
         }
 
-        void SerializeDictionary(BitStreamWriter writer, IDictionary values, DictionaryContract contract, DsdlProperty member, ContainerContract collectionContract, DsdlProperty containerProperty, DsdlType derivedDsdlType, bool tailArrayOptimization)
+        void SerializeDictionary(BitStreamWriter writer, IDictionary values, DictionaryContract contract, DsdlType derivedDsdlType, bool tailArrayOptimization)
         {
             object underlyingDictionary = values is IWrappedDictionary wrappedDictionary ? wrappedDictionary.UnderlyingDictionary : values;
 
@@ -432,7 +451,6 @@ namespace CanardSharp.Dsdl
                 writer,
                 name => ResolveDictionaryProperty(dictionaryNormalized, contract, name),
                 contract,
-                member,
                 derivedDsdlType,
                 tailArrayOptimization);
 
@@ -443,7 +461,6 @@ namespace CanardSharp.Dsdl
             BitStreamWriter writer,
             Func<string, ResolvedProperty?> propertyResolver,
             ContainerContract containerContract,
-            DsdlProperty containerProperty,
             DsdlType derivedDsdlType,
             bool tailArrayOptimization)
         {
@@ -480,7 +497,7 @@ namespace CanardSharp.Dsdl
                     unionMemberFound = true;
                     WriteUnionFieldIndex(writer, i, dsdlScheme);
                     var rp = resolvedProp.Value;
-                    SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type);
+                    SerializeValue(writer, rp.MemberValue, rp.MemberContact, dsdlMember.Type);
                 }
                 else
                 {
@@ -490,7 +507,7 @@ namespace CanardSharp.Dsdl
                     var tao = tailArrayOptimization &&
                         isLastMember &&
                         dsdlMember.Type is ArrayDsdlType adt;
-                    SerializeValue(writer, rp.MemberValue, rp.MemberContact, rp.Member, containerContract, containerProperty, dsdlMember.Type, tao);
+                    SerializeValue(writer, rp.MemberValue, rp.MemberContact, dsdlMember.Type, tao);
                 }
             }
 

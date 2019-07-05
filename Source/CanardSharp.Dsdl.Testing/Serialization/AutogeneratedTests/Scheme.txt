@@ -123,6 +123,14 @@ namespace uavcan.samples
         int8 i
         void10
     }
+    type EnumTest
+    {
+        uint8 t_enum_value
+    }
+    type StringTest
+    {
+        uint8[<=128] t_string_value
+    }
 }
 namespace uavcan.samples.getsettest
 {

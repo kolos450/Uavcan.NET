@@ -16,6 +16,7 @@ namespace CanardSharp.Dsdl
     class DsdlSerializerReader
     {
         readonly DsdlSerializer _dsdlSerializer;
+        readonly Encoding _encoding = Encoding.ASCII;
 
         public DsdlSerializerReader(DsdlSerializer dsdlSerializer)
         {
@@ -45,6 +46,17 @@ namespace CanardSharp.Dsdl
             return CreateValueInternal(reader, contract, null, null, null, null, scheme, null, true);
         }
 
+        IContract _stringContract = null;
+        IContract StringContract
+        {
+            get
+            {
+                if (_stringContract == null)
+                    _stringContract = _dsdlSerializer.ContractResolver.ResolveContract(typeof(byte[]));
+                return _stringContract;
+            }
+        }
+
         object CreateValueInternal(
             BitStreamReader reader,
             IContract contract,
@@ -65,6 +77,10 @@ namespace CanardSharp.Dsdl
                 case PrimitiveDsdlType t:
                     var primitive = ReadPrimitiveType(reader, t);
                     return EnsureType(reader, primitive, CultureInfo.InvariantCulture, contract, objectType);
+
+                case ArrayDsdlType t when t.IsStringLike && contract.UnderlyingType == typeof(string):
+                    var list = CreateList(reader, StringContract, member, null, t, tailArrayOptimization) as IEnumerable<byte>;
+                    return _encoding.GetString(list.ToArray());
 
                 case ArrayDsdlType t:
                     return CreateList(reader, contract, member, existingValue, t, tailArrayOptimization);
@@ -322,14 +338,6 @@ namespace CanardSharp.Dsdl
             throw new SerializationException($"Cannot deserialize the current object.");
         }
 
-        private ArrayContract EnsureArrayContract(IContract contract)
-        {
-            if (!(contract is ArrayContract arrayContract))
-                throw new SerializationException("Could not resolve type to IContract.");
-
-            return arrayContract;
-        }
-
         object CreateList(
             BitStreamReader reader,
             IContract contract,
@@ -339,11 +347,10 @@ namespace CanardSharp.Dsdl
             bool tailArrayOptimization)
         {
             if (HasNoDefinedType(contract))
-            {
                 return CreateUnknownObject(reader, scheme, tailArrayOptimization);
-            }
 
-            var arrayContract = EnsureArrayContract(contract);
+            if (!(contract is ArrayContract arrayContract))
+                throw new SerializationException("Could not resolve type to IContract.");
 
             if (existingValue == null)
             {

@@ -56,6 +56,8 @@ namespace SerializationTestGenerator
                     {
                         Console.WriteLine($"{msg} at {msg.Location}.");
                     }
+
+                    return;
                 }
 
                 Directory.CreateDirectory(dsdlRoot);
@@ -178,7 +180,7 @@ namespace SerializationTestGenerator
                 var node = parseTreeNode.ChildNodes[i];
 
                 if (!IsNullNode(node))
-                    yield return $"{field.Name} = " + BuildTestMethodMemberElement(field.Type, node);
+                    yield return $"{field.Name} = " + BuildTestMethodMemberElement(field.Type, field.Name, node);
             }
         }
 
@@ -194,8 +196,28 @@ namespace SerializationTestGenerator
             return true;
         }
 
-        string BuildTestMethodMemberElement(DsdlType type, ParseTreeNode node)
+        static bool IsEnum(string name, DsdlType type)
         {
+            return (type is IntDsdlType || type is UIntDsdlType) && name.StartsWith("t_enum_");
+        }
+
+        static bool IsString(string name, DsdlType type)
+        {
+            return type is ArrayDsdlType adt && adt.IsStringLike && name.StartsWith("t_string_");
+        }
+
+        string BuildTestMethodMemberElement(DsdlType type, string fieldName, ParseTreeNode node)
+        {
+            if (IsEnum(fieldName, type))
+            {
+                var enumType = GetOrCreateEnum(fieldName, type);
+                return $"({enumType}){node.GetText(SourceText)}";
+            }
+            if (IsString(fieldName, type))
+            {
+                return node.GetText(SourceText);
+            }
+
             switch (type)
             {
                 case PrimitiveDsdlType _:
@@ -204,9 +226,9 @@ namespace SerializationTestGenerator
                 case ArrayDsdlType adt:
                     var nestesNodes = node.FindChild("members");
                     if (nestesNodes == null)
-                        return $"new {GetCSharpType(adt, false)} {{ }}";
-                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ElementType, x));
-                    return $"new {GetCSharpType(adt, false)} {{ {string.Join(", ", arrayContent)} }}";
+                        return $"new {GetCSharpType(adt, false, fieldName)} {{ }}";
+                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildTestMethodMemberElement(adt.ElementType, fieldName, x));
+                    return $"new {GetCSharpType(adt, false, fieldName)} {{ {string.Join(", ", arrayContent)} }}";
 
                 case CompositeDsdlTypeBase cdt:
                     var t = _compoundTypesLookup[cdt];
@@ -281,11 +303,11 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 var node = parseTreeNode.ChildNodes[i];
 
                 if (!IsNullNode(node))
-                    yield return $"{field.Name} = " + BuildPythonInitializerMemberElement(field.Type, node);
+                    yield return $"{field.Name} = " + BuildPythonInitializerMemberElement(field.Type, field.Name, node);
             }
         }
 
-        string BuildPythonInitializerMemberElement(DsdlType type, ParseTreeNode node)
+        string BuildPythonInitializerMemberElement(DsdlType type, string fieldName, ParseTreeNode node)
         {
             switch (type)
             {
@@ -310,11 +332,14 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
 
                     return text;
 
+                case ArrayDsdlType adt when IsString(fieldName, type):
+                    return node.GetText(SourceText);
+
                 case ArrayDsdlType adt:
                     var nestesNodes = node.FindChild("members");
                     if (nestesNodes == null)
                         return "[]";
-                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildPythonInitializerMemberElement(adt.ElementType, x));
+                    var arrayContent = nestesNodes.ChildNodes.Select(x => BuildPythonInitializerMemberElement(adt.ElementType, fieldName, x));
                     return $"[{string.Join(", ", arrayContent)}]";
 
                 case CompositeDsdlTypeBase cdt:
@@ -420,6 +445,11 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 }
             }
 
+            foreach (var helper in _helperTypes.Values)
+            {
+                builder.AppendLine(helper);
+            }
+
             builder.AppendLine("}");
 
             File.WriteAllText(typesPath, builder.ToString());
@@ -429,7 +459,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
         {
             foreach (var m in type.Fields)
             {
-                var fieldType = GetCSharpType(m.Type, type.IsUnion);
+                var fieldType = GetCSharpType(m.Type, type.IsUnion, m.Name);
                 if (fieldType != null)
                 {
                     yield return $"[DataMember(Name = \"{m.Name}\")]";
@@ -438,8 +468,23 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
             }
         }
 
-        string GetCSharpType(DsdlType type, bool nullable)
+
+
+        string GetCSharpType(DsdlType type, bool nullable, string name)
         {
+            if (name != null)
+            {
+                if (IsEnum(name, type))
+                {
+                    var enumType = GetOrCreateEnum(name, type);
+                    return nullable ? enumType + "?" : enumType;
+                }
+                if (IsString(name, type))
+                {
+                    return "string";
+                }
+            }
+
             switch (type)
             {
                 case VoidDsdlType _:
@@ -449,7 +494,7 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                     return nullable ? GetCSharpType(t) + "?" : GetCSharpType(t);
 
                 case ArrayDsdlType t:
-                    return GetCSharpType(t.ElementType, false) + "[]";
+                    return GetCSharpType(t.ElementType, false, name) + "[]";
 
                 case CompositeDsdlTypeBase t:
                     return _compoundTypesLookup[t].CSharpName;
@@ -457,6 +502,19 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 default:
                     throw new InvalidOperationException();
             }
+        }
+
+        Dictionary<string, string> _helperTypes = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        string GetOrCreateEnum(string name, DsdlType type)
+        {
+            var ut = GetCSharpType(type as PrimitiveDsdlType);
+            var key = "Enum_" + ut;
+            if (!_helperTypes.ContainsKey(key))
+            {
+                _helperTypes[key] = $"    public enum {key} : {ut} {{}}";
+            }
+            return key;
         }
 
         string GetCSharpType(PrimitiveDsdlType type)

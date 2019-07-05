@@ -268,4 +268,17 @@ namespace uavcan.samples
         .{{{},null,null,null,null},{null,2524353,null},[1,2,3,0]}
         .{{null,null,null,null,[1,4,6,3,0]},{null,2524353,null},[1,2,3,0]}
     }
+        
+    type EnumTest
+    {
+        uint8 t_enum_value
+    }
+    .{1}
+    
+    type StringTest
+    {
+        uint8[<=128] t_string_value
+    }
+    .{"Hello, World"}
+    .{""}
 }

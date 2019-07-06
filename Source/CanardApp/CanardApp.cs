@@ -1,6 +1,7 @@
 ﻿using CanardApp.Engine;
 using CanardSharp;
 using CanardSharp.Drivers.Slcan;
+using MahApps.Metro;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -12,7 +13,7 @@ using System.Windows;
 
 namespace CanardApp
 {
-    sealed class CanardApp : Application, IDisposable
+    sealed class CanardApp : Application, IDisposable, IPartImportsSatisfiedNotification
     {
         CanardInstance _CanardInstance;
 
@@ -24,13 +25,15 @@ namespace CanardApp
 
         public CanardApp()
         {
-            MainWindow = _mainWindow;
+            SetupThemes();
+
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             Startup += CanardApp_Startup;
         }
 
         void CanardApp_Startup(object sender, StartupEventArgs e)
         {
+
             var connectionSettings = GetConnectionSettings();
             if (connectionSettings == null)
                 Shutdown();
@@ -50,6 +53,14 @@ namespace CanardApp
                     ((MainWindow)MainWindow).Initialize(_CanardInstance);
                 });
             });
+        }
+
+        void SetupThemes()
+        {
+            var resDictionary = new ResourceDictionary();
+
+            resDictionary.Source = new Uri("Style.xaml", UriKind.Relative);
+            Current.Resources.MergedDictionaries.Add(resDictionary);
         }
 
         static ConnectionSettings GetConnectionSettings()
@@ -72,6 +83,11 @@ namespace CanardApp
                 _CanardInstance.Dispose();
                 _CanardInstance = null;
             }
+        }
+
+        public void OnImportsSatisfied()
+        {
+            MainWindow = _mainWindow;
         }
     }
 }

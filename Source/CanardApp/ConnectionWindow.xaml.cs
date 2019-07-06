@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MahApps.Metro.Controls;
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace CanardApp
     /// <summary>
     /// Interaction logic for ConnectionWindow.xaml
     /// </summary>
-    public partial class ConnectionWindow : Window
+    public partial class ConnectionWindow : MetroWindow
     {
         public ConnectionWindow()
         {
@@ -41,7 +42,7 @@ namespace CanardApp
 
             if (upBitRate.Value == null)
                 return;
-            BitRate = upBitRate.Value.Value;
+            BitRate = (int)upBitRate.Value.Value;
 
             DialogResult = true;
             Close();

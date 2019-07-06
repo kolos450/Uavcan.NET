@@ -1,5 +1,8 @@
-﻿using CanardApp.Tools;
+﻿using CanardApp.DataTypes.Protocol;
+using CanardApp.Presentation;
+using CanardApp.Tools;
 using CanardSharp;
+using MahApps.Metro.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -22,13 +25,15 @@ namespace CanardApp
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     [Export]
-    public partial class MainWindow : Window
+    public partial class MainWindow : MetroWindow
     {
         [ImportingConstructor]
         public MainWindow(
             [ImportMany] IEnumerable<ICanardToolProvider> tools)
         {
             InitializeComponent();
+
+            IsBusy = false;
 
             foreach (var tool in tools)
             {
@@ -41,6 +46,12 @@ namespace CanardApp
 
                 menuItem.Click += (o, e) => RunTool(tool);
             }
+        }
+
+        public bool IsBusy
+        {
+            get => bBusyIndicator.Visibility == Visibility.Visible;
+            set => bBusyIndicator.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
         }
 
         void RunTool(ICanardToolProvider tool)
@@ -56,7 +67,38 @@ namespace CanardApp
 
         public void Initialize(CanardInstance canardInstance)
         {
-            busyIndicator.IsBusy = false;
+            dgNodes.ItemsSource = new OnlineNodeModel[]
+            {
+                new OnlineNodeModel
+                {
+                    NodeId = 3,
+                    Name = "dsfsd",
+                    Mode = NodeStatus.ModeKind.Operational,
+                    Health = NodeStatus.HealthKind.Ok,
+                    Uptime = TimeSpan.FromMilliseconds(32422),
+                    VSSC = 34,
+                }
+                ,new OnlineNodeModel
+                {
+                    NodeId = 3,
+                    Name = "dsfsd",
+                    Mode = NodeStatus.ModeKind.Operational,
+                    Health = NodeStatus.HealthKind.Ok,
+                    Uptime = TimeSpan.FromMilliseconds(32422),
+                    VSSC = 34,
+                }
+                ,new OnlineNodeModel
+                {
+                    NodeId = 3,
+                    Name = "dsfsd",
+                    Mode = NodeStatus.ModeKind.Operational,
+                    Health = NodeStatus.HealthKind.Ok,
+                    Uptime = TimeSpan.FromMilliseconds(32422),
+                    VSSC = 34,
+                },
+            };
+
+            IsBusy = false;
         }
 
         void MenuItem_File_Exit_Click(object sender, RoutedEventArgs e)

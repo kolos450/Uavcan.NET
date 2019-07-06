@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MahApps.Metro.Controls;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace CanardApp
     /// <summary>
     /// Interaction logic for ToolWindow.xaml
     /// </summary>
-    public partial class ToolWindow : Window
+    public partial class ToolWindow : MetroWindow
     {
         public ToolWindow(UIElement element)
         {

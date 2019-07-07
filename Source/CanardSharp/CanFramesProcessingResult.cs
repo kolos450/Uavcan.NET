@@ -8,13 +8,13 @@ namespace CanardSharp
 {
     public readonly struct CanFramesProcessingResult
     {
-        public CanFramesProcessingResult(CanardRxTransfer transfer, IEnumerable<CanFrame> sourceFrames)
+        public CanFramesProcessingResult(CanardRxTransfer transfer, IReadOnlyList<CanFrame> sourceFrames)
         {
             Transfer = transfer;
             SourceFrames = sourceFrames;
         }
 
         public readonly CanardRxTransfer Transfer;
-        public readonly IEnumerable<CanFrame> SourceFrames;
+        public readonly IReadOnlyList<CanFrame> SourceFrames;
     }
 }

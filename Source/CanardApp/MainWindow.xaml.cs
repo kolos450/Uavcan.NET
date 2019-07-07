@@ -31,6 +31,8 @@ namespace CanardApp
 
         OnlineNodesTool _onlineNodesTool;
 
+        List<IDisposable> _disposables = new List<IDisposable>();
+
         [ImportingConstructor]
         public MainWindow(
             [ImportMany] IEnumerable<ICanardToolProvider> tools)
@@ -66,6 +68,11 @@ namespace CanardApp
                 var toolWindow = new ToolWindow(uiElement);
                 toolWindow.Title = tool.ToolTitle;
                 toolWindow.Show();
+
+                if (toolWindow is IDisposable disposable)
+                {
+                    _disposables.Add(disposable);
+                }
             }
         }
 
@@ -106,6 +113,15 @@ namespace CanardApp
             {
                 _onlineNodesTool.Dispose();
                 _onlineNodesTool = null;
+            }
+
+            if (_disposables != null)
+            {
+                foreach (var disposable in _disposables)
+                {
+                    disposable.Dispose();
+                }
+                _disposables = null;
             }
         }
     }

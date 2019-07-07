@@ -28,6 +28,7 @@ namespace CanardSharp
 
         public IUavcanTypeResolver TypeResolver => _typeResolver;
         public DsdlSerializer Serializer => _serializer;
+        public ICanDriver CanDriver => _canDriver;
 
         public CanardInstance(ICanDriver canDriver, IUavcanTypeResolver typeResolver)
         {

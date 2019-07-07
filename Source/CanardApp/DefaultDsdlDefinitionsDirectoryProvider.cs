@@ -22,7 +22,8 @@ namespace CanardApp
                     var dsdlDefinitionsPath = Path.Combine(rootPath, "DsdlDefinitions");
                     if (Directory.Exists(dsdlDefinitionsPath))
                     {
-                        yield return dsdlDefinitionsPath;
+                        foreach (var dir in Directory.EnumerateDirectories(dsdlDefinitionsPath))
+                            yield return dir;
                         yield break;
                     }
 

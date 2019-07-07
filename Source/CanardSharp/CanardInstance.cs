@@ -65,6 +65,8 @@ namespace CanardSharp
 
         byte _nodeId = CanardConstants.BroadcastNodeId;
 
+        public event EventHandler NodeIDChanged;
+
         /// <summary>
         /// Node ID of the local node.
         /// </summary>
@@ -78,13 +80,13 @@ namespace CanardSharp
 
             set
             {
-                if (_nodeId != CanardConstants.BroadcastNodeId)
-                    throw new InvalidOperationException("Node ID can be assigned only once.");
-
                 if ((value < CanardConstants.MinNodeId) || (value > CanardConstants.MaxNodeId))
                     throw new ArgumentOutOfRangeException(nameof(value));
 
+                bool changed = _nodeId != value;
                 _nodeId = value;
+                if (changed)
+                    NodeIDChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -203,7 +205,7 @@ namespace CanardSharp
                 (dataTypeId & 0xFFFF);
         }
 
-        Dictionary<int, byte> _transferIdRegistry = new Dictionary<int, byte>();
+        ConcurrentDictionary<int, byte> _transferIdRegistry = new ConcurrentDictionary<int, byte>();
 
         public event EventHandler<TransferReceivedArgs> MessageReceived;
         public event EventHandler<TransferReceivedArgs> RequestReceived;
@@ -232,11 +234,11 @@ namespace CanardSharp
                     NodeID,
                     0);
 
-                var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
+                byte transferId = GetNextTransferId(transferDescriptor);
 
                 var frames = CanFramesGenerator.Broadcast(valueType.GetDataTypeSignature().Value,
                     valueType.Meta.DefaultDTID.Value,
-                    transferId,
+                    (byte)(transferId - 1),
                     NodeID,
                     priority,
                     buffer,
@@ -244,8 +246,6 @@ namespace CanardSharp
                     payloadLen);
 
                 SendFrames(frames);
-
-                _transferIdRegistry[transferDescriptor] = ++transferId;
             }
             finally
             {
@@ -282,7 +282,8 @@ namespace CanardSharp
                     NodeID,
                     destinationNodeId);
 
-                var transferId = _transferIdRegistry.GetOrAdd(transferDescriptor, default);
+                byte transferId = GetNextTransferId(transferDescriptor);
+
                 var frames = CanFramesGenerator.RequestOrRespond(destinationNodeId,
                         valueType.GetDataTypeSignature().Value,
                         valueType.Meta.DefaultDTID.Value,
@@ -295,8 +296,6 @@ namespace CanardSharp
                         payloadLen);
 
                 SendFrames(frames);
-
-                _transferIdRegistry[transferDescriptor] = (byte)(transferId + 1);
 
                 ticket = new ResponseTicket();
                 var responseTickedId = transferDescriptor | (transferId << 32);
@@ -312,6 +311,11 @@ namespace CanardSharp
             }
 
             return ticket.WaitForResponse(ct);
+        }
+
+        private byte GetNextTransferId(int transferDescriptor)
+        {
+            return (byte)(_transferIdRegistry.AddOrUpdate(transferDescriptor, 1, (_, id) => (byte)(id + 1)) - 1);
         }
 
         void SendFrames(IEnumerable<CanFrame> frames)

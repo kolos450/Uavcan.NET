@@ -79,6 +79,7 @@
     <Compile Include="DataTypes\Protocol\RestartNode.cs" />
     <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
     <Compile Include="DataTypes\Timestamp.cs" />
+    <Compile Include="DsdlSerializerExtensions.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToTextConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToHexConverter.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Tools\BusMonitor\Presentation\Converters\TransferIdToBrushConverter.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\FrameDirection.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\FrameModel.cs" />
+    <Compile Include="Tools\OnlineNodesTool.cs" />
     <Compile Include="ToolWindow.xaml.cs">
       <DependentUpon>ToolWindow.xaml</DependentUpon>
     </Compile>

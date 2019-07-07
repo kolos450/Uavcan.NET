@@ -9,7 +9,7 @@ using System.Windows.Media;
 
 namespace CanardApp.Tools.BusMonitor.Presentation
 {
-    class FrameModel
+    sealed class FrameModel
     {
         public FrameDirection Direction { get; set; }
         public DateTime Time { get; set; }

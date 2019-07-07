@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CanardSharp;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,6 @@ namespace CanardApp.Tools
     {
         string ToolTitle { get; }
 
-        UIElement GetUIElement();
+        UIElement CreateUIElement(CanardInstance canardInstance);
     }
 }

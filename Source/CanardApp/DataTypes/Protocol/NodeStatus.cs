@@ -99,7 +99,7 @@ namespace CanardApp.DataTypes.Protocol
         /// Current mode.
         /// </summary>
         [DataMember(Name = "mode")]
-        public byte Mode { get; set; }
+        public ModeKind Mode { get; set; }
 
         /// <summary>
         /// Not used currently, keep zero when publishing, ignore when receiving.

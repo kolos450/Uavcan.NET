@@ -25,8 +25,12 @@ namespace CanardApp
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     [Export]
-    public partial class MainWindow : MetroWindow
+    public partial class MainWindow : MetroWindow, IDisposable
     {
+        CanardInstance _canardInstance;
+
+        OnlineNodesTool _onlineNodesTool;
+
         [ImportingConstructor]
         public MainWindow(
             [ImportMany] IEnumerable<ICanardToolProvider> tools)
@@ -56,7 +60,7 @@ namespace CanardApp
 
         void RunTool(ICanardToolProvider tool)
         {
-            var uiElement = tool.GetUIElement();
+            var uiElement = tool.CreateUIElement(_canardInstance);
             if (uiElement != null)
             {
                 var toolWindow = new ToolWindow(uiElement);
@@ -67,50 +71,16 @@ namespace CanardApp
 
         public void Initialize(CanardInstance canardInstance)
         {
-            dgNodes.ItemsSource = new OnlineNodeModel[]
-            {
-                new OnlineNodeModel
-                {
-                    NodeId = 3,
-                    Name = "dsfsd",
-                    Mode = NodeStatus.ModeKind.Operational,
-                    Health = NodeStatus.HealthKind.Ok,
-                    Uptime = TimeSpan.FromMilliseconds(32422),
-                    VSSC = 34,
-                }
-                ,new OnlineNodeModel
-                {
-                    NodeId = 3,
-                    Name = "dsfsd",
-                    Mode = NodeStatus.ModeKind.Operational,
-                    Health = NodeStatus.HealthKind.Ok,
-                    Uptime = TimeSpan.FromMilliseconds(32422),
-                    VSSC = 34,
-                }
-                ,new OnlineNodeModel
-                {
-                    NodeId = 3,
-                    Name = "dsfsd",
-                    Mode = NodeStatus.ModeKind.Operational,
-                    Health = NodeStatus.HealthKind.Ok,
-                    Uptime = TimeSpan.FromMilliseconds(32422),
-                    VSSC = 34,
-                },
-            };
+            _canardInstance = canardInstance;
 
-            dgDebug.ItemsSource = new DebugMessageModel[]
-            {
-                new DebugMessageModel
-                {
-                    NodeId=1,
-                    Level = DataTypes.Protocol.Debug.LogLevel.ValueKind.Info,
-                    Source = "dsf",
-                    Text = "dfsdf",
-                    Time = DateTime.Now,
-                }
-            };
+            InitializeWndTools();
 
             IsBusy = false;
+        }
+
+        void InitializeWndTools()
+        {
+            _onlineNodesTool = new OnlineNodesTool(_canardInstance);
         }
 
         void MenuItem_File_Exit_Click(object sender, RoutedEventArgs e)
@@ -122,6 +92,21 @@ namespace CanardApp
         {
             var aboutBox = new AboutBox();
             aboutBox.ShowDialog(new WpfWindowWrapper(this));
+        }
+
+        void ApplyNodeIdButton_Click(object sender, RoutedEventArgs e)
+        {
+            var nodeId = (byte)nudNodeId.Value;
+            _canardInstance.NodeID = nodeId;
+        }
+
+        public void Dispose()
+        {
+            if (_onlineNodesTool != null)
+            {
+                _onlineNodesTool.Dispose();
+                _onlineNodesTool = null;
+            }
         }
     }
 }

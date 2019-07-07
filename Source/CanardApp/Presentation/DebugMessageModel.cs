@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CanardApp.Presentation
 {
-    class DebugMessageModel
+    sealed class DebugMessageModel
     {
         public int NodeId { get; set; }
         public DateTime Time { get; set; }

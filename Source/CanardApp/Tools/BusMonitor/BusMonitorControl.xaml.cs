@@ -23,8 +23,12 @@ namespace CanardApp.Tools.BusMonitor
     /// </summary>
     public partial class BusMonitorControl : UserControl
     {
-        public BusMonitorControl()
+        CanardInstance _canardInstance;
+
+        public BusMonitorControl(CanardInstance canardInstance)
         {
+            _canardInstance = canardInstance;
+
             InitializeComponent();
 
             dgFrames.ItemsSource = new FrameModel[]

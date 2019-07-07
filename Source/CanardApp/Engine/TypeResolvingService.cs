@@ -49,6 +49,8 @@ namespace CanardApp.Engine
 
         public IUavcanType TryResolveType(string ns, string typeName)
         {
+            EnsureInitialized();
+
             foreach (var resolver in _resolvers)
             {
                 var result = resolver.TryResolveType(ns, typeName);
@@ -61,6 +63,8 @@ namespace CanardApp.Engine
 
         public IUavcanType TryResolveType(int dataTypeId)
         {
+            EnsureInitialized();
+
             foreach (var resolver in _resolvers)
             {
                 var result = resolver.TryResolveType(dataTypeId);

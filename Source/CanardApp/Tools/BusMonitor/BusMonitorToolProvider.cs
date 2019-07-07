@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CanardSharp;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -13,9 +14,9 @@ namespace CanardApp.Tools.BusMonitor
     {
         public string ToolTitle => "Bus monitor";
 
-        public UIElement GetUIElement()
+        public UIElement CreateUIElement(CanardInstance canardInstance)
         {
-            return new BusMonitorControl();
+            return new BusMonitorControl(canardInstance);
         }
     }
 }

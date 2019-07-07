@@ -33,7 +33,6 @@ namespace CanardApp
 
         void CanardApp_Startup(object sender, StartupEventArgs e)
         {
-
             var connectionSettings = GetConnectionSettings();
             if (connectionSettings == null)
                 Shutdown();
@@ -58,9 +57,8 @@ namespace CanardApp
         void SetupThemes()
         {
             var resDictionary = new ResourceDictionary();
-
             resDictionary.Source = new Uri("Style.xaml", UriKind.Relative);
-            Current.Resources.MergedDictionaries.Add(resDictionary);
+            Resources.MergedDictionaries.Add(resDictionary);
         }
 
         static ConnectionSettings GetConnectionSettings()
@@ -78,6 +76,11 @@ namespace CanardApp
 
         public void Dispose()
         {
+            if (MainWindow is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
             if (_CanardInstance != null)
             {
                 _CanardInstance.Dispose();

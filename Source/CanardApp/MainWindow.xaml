@@ -35,10 +35,10 @@
                     <GroupBox DockPanel.Dock="Top" Header="Local node properties">
                         <WrapPanel>
                             <Label>Node ID:</Label>
-                            <Controls:NumericUpDown Grid.Column="1" Value="127" Maximum="127" Width="30" MinWidth="20"
-                                                HideUpDownButtons="True" HasDecimals="False" Interval="1" />
+                            <Controls:NumericUpDown Grid.Column="1" Value="127" Maximum="127" Width="30" MinWidth="20" Minimum="1"
+                                                HideUpDownButtons="True" HasDecimals="False" Interval="1" Name="nudNodeId" />
 
-                            <Button>Ok</Button>
+                            <Button Click="ApplyNodeIdButton_Click">Apply</Button>
                         </WrapPanel>
                     </GroupBox>
                     <GroupBox DockPanel.Dock="Top" Header="Online nodes">
@@ -125,7 +125,7 @@
             </Grid>
         </DockPanel>
 
-        <Border Background="#50000000" Name="bBusyIndicator">
+        <Border Background="#50000000" Name="bBusyIndicator" d:IsHidden="True">
             <Controls:ProgressRing IsActive="True" Foreground="{DynamicResource AccentColorBrush}" />
         </Border>
     </Grid>

@@ -80,10 +80,22 @@
     <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
     <Compile Include="DataTypes\Timestamp.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Presentation\Converters\ByteArrayToTextConverter.cs" />
+    <Compile Include="Presentation\Converters\ByteArrayToHexConverter.cs" />
+    <Compile Include="Presentation\Converters\IsNullConverter.cs" />
+    <Compile Include="Presentation\DebugMessageModel.cs" />
     <Compile Include="Presentation\OnlineNodeModel.cs" />
     <Compile Include="Tools\BusMonitor\BusMonitorControl.xaml.cs">
       <DependentUpon>BusMonitorControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\BusMonitor\Presentation\BindingProxy.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\Converters\CanIdToBrushConverter.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\Converters\ColorUtils.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\Converters\DataTypeToBrushConverter.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\Converters\NodeIdToBrushConverter.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\Converters\TransferIdToBrushConverter.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\FrameDirection.cs" />
+    <Compile Include="Tools\BusMonitor\Presentation\FrameModel.cs" />
     <Compile Include="ToolWindow.xaml.cs">
       <DependentUpon>ToolWindow.xaml</DependentUpon>
     </Compile>
@@ -186,5 +198,6 @@
       <Version>4.5.0</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

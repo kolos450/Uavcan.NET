@@ -6,6 +6,7 @@
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:local="clr-namespace:CanardApp"
         mc:Ignorable="d"
+        GlowBrush="{DynamicResource AccentColorBrush}"
         Title="Connection Setup" Width="240" SizeToContent="Height"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen">

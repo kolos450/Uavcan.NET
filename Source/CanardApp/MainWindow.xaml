@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:local="clr-namespace:CanardApp"
-        xmlns:conv="clr-namespace:CanardApp.Presentation.Converters"
+        GlowBrush="{DynamicResource AccentColorBrush}"
         mc:Ignorable="d"
         Title="CanardApp" Height="450" Width="800">
     <Grid>
@@ -49,7 +49,19 @@
                                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
                                 <DataGridTextColumn Header="Mode" Binding="{Binding Mode}" />
                                 <DataGridTextColumn Header="Health" Binding="{Binding Health}" />
-                                <DataGridTextColumn Header="Uptime" Binding="{Binding Uptime}" />
+                                <DataGridTemplateColumn Header="Uptime">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Uptime, StringFormat=\{0:d\\.hh\\:mm\\:ss\}}">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip>
+                                                        <TextBlock Text="{Binding Path=Uptime, StringFormat=\{0\}}" />
+                                                    </ToolTip>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="VSSC" Binding="{Binding VSSC}" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -89,8 +101,20 @@
 
                         <DataGrid Name="dgDebug" AutoGenerateColumns="False" EnableRowVirtualization="True" IsReadOnly="True">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Node" Binding="{Binding Node}" />
-                                <DataGridTextColumn Header="Time" Binding="{Binding Time}" />
+                                <DataGridTextColumn Header="Node" Binding="{Binding NodeId}" />
+                                <DataGridTemplateColumn Header="Time">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Time, StringFormat=\{0:HH:mm:ss\}}">
+                                                <TextBlock.ToolTip>
+                                                    <ToolTip>
+                                                        <TextBlock Text="{Binding Path=Time, StringFormat=\{0:dd.MM.yy HH:mm:ss.ffff\}}" />
+                                                    </ToolTip>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="Level" Binding="{Binding Level}" />
                                 <DataGridTextColumn Header="Source" Binding="{Binding Source}" />
                                 <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />

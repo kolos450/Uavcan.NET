@@ -98,6 +98,18 @@ namespace CanardApp
                 },
             };
 
+            dgDebug.ItemsSource = new DebugMessageModel[]
+            {
+                new DebugMessageModel
+                {
+                    NodeId=1,
+                    Level = DataTypes.Protocol.Debug.LogLevel.ValueKind.Info,
+                    Source = "dsf",
+                    Text = "dfsdf",
+                    Time = DateTime.Now,
+                }
+            };
+
             IsBusy = false;
         }
 

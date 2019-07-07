@@ -32,5 +32,13 @@ namespace CanardSharp.Dsdl.DataTypes
         {
             return SignatureUtilities.GetDataTypeSignature(GetNormalizedLayout(), Request.Fields.Concat(Response.Fields));
         }
+
+        public override string ToString()
+        {
+            var meta = Meta;
+            if (meta == null)
+                return "<?>";
+            return meta.FullName;
+        }
     }
 }

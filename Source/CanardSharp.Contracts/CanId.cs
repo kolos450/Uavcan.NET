@@ -62,5 +62,10 @@ namespace CanardSharp
              */
             return self_clean_id.CompareTo(other_clean_id);
         }
+
+        public override string ToString()
+        {
+            return Value.ToString();
+        }
     }
 }

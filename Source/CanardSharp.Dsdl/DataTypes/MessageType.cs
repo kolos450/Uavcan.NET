@@ -44,5 +44,13 @@ namespace CanardSharp.Dsdl.DataTypes
         public override DsdlField TryGetField(string fieldName) => _underlyingCompoundType.TryGetField(fieldName);
 
         internal CompositeDsdlTypeBase UnderlyingCompositeDsdlType => _underlyingCompoundType;
+
+        public override string ToString()
+        {
+            var meta = Meta;
+            if (meta == null)
+                return "<?>";
+            return meta.FullName;
+        }
     }
 }

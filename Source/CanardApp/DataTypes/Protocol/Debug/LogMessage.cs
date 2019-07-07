@@ -15,9 +15,11 @@ namespace CanardApp.DataTypes.Protocol.Debug
     {
         [DataMember(Name = "level")]
         public LogLevel Level { get; set; }
+
         [DataMember(Name = "source")]
-        public byte[] Source { get; set; }
+        public string Source { get; set; }
+
         [DataMember(Name = "text")]
-        public byte[] Text { get; set; }
+        public string Text { get; set; }
     }
 }

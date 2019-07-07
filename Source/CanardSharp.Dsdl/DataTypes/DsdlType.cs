@@ -2,8 +2,6 @@
 {
     public abstract class DsdlType
     {
-        //public string FullName { get; set; }
-
         public abstract ulong? GetDataTypeSignature();
 
         public abstract string GetNormalizedMemberDefinition();

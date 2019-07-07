@@ -4,6 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:CanardApp.Tools.BusMonitor"
+             xmlns:conv="clr-namespace:CanardApp.Presentation.Converters"
+             xmlns:diag="clr-namespace:System.Diagnostics;assembly=WindowsBase"
+             xmlns:tconv="clr-namespace:CanardApp.Tools.BusMonitor.Presentation.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <DockPanel>
@@ -25,19 +28,28 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="200" />
                     </Grid.ColumnDefinitions>
-                    <WrapPanel Grid.Column="0">
+                    <WrapPanel DockPanel.Dock="Top">
                         <WrapPanel.Resources>
-                            <Style TargetType="{x:Type ButtonBase}">
+                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                                <Setter Property="Margin" Value="3,3" />
+                                <Setter Property="Padding" Value="2,2" />
+                                <Setter Property="Width" Value="25" />
+                                <Setter Property="Height" Value="25" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource GrayBrush5}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
                                 <Setter Property="Margin" Value="3,3" />
                                 <Setter Property="Padding" Value="2,2" />
                                 <Setter Property="Width" Value="25" />
                                 <Setter Property="Height" Value="25" />
                             </Style>
-                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource {x:Type ButtonBase}}" />
-                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type ButtonBase}}" />
                         </WrapPanel.Resources>
 
-                        <ToggleButton>&#x1F3A5;</ToggleButton>
+                        <ToggleButton IsChecked="True">&#x1F3A5;</ToggleButton>
                         <Button>&#10074;&#10074;</Button>
                         <Button>&#x1F5D1;</Button>
                         <Button>&#x1F50D;</Button>
@@ -48,16 +60,74 @@
                 </Grid>
             </StackPanel>
 
-            <DataGrid Name="dgFrames" AutoGenerateColumns="False" Grid.Row="1" EnableRowVirtualization="True">
+            <DataGrid Name="dgFrames" AutoGenerateColumns="False" Grid.Row="1" EnableRowVirtualization="True"
+                      IsReadOnly="True">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource MetroDataGridRow}">
+                        <Setter Property="FontFamily" Value="Consolas,Courier New" />
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Resources>
+                    <conv:ByteArrayToHexConverter x:Key="ByteArrayToHexConverter" />
+                    <conv:ByteArrayToTextConverter x:Key="ByteArrayToTextConverter" />
+                    <conv:IsNullConverter x:Key="IsNullConverter" />
+                    <tconv:CanIdToBrushConverter x:Key="CanIdToBrushConverter" />
+                    <tconv:NodeIdToBrushConverter x:Key="NodeIdToBrushConverter" />
+                    <tconv:TransferIdToBrushConverter x:Key="TransferIdToBrushConverter" />
+                    <tconv:DataTypeToBrushConverter x:Key="DataTypeToBrushConverter" />
+                    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource MetroTextBlock}" x:Key="RightCell">
+                        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                        <Setter Property="TextAlignment" Value="Right"/>
+                        <Setter Property="Padding" Value="0,0,3,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DataCell">
+                        <Setter Property="Background" Value="{Binding Path=., Converter={StaticResource TransferIdToBrushConverter}}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="SrcNodeIdCell">
+                        <Setter Property="Background" Value="{Binding SourceNodeId, Converter={StaticResource NodeIdToBrushConverter}}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DstNodeIdCell">
+                        <Setter Property="Background" Value="{Binding DestinationNodeId, Converter={StaticResource NodeIdToBrushConverter}}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="CanIdCell">
+                        <Setter Property="Background" Value="{Binding CanId, Converter={StaticResource CanIdToBrushConverter}}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DataTypeCell">
+                        <Setter Property="Background" Value="{Binding DataType, Converter={StaticResource DataTypeToBrushConverter}}"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                    </Style>
+                </DataGrid.Resources>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Dir" Binding="{Binding Dir}" />
-                    <DataGridTextColumn Header="Time" Binding="{Binding Time}" />
-                    <DataGridTextColumn Header="CAN ID" Binding="{Binding CanId}" />
-                    <DataGridTextColumn Header="Hex" Binding="{Binding Hex}" />
-                    <DataGridTextColumn Header="Text" Binding="{Binding Text}" />
-                    <DataGridTextColumn Header="Src" Binding="{Binding SourceNodeId}" />
-                    <DataGridTextColumn Header="Dst" Binding="{Binding DestinationNodeId}" />
-                    <DataGridTextColumn Header="Data Type" Binding="{Binding DataTypeFullName}" Width="*" />
+                    <DataGridTextColumn Header="Dir" Binding="{Binding Direction}" />
+                    <DataGridTemplateColumn Header="Time">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Time, StringFormat=\{0:HH:mm:ss.ffff\}}">
+                                    <TextBlock.ToolTip>
+                                        <ToolTip>
+                                            <TextBlock Text="{Binding Path=Time, StringFormat=\{0:dd.MM.yy HH:mm:ss.ffff\}}" />
+                                        </ToolTip>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="CAN ID" Binding="{Binding CanId}" ElementStyle="{StaticResource RightCell}" 
+                                        CellStyle="{StaticResource CanIdCell}"/>
+                    <DataGridTextColumn Header="Hex" Binding="{Binding Data, Converter={StaticResource ByteArrayToHexConverter}}"
+                                        CellStyle="{StaticResource DataCell}"/>
+                    <DataGridTextColumn Header="Text" Binding="{Binding Data, Converter={StaticResource ByteArrayToTextConverter}}"
+                                        CellStyle="{StaticResource DataCell}"/>
+                    <DataGridTextColumn Header="Src" Binding="{Binding SourceNodeId}" ElementStyle="{StaticResource RightCell}"
+                                        CellStyle="{StaticResource SrcNodeIdCell}"/>
+                    <DataGridTextColumn Header="Dst" Binding="{Binding DestinationNodeId}" ElementStyle="{StaticResource RightCell}"
+                                        CellStyle="{StaticResource DstNodeIdCell}"/>
+                    <DataGridTextColumn Header="Data Type" Binding="{Binding DataType}" Width="*"
+                                        CellStyle="{StaticResource DataTypeCell}"/>
                 </DataGrid.Columns>
             </DataGrid>
 

@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CanardSharp.Dsdl.Testing
+namespace CanardSharp.Testing.Framework
 {
-    static class Hex
+    public static class Hex
     {
         public static byte[] Decode(string hex)
         {

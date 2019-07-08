@@ -18,9 +18,9 @@ namespace CanardApp.Engine
                 throw new InvalidOperationException($"Cannot resolve type '{ns}.{typeName}'.");
         }
 
-        public IUavcanType ResolveType(int dataTypeId)
+        public IUavcanType ResolveType(int dataTypeId, UavcanTypeKind typeKind)
         {
-            return TryResolveType(dataTypeId) ??
+            return TryResolveType(dataTypeId, typeKind) ??
                 throw new InvalidOperationException($"Cannot resolve type with ID = {dataTypeId}.");
         }
 
@@ -64,13 +64,13 @@ namespace CanardApp.Engine
             return null;
         }
 
-        public IUavcanType TryResolveType(int dataTypeId)
+        public IUavcanType TryResolveType(int dataTypeId, UavcanTypeKind typeKind)
         {
             EnsureInitialized();
 
             foreach (var resolver in _resolvers)
             {
-                var result = resolver.TryResolveType(dataTypeId);
+                var result = resolver.TryResolveType(dataTypeId, typeKind);
                 if (result != null)
                     return result;
             }

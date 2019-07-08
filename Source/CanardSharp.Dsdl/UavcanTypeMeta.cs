@@ -2,7 +2,7 @@
 
 namespace CanardSharp.Dsdl
 {
-    public class UavcanTypeMeta
+    public class UavcanTypeMeta : IUavcanTypeFullName
     {
         public string Namespace { get; set; }
         public string Name { get; set; }

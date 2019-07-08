@@ -45,6 +45,8 @@ namespace CanardSharp.Dsdl.DataTypes
 
         internal CompositeDsdlTypeBase UnderlyingCompositeDsdlType => _underlyingCompoundType;
 
+        public UavcanTypeKind Kind => UavcanTypeKind.Message;
+
         public override string ToString()
         {
             var meta = Meta;

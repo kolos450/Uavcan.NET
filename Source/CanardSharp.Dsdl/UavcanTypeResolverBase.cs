@@ -51,21 +51,24 @@ namespace CanardSharp.Dsdl
             return type;
         }
 
-        public IUavcanType ResolveType(int dtid)
+        public IUavcanType ResolveType(int dtid, UavcanTypeKind kind)
         {
-            return TryResolveType(dtid) ??
+            return TryResolveType(dtid, kind) ??
                  throw new Exception($"Type definition not found, ID = {dtid}.");
         }
 
-        public IUavcanType TryResolveType(int dtid)
+        public IUavcanType TryResolveType(int dtid, UavcanTypeKind kind)
         {
-            var name = TryResolveTypeName(dtid);
-            if (name == default)
-                return null;
-            return TryResolveType(name.Namespace, name.Name);
+            foreach (var fullName in ResolveTypeNames(dtid))
+            {
+                var type = TryResolveType(fullName.Namespace, fullName.Name);
+                if (type.Kind == kind)
+                    return type;
+            }
+            return null;
         }
 
         protected abstract IUavcanType TryResolveTypeCore(string ns, string typeName);
-        protected abstract (string Namespace, string Name) TryResolveTypeName(int dataTypeId);
+        protected abstract IEnumerable<IUavcanTypeFullName> ResolveTypeNames(int dataTypeId);
     }
 }

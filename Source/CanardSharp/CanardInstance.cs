@@ -34,17 +34,29 @@ namespace CanardSharp
         {
             _typeResolver = typeResolver;
             _serializer = new DsdlSerializer(typeResolver);
-            _framesProcessor = new CanFramesProcessor(CanardShouldAcceptTransfer);
+            _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
 
             _canDriver = canDriver;
 
             _canDriver.MessageReceived += CanDriver_MessageReceived;
         }
 
+        public event UnhandledExceptionEventHandler ErrorOccurred;
+
         void CanDriver_MessageReceived(object sender, CanMessageEventArgs e)
         {
             var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
-            var transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs).Transfer;
+            CanardRxTransfer transfer;
+            try
+            {
+                transfer = _framesProcessor.HandleRxFrame(e.Message, nowUs).Transfer;
+            }
+            catch (CanFramesProcessingException ex)
+            {
+                ErrorOccurred?.Invoke(this, new UnhandledExceptionEventArgs(ex, false));
+                return;
+            }
+
             if (transfer == null)
                 return;
 
@@ -121,7 +133,10 @@ namespace CanardSharp
 
         TransferReceivedArgs CreateTransferReceivedArgs(CanardRxTransfer transfer)
         {
-            var uavcanType = _typeResolver.TryResolveType((int)transfer.DataTypeId);
+            var typeKind = transfer.TransferType == CanardTransferType.CanardTransferTypeBroadcast ?
+                UavcanTypeKind.Message :
+                UavcanTypeKind.Service;
+            var uavcanType = _typeResolver.TryResolveType((int)transfer.DataTypeId, typeKind);
             if (uavcanType == null)
                 throw new InvalidOperationException($"Cannot resolve uavcan type with id = {transfer.DataTypeId}.");
 
@@ -160,14 +175,17 @@ namespace CanardSharp
             }
         }
 
-        bool CanardShouldAcceptTransfer(out ulong dataTypeSignature, uint dataTypeId, CanardTransferType transferType, byte sourceNodeId, byte destinationNodeId)
+        bool ShouldAcceptTransfer(out ulong dataTypeSignature, uint dataTypeId, CanardTransferType transferType, byte sourceNodeId, byte destinationNodeId)
         {
             dataTypeSignature = 0;
 
             if (transferType != CanardTransferType.CanardTransferTypeBroadcast && destinationNodeId != NodeID)
                 return false;
 
-            var type = _typeResolver.TryResolveType((int)dataTypeId);
+            var typeKind = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
+                UavcanTypeKind.Message :
+                UavcanTypeKind.Service;
+            var type = _typeResolver.TryResolveType((int)dataTypeId, typeKind);
             if (type == null)
                 return false;
 

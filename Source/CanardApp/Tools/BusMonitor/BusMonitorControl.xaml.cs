@@ -61,7 +61,10 @@ namespace CanardApp.Tools.BusMonitor
         {
             dataTypeSignature = 0;
 
-            var type = _typeResolver.TryResolveType((int)dataTypeId);
+            var typeKind = transferType == CanardTransferType.CanardTransferTypeBroadcast ?
+                UavcanTypeKind.Message :
+                UavcanTypeKind.Service;
+            var type = _typeResolver.TryResolveType((int)dataTypeId, typeKind);
             if (type == null)
                 return false;
 
@@ -142,7 +145,10 @@ namespace CanardApp.Tools.BusMonitor
 
         void Apply(CanardRxTransfer transfer, FrameModel frame)
         {
-            var type = _typeResolver.TryResolveType((int)transfer.DataTypeId);
+            var typeKind = transfer.TransferType == CanardTransferType.CanardTransferTypeBroadcast ?
+                UavcanTypeKind.Message :
+                UavcanTypeKind.Service;
+            var type = _typeResolver.TryResolveType((int)transfer.DataTypeId, typeKind);
             if (type != null)
             {
                 frame.DataType = type;

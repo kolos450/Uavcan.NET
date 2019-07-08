@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CanardSharp.Dsdl
@@ -136,11 +137,11 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        Dictionary<int, UavcanTypeMeta> _idToMetaLookup;
+        Dictionary<int, List<UavcanTypeMeta>> _idToMetaLookup;
 
         void ExploreTypes()
         {
-            _idToMetaLookup = new Dictionary<int, UavcanTypeMeta>();
+            _idToMetaLookup = new Dictionary<int, List<UavcanTypeMeta>>();
 
             var definitions = Directory.EnumerateFiles(_root, "*." + DsdlExtension, SearchOption.AllDirectories);
             foreach (var path in definitions)
@@ -150,7 +151,12 @@ namespace CanardSharp.Dsdl
                     var meta = ParseMeta(path);
                     if (meta.DefaultDTID != null)
                     {
-                        _idToMetaLookup[meta.DefaultDTID.Value] = meta;
+                        if (!_idToMetaLookup.TryGetValue(meta.DefaultDTID.Value, out var list))
+                        {
+                            list = new List<UavcanTypeMeta>();
+                            _idToMetaLookup[meta.DefaultDTID.Value] = list;
+                        }
+                        list.Add(meta);
                     }
                 }
                 catch
@@ -160,11 +166,11 @@ namespace CanardSharp.Dsdl
             }
         }
 
-        protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
+        protected override IEnumerable<IUavcanTypeFullName> ResolveTypeNames(int dataTypeId)
         {
-            if (!_idToMetaLookup.TryGetValue(dataTypeId, out var meta))
-                return default;
-            return (meta.Namespace, meta.Name);
+            if (!_idToMetaLookup.TryGetValue(dataTypeId, out var metas))
+                return Enumerable.Empty<IUavcanTypeFullName>();
+            return metas;
         }
     }
 }

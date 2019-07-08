@@ -33,6 +33,8 @@ namespace CanardSharp.Dsdl.DataTypes
             return SignatureUtilities.GetDataTypeSignature(GetNormalizedLayout(), Request.Fields.Concat(Response.Fields));
         }
 
+        public UavcanTypeKind Kind => UavcanTypeKind.Service;
+
         public override string ToString()
         {
             var meta = Meta;

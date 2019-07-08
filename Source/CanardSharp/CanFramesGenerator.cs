@@ -36,7 +36,7 @@ namespace CanardSharp
                 throw new ArgumentException(nameof(priority));
 
             uint canId;
-            ushort crc = CRC.InitialValue;
+            ushort crc = Crc16.InitialValue;
 
             if (nodeId == 0)
             {
@@ -53,7 +53,7 @@ namespace CanardSharp
                 }
 
                 // Anonymous transfer, random discriminator.
-                ushort discriminator = (ushort)((CRC.Add(CRC.InitialValue, payload, payloadOffset, payloadLen)) & 0x7FFEU);
+                ushort discriminator = (ushort)((Crc16.Add(Crc16.InitialValue, payload, payloadOffset, payloadLen)) & 0x7FFEU);
                 canId = ((uint)priority << 24) | ((uint)discriminator << 9) |
                          ((uint)(dataTypeId & DTIDMask) << 8) | nodeId;
             }
@@ -63,8 +63,8 @@ namespace CanardSharp
 
                 if (payloadLen > 7)
                 {
-                    crc = CRC.AddSignature(crc, dataTypeSignature);
-                    crc = CRC.Add(crc, payload, payloadOffset, payloadLen);
+                    crc = Crc16.AddSignature(crc, dataTypeSignature);
+                    crc = Crc16.Add(crc, payload, payloadOffset, payloadLen);
                 }
             }
 
@@ -104,12 +104,12 @@ namespace CanardSharp
             uint canId = ((uint)priority << 24) | ((uint)dataTypeId << 16) |
                                     ((uint)kind << 15) | ((uint)destinationNodeId << 8) |
                                     (1U << 7) | nodeId;
-            ushort crc = CRC.InitialValue;
+            ushort crc = Crc16.InitialValue;
 
             if (payloadLen > 7)
             {
-                crc = CRC.AddSignature(crc, dataTypeSignature);
-                crc = CRC.Add(crc, payload, payloadOffset, payloadLen);
+                crc = Crc16.AddSignature(crc, dataTypeSignature);
+                crc = Crc16.Add(crc, payload, payloadOffset, payloadLen);
             }
 
             return CreateTxFrames(canId, transferId, crc, payload, payloadOffset, payloadLen);

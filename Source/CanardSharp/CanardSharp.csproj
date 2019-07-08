@@ -60,7 +60,7 @@
     <Compile Include="CanIdInfo.cs" />
     <Compile Include="CanardConstants.cs" />
     <Compile Include="CollectionExtensions.cs" />
-    <Compile Include="CRC.cs" />
+    <Compile Include="Crc16.cs" />
     <Compile Include="DataTypeDescriptor.cs" />
     <Compile Include="CanardRxTransfer.cs" />
     <Compile Include="LittleEndianBitConverter.cs" />

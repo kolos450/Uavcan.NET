@@ -64,6 +64,7 @@
     <Compile Include="DsdlSerializerWriter.cs" />
     <Compile Include="FileSystemUavcanTypeResolver.cs" />
     <Compile Include="IO\BitStream.cs" />
+    <Compile Include="IUavcanTypeFullName.cs" />
     <Compile Include="IUavcanTypeResolver.cs" />
     <Compile Include="DataTypes\MessageType.cs" />
     <Compile Include="DataTypes\PrimitiveDsdlType.cs" />
@@ -99,6 +100,7 @@
     <Compile Include="TypesInterop\Utilities\ReflectionDelegateFactory.cs" />
     <Compile Include="TypesInterop\Utilities\ReflectionUtils.cs" />
     <Compile Include="TypesInterop\Utilities\TypeExtensions.cs" />
+    <Compile Include="UavcanTypeKind.cs" />
     <Compile Include="UavcanTypeMeta.cs" />
     <Compile Include="DataTypes\VoidDsdlType.cs" />
     <Compile Include="DsdlConstExprEvaluator.cs" />

@@ -35,9 +35,9 @@ namespace CanardSharp.Dsdl.Testing
             }
         }
 
-        protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
+        protected override IEnumerable<IUavcanTypeFullName> ResolveTypeNames(int dataTypeId)
         {
-            return default;
+            yield break;
         }
     }
 }

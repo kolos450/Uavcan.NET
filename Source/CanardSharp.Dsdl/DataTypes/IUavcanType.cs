@@ -8,6 +8,7 @@ namespace CanardSharp.Dsdl.DataTypes
 {
     public interface IUavcanType
     {
+        UavcanTypeKind Kind { get; }
         UavcanTypeMeta Meta { get; }
 
         /// <summary>

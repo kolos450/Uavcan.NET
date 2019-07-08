@@ -32,9 +32,8 @@ namespace CanardSharp
 
         ushort CalculateCrc(byte[] data)
         {
-            var crc = CRC.AddSignature(CRC.InitialValue, DataTypeDescriptor.Signature);
-            CRC.Add(crc, data, 0, data.Length);
-            return crc;
+            var crc = Crc16.AddSignature(Crc16.InitialValue, DataTypeDescriptor.Signature);
+            return Crc16.Add(crc, data, 0, data.Length);
         }
 
         static readonly byte[] _emptyPayload = new byte[0];

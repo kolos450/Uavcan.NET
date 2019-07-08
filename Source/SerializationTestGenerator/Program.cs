@@ -670,9 +670,9 @@ print(''.join('{{:02x}}'.format(x) for x in payload))";
                 }
             }
 
-            protected override (string Namespace, string Name) TryResolveTypeName(int dataTypeId)
+            protected override IEnumerable<IUavcanTypeFullName> ResolveTypeNames(int dataTypeId)
             {
-                return default;
+                yield break;
             }
         }
 

@@ -6,7 +6,18 @@ using System.Threading.Tasks;
 
 namespace CanardSharp
 {
-    static class CRC
+    /// <summary>
+    /// CRC-16-CCITT-FALSE
+    /// </summary>
+    /// <remarks>
+    /// Description: http://reveng.sourceforge.net/crc-catalogue/16.htm#crc.cat.crc-16-ccitt-false
+    /// Initial value: 0xFFFF
+    /// Poly: 0x1021
+    /// Reverse: no
+    /// Output XOR: 0
+    /// Check: 0x29B1
+    /// </remarks>
+    public static class Crc16
     {
         public const ushort InitialValue = (ushort)0xFFFFU;
 

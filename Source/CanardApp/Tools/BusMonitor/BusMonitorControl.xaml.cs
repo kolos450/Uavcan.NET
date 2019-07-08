@@ -5,6 +5,7 @@ using CanardSharp.Drivers;
 using CanardSharp.Dsdl;
 using CanardSharp.Dsdl.DataTypes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -106,8 +107,10 @@ namespace CanardApp.Tools.BusMonitor
             {
                 processorResult = _framesProcessor.HandleRxFrame(frame, nowUs);
             }
-            catch (CanFramesProcessingException)
+            catch (CanFramesProcessingException ex)
             {
+                Apply(ex.SourceFrames, m => m.AccociatedFrameProcessorException = ex);
+
                 return ProcessFramesResult.UpdatedSingle;
             }
 
@@ -118,18 +121,7 @@ namespace CanardApp.Tools.BusMonitor
                 if (processorResult.SourceFrames.Count > 1 &&
                     _framesMap.Count != 0)
                 {
-                    var hashset = new HashSet<CanFrame>(processorResult.SourceFrames);
-                    var node = _framesMap.First;
-                    while (node != null)
-                    {
-                        var next = node.Next;
-                        if (hashset.Contains(node.Value.Frame))
-                        {
-                            _framesMap.Remove(node);
-                            Apply(processorResult.Transfer, node.Value.Model);
-                        }
-                        node = next;
-                    }
+                    Apply(processorResult.SourceFrames, m => Apply(processorResult.Transfer, m));
 
                     return ProcessFramesResult.UpdatedMultiple;
                 }
@@ -143,8 +135,26 @@ namespace CanardApp.Tools.BusMonitor
             }
         }
 
+        void Apply(IEnumerable<CanFrame> frames, Action<FrameModel> action)
+        {
+            var hashset = new HashSet<CanFrame>(frames);
+            var node = _framesMap.First;
+            while (node != null)
+            {
+                var next = node.Next;
+                if (hashset.Contains(node.Value.Frame))
+                {
+                    _framesMap.Remove(node);
+                    action(node.Value.Model);
+                }
+                node = next;
+            }
+        }
+
         void Apply(CanardRxTransfer transfer, FrameModel frame)
         {
+            frame.AssociatedTransfer = transfer;
+
             var typeKind = transfer.TransferType == CanardTransferType.CanardTransferTypeBroadcast ?
                 UavcanTypeKind.Message :
                 UavcanTypeKind.Service;
@@ -339,6 +349,57 @@ namespace CanardApp.Tools.BusMonitor
 
                 _itemsViewSource.View.Refresh();
             };
+        }
+
+        void DgFrames_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selectedModel = dgFrames.SelectedItem as FrameModel;
+            if (selectedModel != null)
+            {
+                var str = GetPayloadString(selectedModel) ?? string.Empty;
+                runObjectView.Text = str;
+            }
+        }
+
+        string GetPayloadString(FrameModel model)
+        {
+            var exception = model.AccociatedFrameProcessorException;
+            if (exception != null)
+                return exception.ToString();
+
+            var transfer = model.AssociatedTransfer;
+            if (transfer == null)
+                return null;
+
+            DsdlType scheme;
+            switch (transfer.TransferType)
+            {
+                case CanardTransferType.CanardTransferTypeBroadcast:
+                    scheme = model.DataType as MessageType;
+                    break;
+                case CanardTransferType.CanardTransferTypeRequest:
+                    scheme = (model.DataType as ServiceType)?.Request;
+                    break;
+                case CanardTransferType.CanardTransferTypeResponse:
+                    scheme = (model.DataType as ServiceType)?.Response;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+
+            if (scheme == null)
+                return null;
+
+            var bytes = transfer.Payload;
+            var obj = _canardInstance.Serializer.Deserialize(bytes, 0, bytes.Length, scheme);
+            try
+            {
+                return ObjectPrinter.PrintToString(obj, scheme);
+            }
+            catch (Exception ex)
+            {
+                return ex.ToString();
+            }
         }
     }
 }

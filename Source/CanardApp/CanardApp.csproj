@@ -90,6 +90,7 @@
       <DependentUpon>BusMonitorControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tools\BusMonitor\FilterModel.cs" />
+    <Compile Include="Tools\BusMonitor\ObjectPrinter.cs" />
     <Compile Include="Tools\BusMonitor\ObservableStack.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\BindingProxy.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\Converters\CanIdToBrushConverter.cs" />

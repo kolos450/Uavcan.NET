@@ -38,5 +38,7 @@ namespace CanardApp.Tools.BusMonitor.Presentation
         public int? SourceNodeId { get; set; }
         public int? DestinationNodeId { get; set; }
         public object DataType { get => _dataType; set => SetField(ref _dataType, value); }
+        public CanardRxTransfer AssociatedTransfer { get; set; }
+        public Exception AccociatedFrameProcessorException { get; set; }
     }
 }

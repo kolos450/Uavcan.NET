@@ -64,7 +64,7 @@
             </StackPanel>
 
             <DataGrid Name="dgFrames" AutoGenerateColumns="False" Grid.Row="1" EnableRowVirtualization="True"
-                      IsReadOnly="True">
+                      IsReadOnly="True" SelectionMode="Single" SelectionChanged="DgFrames_SelectionChanged">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource MetroDataGridRow}">
                         <Setter Property="FontFamily" Value="Consolas,Courier New" />
@@ -148,7 +148,7 @@
                 <RichTextBox HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <FlowDocument>
                         <Paragraph>
-                            <Run Text="RichTextBox"/>
+                            <Run Name="runObjectView"/>
                         </Paragraph>
                     </FlowDocument>
                 </RichTextBox>

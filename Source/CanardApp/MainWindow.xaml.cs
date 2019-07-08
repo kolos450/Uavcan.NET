@@ -88,6 +88,7 @@ namespace CanardApp
         void InitializeWndTools()
         {
             _onlineNodesTool = new OnlineNodesTool(_canardInstance);
+            dgNodes.ItemsSource = _onlineNodesTool.OnlineNodes;
         }
 
         void MenuItem_File_Exit_Click(object sender, RoutedEventArgs e)

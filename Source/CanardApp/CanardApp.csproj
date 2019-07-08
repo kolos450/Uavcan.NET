@@ -89,6 +89,8 @@
     <Compile Include="Tools\BusMonitor\BusMonitorControl.xaml.cs">
       <DependentUpon>BusMonitorControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\BusMonitor\FilterModel.cs" />
+    <Compile Include="Tools\BusMonitor\ObservableStack.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\BindingProxy.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\Converters\CanIdToBrushConverter.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\Converters\ColorUtils.cs" />
@@ -97,6 +99,9 @@
     <Compile Include="Tools\BusMonitor\Presentation\Converters\TransferIdToBrushConverter.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\FrameDirection.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\FrameModel.cs" />
+    <Compile Include="Tools\BusMonitor\TableFilterControl.xaml.cs">
+      <DependentUpon>TableFilterControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Tools\OnlineNodesTool.cs" />
     <Compile Include="ToolWindow.xaml.cs">
       <DependentUpon>ToolWindow.xaml</DependentUpon>
@@ -132,6 +137,10 @@
     </Compile>
     <Compile Include="MarginSetter.cs" />
     <Compile Include="ShellService.cs" />
+    <Page Include="Tools\BusMonitor\TableFilterControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ToolWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

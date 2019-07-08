@@ -35,8 +35,8 @@ namespace CanardApp.Tools.BusMonitor.Presentation
         public DateTime Time { get; set; }
         public CanId CanId { get; set; }
         public byte[] Data { get; set; }
-        public int SourceNodeId { get; set; }
-        public int DestinationNodeId { get; set; }
+        public int? SourceNodeId { get; set; }
+        public int? DestinationNodeId { get; set; }
         public object DataType { get => _dataType; set => SetField(ref _dataType, value); }
     }
 }

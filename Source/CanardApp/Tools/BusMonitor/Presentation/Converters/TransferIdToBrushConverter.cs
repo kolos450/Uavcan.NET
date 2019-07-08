@@ -15,7 +15,7 @@ namespace CanardApp.Tools.BusMonitor.Presentation.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var model = (FrameModel)value;
-            if (model.Data.Length < 0)
+            if (model.Data.Length <= 0)
                 return null;
 
             // Making a rather haphazard hash using transfer ID and a part of CAN ID

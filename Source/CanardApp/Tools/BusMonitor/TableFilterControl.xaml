@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="CanardApp.Tools.BusMonitor.TableFilterControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:CanardApp.Tools.BusMonitor"
+             mc:Ignorable="d" 
+             d:DesignHeight="32" d:DesignWidth="800"
+             x:ClassModifier="internal">
+    <Grid>
+        <Grid.Resources>
+            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+                <Setter Property="Margin" Value="3,3" />
+                <Setter Property="Padding" Value="2,2" />
+                <Setter Property="Width" Value="25" />
+                <Setter Property="Height" Value="25" />
+            </Style>
+            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                <Setter Property="Margin" Value="3,3" />
+                <Setter Property="Padding" Value="2,2" />
+                <Setter Property="Width" Value="25" />
+                <Setter Property="Height" Value="25" />
+                <Style.Triggers>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource GrayBrush5}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource MetroTextBox}">
+                <Setter Property="Height" Value="25" />
+                <Setter Property="MinHeight" Value="25" />
+                <Setter Property="Margin" Value="3,3" />
+            </Style>
+        </Grid.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Button ToolTip="Remove filter" Grid.Column="0" Click="RemoveButton_Click">&#10005;</Button>
+        <TextBox Grid.Column="1" TextChanged="TextBox_TextChanged"></TextBox>
+        <WrapPanel Grid.Column="2" Orientation="Horizontal">
+            <ToggleButton ToolTip="Apply filter" Click="ApplyButton_Click">&#10003;</ToggleButton>
+            <ToggleButton ToolTip="Negate filter" Click="NegateButton_Click">&#172;</ToggleButton>
+            <ToggleButton ToolTip="Use RegEx" Click="RegexButton_Click">RE</ToggleButton>
+            <ToggleButton ToolTip="Case sensitive" Click="CaseButton_Click">Cc</ToggleButton>
+        </WrapPanel>
+    </Grid>
+</UserControl>

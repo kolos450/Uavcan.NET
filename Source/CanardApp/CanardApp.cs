@@ -35,7 +35,10 @@ namespace CanardApp
         {
             var connectionSettings = GetConnectionSettings();
             if (connectionSettings == null)
+            {
                 Shutdown();
+                return;
+            }
 
             MainWindow.Show();
 

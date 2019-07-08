@@ -35,6 +35,7 @@ namespace CanardApp.Engine
         {
             if (_initialized)
                 return;
+
             lock (_syncRoot)
             {
                 if (_initialized)
@@ -44,6 +45,8 @@ namespace CanardApp.Engine
                     .SelectMany(x => x.Directories)
                     .Select(x => new FileSystemUavcanTypeResolver(x))
                     .ToList();
+
+                _initialized = true;
             }
         }
 

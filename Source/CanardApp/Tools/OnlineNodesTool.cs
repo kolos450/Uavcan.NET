@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace CanardApp.Tools
@@ -51,11 +52,11 @@ namespace CanardApp.Tools
             var request = new GetNodeInfo_Request();
             var response = await _canard.SendServiceRequest(nodeId, request, _getNodeInfoService, ct: _cts.Token).ConfigureAwait(false);
             var data = _canard.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes, 0, response.ContentBytes.Length);
-            Dispatcher.CurrentDispatcher.Invoke((Action)(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (_nodesLookup.TryGetValue(response.SourceNodeId, out var model))
                     UpdateNodeStatus(response.ReceivedTime, data, model);
-            }));
+            });
         }
 
         void ResolveTypes(IUavcanTypeResolver typeResolver)
@@ -95,7 +96,7 @@ namespace CanardApp.Tools
             {
                 var data = _canard.Serializer.Deserialize<NodeStatus>(e.ContentBytes, 0, e.ContentBytes.Length);
 
-                Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
+                Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
                 {
                     OnlineNodeModel model;
 

@@ -8,8 +8,8 @@ namespace CanardSharp
 {
     public readonly struct CanId : IComparable<CanId>
     {
-        const uint CANARD_CAN_EXT_ID_MASK = 0x1FFFFFFFU;
-        const uint CANARD_CAN_STD_ID_MASK = 0x000007FFU;
+        public const uint CanExtendedIdMask = 0x1FFFFFFFU;
+        public const uint CanStandardIdMask = 0x000007FFU;
 
         public readonly uint Value;
 
@@ -25,8 +25,8 @@ namespace CanardSharp
             uint self = Value;
             uint other = value.Value;
 
-            uint self_clean_id = self & CANARD_CAN_EXT_ID_MASK;
-            uint other_clean_id = other & CANARD_CAN_EXT_ID_MASK;
+            uint self_clean_id = self & CanExtendedIdMask;
+            uint other_clean_id = other & CanExtendedIdMask;
 
             /*
              * STD vs EXT - if 11 most significant bits are the same, EXT loses.
@@ -65,7 +65,7 @@ namespace CanardSharp
 
         public override string ToString()
         {
-            return Value.ToString();
+            return Convert.ToString(Value, 16);
         }
     }
 }

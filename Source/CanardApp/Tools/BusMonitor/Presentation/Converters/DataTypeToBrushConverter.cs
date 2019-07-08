@@ -14,6 +14,9 @@ namespace CanardApp.Tools.BusMonitor.Presentation.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            if (value == null)
+                return null;
+
             var dtFullName = value.ToString();
             var colorHash = Encoding.ASCII.GetBytes(dtFullName).Sum(x => x) & 0xF7;
             var (r, g, b) = ColorUtils.Map7BitToColor(colorHash);

@@ -23,7 +23,7 @@ namespace CanardApp.Presentation.Converters
             throw new NotImplementedException();
         }
 
-        static string ToString(byte[] bytes)
+        public static string ToString(byte[] bytes)
         {
             var sb = new StringBuilder();
 

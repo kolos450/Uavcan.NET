@@ -132,8 +132,10 @@ namespace CanardSharp
             // Single frame transfer.
             if (payloadLen < CanardConstants.CanFrameMaxDataLen)
             {
-                var data = new byte[payloadLen];
+                var data = new byte[payloadLen + 1];
                 Buffer.BlockCopy(payload, payloadOffset, data, 0, payloadLen);
+
+                data[data.Length - 1] = (byte)(0xC0U | (transferId & 31));
 
                 yield return new CanFrame(
                     new CanId(canId | (uint)CanIdFlags.EFF),

@@ -24,8 +24,8 @@ namespace CanardSharp.Drivers.Slcan
         /// <param name="msg">Message string</param>
         public static CanFrame Parse(string msg)
         {
-            var rtr = false;
-            uint id = 0;
+            bool rtr;
+            uint id;
             int index = 1;
             char type;
             if (msg.Length > 0) type = msg[0];
@@ -37,18 +37,19 @@ namespace CanardSharp.Drivers.Slcan
                 default:
                 case 't':
                     rtr = type == 'r';
-                    id = Convert.ToUInt32(msg.Substring(index, index + 3), 16);
+                    id = Convert.ToUInt32(msg.Substring(index, 3), 16);
                     index += 3;
                     break;
                 case 'R':
                 case 'T':
                     rtr = type == 'R';
-                    id = Convert.ToUInt32(msg.Substring(index, index + 8), 16);
+                    id = Convert.ToUInt32(msg.Substring(index, 8), 16);
+                    id |= (uint)CanIdFlags.EFF;
                     index += 8;
                     break;
             }
 
-            var length = Convert.ToInt32(msg.Substring(index, index + 1), 16);
+            var length = Convert.ToInt32(msg.Substring(index, 1), 16);
             if (length > 8) length = 8;
             index += 1;
 
@@ -57,9 +58,13 @@ namespace CanardSharp.Drivers.Slcan
             {
                 for (int i = 0; i < length; i++)
                 {
-                    data[i] = Convert.ToByte(msg.Substring(index, index + 2), 16);
+                    data[i] = Convert.ToByte(msg.Substring(index, 2), 16);
                     index += 2;
                 }
+            }
+            else
+            {
+                id |= (uint)CanIdFlags.RTR;
             }
 
             return new CanFrame(id, data, 0, length);
@@ -72,12 +77,8 @@ namespace CanardSharp.Drivers.Slcan
         public static string ToString(CanFrame frame)
         {
             var flags = frame.Id.Flags;
-            var rtr = (flags & CanIdFlags.ERR) != 0;
-            var id = frame.Id.Value;
-
-            if (id > 0x1fffffff)
-                id = 0x1fffffff;
-
+            var rtr = (flags & CanIdFlags.RTR) != 0;
+            var id = frame.Id.Value & CanId.CanExtendedIdMask;
             var extended = id > 0x7ff;
 
             string s;

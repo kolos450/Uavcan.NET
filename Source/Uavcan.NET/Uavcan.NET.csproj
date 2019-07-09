@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{504820BF-A958-4679-B1D5-5B4BA9F340A6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Uavcan.NET</RootNamespace>
+    <AssemblyName>Uavcan.NET</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Versioning\VersionAssemblyInfo.cs">
+      <Link>Properties\VersionAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="UavcanInstance.cs" />
+    <Compile Include="UavcanPriority.cs" />
+    <Compile Include="UavcanRequestResponse.cs" />
+    <Compile Include="UavcanRxState.cs" />
+    <Compile Include="UavcanTransferType.cs" />
+    <Compile Include="CanFrameExtensions.cs" />
+    <Compile Include="CanFrameInfo.cs" />
+    <Compile Include="CanFramesGenerator.cs" />
+    <Compile Include="CanFramesProcessingException.cs" />
+    <Compile Include="CanFramesProcessingResult.cs" />
+    <Compile Include="CanFramesProcessor.cs" />
+    <Compile Include="CanIdInfo.cs" />
+    <Compile Include="UavcanConstants.cs" />
+    <Compile Include="CollectionExtensions.cs" />
+    <Compile Include="Crc16.cs" />
+    <Compile Include="DataTypeDescriptor.cs" />
+    <Compile Include="UavcanRxTransfer.cs" />
+    <Compile Include="LittleEndianBitConverter.cs" />
+    <Compile Include="PortIdRanges.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResponseTicket.cs" />
+    <Compile Include="TransferDescriptor.cs" />
+    <Compile Include="TransferReceivedArgs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Uavcan.NET.Contracts\Uavcan.NET.Contracts.csproj">
+      <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
+      <Name>Uavcan.NET.Contracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Uavcan.NET.Dsdl\Uavcan.NET.Dsdl.csproj">
+      <Project>{46eb0c5d-dfeb-4567-8928-63496ec618a3}</Project>
+      <Name>Uavcan.NET.Dsdl</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Buffers">
+      <Version>4.5.0</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

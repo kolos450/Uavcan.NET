@@ -18,6 +18,6 @@ namespace Uavcan.NET.Studio.DataTypes.Protocol
         public const ushort MaxIntervalMs = 500;
 
         [DataMember(Name = "reason_text")]
-        public byte[] ReasonText { get; set; }
+        public string ReasonText { get; set; }
     }
 }

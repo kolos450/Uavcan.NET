@@ -1,0 +1,69 @@
+﻿<reactiveui:ReactiveUserControl
+        x:Class="Uavcan.NET.Studio.Tools.LogViewer.LogViewerControl"
+        x:TypeArguments="local:LogViewerViewModel"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:reactiveui="http://reactiveui.net"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:local="clr-namespace:Uavcan.NET.Studio.Tools.LogViewer"
+    xmlns:tools="clr-namespace:Uavcan.NET.Studio.Tools"
+    mc:Ignorable="d" 
+        d:DesignHeight="450" d:DesignWidth="800">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top">
+            <WrapPanel>
+                <WrapPanel.Resources>
+                    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                        <Setter Property="Margin" Value="3,3" />
+                        <Setter Property="Padding" Value="2,2" />
+                        <Setter Property="Width" Value="25" />
+                        <Setter Property="Height" Value="25" />
+                        <Style.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource GrayBrush5}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+                        <Setter Property="Margin" Value="3,3" />
+                        <Setter Property="Padding" Value="2,2" />
+                        <Setter Property="Width" Value="25" />
+                        <Setter Property="Height" Value="25" />
+                    </Style>
+                </WrapPanel.Resources>
+
+                <ToggleButton IsChecked="True" ToolTip="Enable or disable">&#x1F3A5;</ToggleButton>
+                <Button ToolTip="Pause">&#10074;&#10074;</Button>
+                <Button ToolTip="Clear">&#x1F5D1;</Button>
+                <Button ToolTip="Search">&#x1F50D;</Button>
+                <Button ToolTip="Add filter" Name="AddFilterButton">&#x25BC;</Button>
+            </WrapPanel>
+            <tools:TableFilterSetControl x:Name="TableFilterSet" />
+        </StackPanel>
+
+
+        <DataGrid Name="dgLogItems" AutoGenerateColumns="False" EnableRowVirtualization="True" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Node" Binding="{Binding NodeId}" />
+                <DataGridTemplateColumn Header="Time">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Time, StringFormat=\{0:HH:mm:ss\}}">
+                                <TextBlock.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock Text="{Binding Path=Time, StringFormat=\{0:dd.MM.yy HH:mm:ss.ffff\}}" />
+                                    </ToolTip>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Level" Binding="{Binding Level}" />
+                <DataGridTextColumn Header="Source" Binding="{Binding Source}" />
+                <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</reactiveui:ReactiveUserControl>

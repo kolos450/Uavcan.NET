@@ -107,9 +107,14 @@
     <Compile Include="Tools\BusMonitor\Presentation\FrameViewModel.cs" />
     <Compile Include="Tools\FilterPredicateBuilder.cs" />
     <Compile Include="Tools\TableFilterViewModel.cs" />
+    <Compile Include="Tools\LogViewer\LogViewerItemViewModel.cs" />
     <Compile Include="Tools\TableFilterControl.xaml.cs">
       <DependentUpon>TableFilterControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\LogViewer\LogViewerControl.xaml.cs">
+      <DependentUpon>LogViewerControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\LogViewer\LogViewerViewModel.cs" />
     <Compile Include="Tools\OnlineNodesTool.cs" />
     <Compile Include="Tools\TableFilterSetControl.xaml.cs">
       <DependentUpon>TableFilterSetControl.xaml</DependentUpon>
@@ -151,6 +156,10 @@
     <Compile Include="MarginSetter.cs" />
     <Compile Include="ShellService.cs" />
     <Page Include="Tools\TableFilterControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tools\LogViewer\LogViewerControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:local="clr-namespace:Uavcan.NET.Studio"
+        xmlns:logviewer="clr-namespace:Uavcan.NET.Studio.Tools.LogViewer"
         GlowBrush="{DynamicResource AccentColorBrush}"
         mc:Ignorable="d"
         Title="Uavcan Studio" Height="450" Width="800">
@@ -70,57 +71,7 @@
                 <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" 
                               Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
                 <GroupBox Grid.Column="2" Header="Log messages">
-                    <DockPanel>
-                        <WrapPanel DockPanel.Dock="Top">
-                            <WrapPanel.Resources>
-                                <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
-                                    <Setter Property="Margin" Value="3,3" />
-                                    <Setter Property="Padding" Value="2,2" />
-                                    <Setter Property="Width" Value="25" />
-                                    <Setter Property="Height" Value="25" />
-                                    <Style.Triggers>
-                                        <Trigger Property="IsChecked" Value="True">
-                                            <Setter Property="Background" Value="{DynamicResource GrayBrush5}" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                                <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
-                                    <Setter Property="Margin" Value="3,3" />
-                                    <Setter Property="Padding" Value="2,2" />
-                                    <Setter Property="Width" Value="25" />
-                                    <Setter Property="Height" Value="25" />
-                                </Style>
-                            </WrapPanel.Resources>
-
-                            <ToggleButton IsChecked="True">&#x1F3A5;</ToggleButton>
-                            <Button>&#10074;&#10074;</Button>
-                            <Button>&#x1F5D1;</Button>
-                            <Button>&#x1F50D;</Button>
-                            <Button>&#x25BC;</Button>
-                        </WrapPanel>
-
-                        <DataGrid Name="dgDebug" AutoGenerateColumns="False" EnableRowVirtualization="True" IsReadOnly="True">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="Node" Binding="{Binding NodeId}" />
-                                <DataGridTemplateColumn Header="Time">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Time, StringFormat=\{0:HH:mm:ss\}}">
-                                                <TextBlock.ToolTip>
-                                                    <ToolTip>
-                                                        <TextBlock Text="{Binding Path=Time, StringFormat=\{0:dd.MM.yy HH:mm:ss.ffff\}}" />
-                                                    </ToolTip>
-                                                </TextBlock.ToolTip>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Level" Binding="{Binding Level}" />
-                                <DataGridTextColumn Header="Source" Binding="{Binding Source}" />
-                                <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                    </DockPanel>
+                    <logviewer:LogViewerControl />
                 </GroupBox>
             </Grid>
         </DockPanel>

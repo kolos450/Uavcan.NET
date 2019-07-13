@@ -83,6 +83,8 @@
     <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
     <Compile Include="DataTypes\Timestamp.cs" />
     <Compile Include="DsdlSerializerExtensions.cs" />
+    <Compile Include="Framework\ExportViewForAttribute.cs" />
+    <Compile Include="MefDependencyResolver.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToTextConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToHexConverter.cs" />
@@ -92,7 +94,7 @@
     <Compile Include="Tools\BusMonitor\BusMonitorControl.xaml.cs">
       <DependentUpon>BusMonitorControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Tools\BusMonitor\FilterModel.cs" />
+    <Compile Include="Tools\BusMonitor\BusMonitorViewModel.cs" />
     <Compile Include="Tools\BusMonitor\ObjectPrinter.cs" />
     <Compile Include="Tools\BusMonitor\ObservableStack.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\BindingProxy.cs" />
@@ -102,14 +104,21 @@
     <Compile Include="Tools\BusMonitor\Presentation\Converters\NodeIdToBrushConverter.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\Converters\TransferIdToBrushConverter.cs" />
     <Compile Include="Tools\BusMonitor\Presentation\FrameDirection.cs" />
-    <Compile Include="Tools\BusMonitor\Presentation\FrameModel.cs" />
-    <Compile Include="Tools\BusMonitor\TableFilterControl.xaml.cs">
+    <Compile Include="Tools\BusMonitor\Presentation\FrameViewModel.cs" />
+    <Compile Include="Tools\FilterPredicateBuilder.cs" />
+    <Compile Include="Tools\TableFilterViewModel.cs" />
+    <Compile Include="Tools\TableFilterControl.xaml.cs">
       <DependentUpon>TableFilterControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tools\OnlineNodesTool.cs" />
+    <Compile Include="Tools\TableFilterSetControl.xaml.cs">
+      <DependentUpon>TableFilterSetControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Tools\TableFilterSetViewModel.cs" />
     <Compile Include="ToolWindow.xaml.cs">
       <DependentUpon>ToolWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UavcanService.cs" />
     <Compile Include="WpfWindowWrapper.cs" />
     <Page Include="ConnectionWindow.xaml">
       <SubType>Designer</SubType>
@@ -141,7 +150,11 @@
     </Compile>
     <Compile Include="MarginSetter.cs" />
     <Compile Include="ShellService.cs" />
-    <Page Include="Tools\BusMonitor\TableFilterControl.xaml">
+    <Page Include="Tools\TableFilterControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tools\TableFilterSetControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -208,6 +221,9 @@
   <ItemGroup>
     <PackageReference Include="MahApps.Metro">
       <Version>1.6.5</Version>
+    </PackageReference>
+    <PackageReference Include="ReactiveUI.WPF">
+      <Version>9.19.3</Version>
     </PackageReference>
     <PackageReference Include="System.Buffers">
       <Version>4.5.0</Version>

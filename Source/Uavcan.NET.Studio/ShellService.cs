@@ -1,4 +1,7 @@
-﻿using System.ComponentModel.Composition;
+﻿using ReactiveUI;
+using Splat;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 
@@ -8,7 +11,7 @@ namespace Uavcan.NET.Studio
     sealed class ShellService
     {
         [Import]
-        ICompositionService _compositionService = null;
+        CompositionContainer _compositionContainer = null;
 
         public void RunApplication()
         {
@@ -18,10 +21,26 @@ namespace Uavcan.NET.Studio
 
             using (var app = new StudioApp())
             {
-                _compositionService.SatisfyImportsOnce(app);
-                app.Properties["CCS"] = _compositionService;
+                app.Properties["CCS"] = _compositionContainer;
+                _compositionContainer.SatisfyImportsOnce(app);
+
+                InitializeRxUIContainer(_compositionContainer);
+
                 app.Run();
             }
+        }
+
+        static void InitializeRxUIContainer(CompositionContainer container)
+        {
+            var mefResolver = new MefDependencyResolver(container);
+            mefResolver.InitializeSplat();
+            mefResolver.InitializeReactiveUI();
+            Locator.SetLocator(mefResolver);
+        }
+
+        public static void SatisfyImportsOnce(object attributedPart)
+        {
+            ((ICompositionService)System.Windows.Application.Current.Properties["CCS"]).SatisfyImportsOnce(attributedPart);
         }
     }
 }

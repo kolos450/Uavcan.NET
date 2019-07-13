@@ -9,7 +9,7 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor.Presentation.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var model = (FrameModel)value;
+            var model = (FrameViewModel)value;
             if (model.Data.Length <= 0)
                 return null;
 

@@ -1,12 +1,16 @@
-﻿<UserControl x:Class="Uavcan.NET.Studio.Tools.BusMonitor.TableFilterControl"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:Uavcan.NET.Studio.Tools.BusMonitor"
-             mc:Ignorable="d" 
-             d:DesignHeight="32" d:DesignWidth="800"
-             x:ClassModifier="internal">
+﻿<reactiveui:ReactiveUserControl
+        x:Class="Uavcan.NET.Studio.Tools.TableFilterControl"
+        x:TypeArguments="tools:TableFilterViewModel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:reactiveui="http://reactiveui.net"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:local="clr-namespace:Uavcan.NET.Studio.Tools.BusMonitor"
+        xmlns:tools="clr-namespace:Uavcan.NET.Studio.Tools"
+        mc:Ignorable="d" 
+        d:DesignHeight="32" d:DesignWidth="800"
+        x:ClassModifier="internal">
     <Grid>
         <Grid.Resources>
             <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
@@ -37,13 +41,13 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Button ToolTip="Remove filter" Grid.Column="0" Click="RemoveButton_Click">&#10005;</Button>
-        <TextBox Grid.Column="1" TextChanged="TextBox_TextChanged"></TextBox>
+        <Button ToolTip="Remove filter" Grid.Column="0" Name="RemoveButton">&#10005;</Button>
+        <TextBox Grid.Column="1" Name="SearchTerm"></TextBox>
         <WrapPanel Grid.Column="2" Orientation="Horizontal">
-            <ToggleButton ToolTip="Apply filter" Click="ApplyButton_Click">&#10003;</ToggleButton>
-            <ToggleButton ToolTip="Negate filter" Click="NegateButton_Click">&#172;</ToggleButton>
-            <ToggleButton ToolTip="Use RegEx" Click="RegexButton_Click">RE</ToggleButton>
-            <ToggleButton ToolTip="Case sensitive" Click="CaseButton_Click">Cc</ToggleButton>
+            <ToggleButton ToolTip="Apply filter" Name="ApplyButton">&#10003;</ToggleButton>
+            <ToggleButton ToolTip="Negate filter" Name="NegateButton">&#172;</ToggleButton>
+            <ToggleButton ToolTip="Use RegEx" Name="RegexButton">RE</ToggleButton>
+            <ToggleButton ToolTip="Case sensitive" Name="CaseButton">Cc</ToggleButton>
         </WrapPanel>
     </Grid>
-</UserControl>
+</reactiveui:ReactiveUserControl>

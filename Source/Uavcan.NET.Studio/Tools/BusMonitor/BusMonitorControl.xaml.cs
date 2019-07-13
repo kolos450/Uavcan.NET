@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
-using System.Windows;
+﻿using ReactiveUI;
+using System;
+using System.Reactive.Disposables;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using Uavcan.NET.Drivers;
 using Uavcan.NET.Dsdl;
 using Uavcan.NET.Dsdl.DataTypes;
-using Uavcan.NET.Studio.Presentation.Converters;
 using Uavcan.NET.Studio.Tools.BusMonitor.Presentation;
 
 namespace Uavcan.NET.Studio.Tools.BusMonitor
@@ -17,331 +11,51 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
     /// <summary>
     /// Interaction logic for BusMonitorControl.xaml
     /// </summary>
-    public partial class BusMonitorControl : UserControl, IDisposable
+    partial class BusMonitorControl : ReactiveUserControl<BusMonitorViewModel>, IDisposable
     {
-        readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-        UavcanInstance _uavcan;
-        CanFramesProcessor _framesProcessor;
-        IUavcanTypeResolver _typeResolver;
-
-        LinkedList<(CanFrame Frame, FrameModel Model)> _framesMap = new LinkedList<(CanFrame, FrameModel)>();
-
-        volatile bool _enabled = true;
+        DsdlSerializer _serializer;
 
         public BusMonitorControl(UavcanInstance uavcan)
         {
-            _uavcan = uavcan;
-            _typeResolver = uavcan.TypeResolver;
-            _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
+            _serializer = uavcan.Serializer;
 
             InitializeComponent();
 
-            var driver = _uavcan.CanDriver;
-            driver.MessageReceived += Driver_MessageReceived;
-            driver.MessageTransmitted += Driver_MessageTransmitted;
+            var filter = TableFilterSet.ViewModel;
+            ViewModel = new BusMonitorViewModel(uavcan, filter);
 
-            _itemsViewSource = new CollectionViewSource() { Source = _items };
-            var itemList = _itemsViewSource.View;
-            itemList.Filter = FilterItem;
-            dgFrames.ItemsSource = itemList;
-        }
-
-        bool ShouldAcceptTransfer(out ulong dataTypeSignature, uint dataTypeId, UavcanTransferType transferType, byte sourceNodeId, byte destinationNodeId)
-        {
-            dataTypeSignature = 0;
-
-            var typeKind = transferType == UavcanTransferType.Broadcast ?
-                UavcanTypeKind.Message :
-                UavcanTypeKind.Service;
-            var type = _typeResolver.TryResolveType((int)dataTypeId, typeKind);
-            if (type == null)
-                return false;
-
-            var signature = type.GetDataTypeSignature();
-            if (signature == null)
-                return false;
-
-            dataTypeSignature = signature.Value;
-
-            return true;
-        }
-
-        CollectionViewSource _itemsViewSource;
-        ObservableStack<FrameModel> _items = new ObservableStack<FrameModel>();
-
-        void Driver_MessageTransmitted(object sender, CanMessageEventArgs e)
-        {
-            if (!_enabled)
-                return;
-
-            Dispatcher.BeginInvoke((Action)(() =>
+            this.WhenActivated(disposableRegistration =>
             {
-                ProcessMessageCore(e, FrameDirection.Tx);
-            }));
-        }
+                this.OneWayBind(ViewModel,
+                    vm => vm.Items,
+                    v => v.dgFrames.ItemsSource)
+                    .DisposeWith(disposableRegistration);
 
-        enum ProcessFramesResult
-        {
-            UpdatedNone,
-            UpdatedSingle,
-            UpdatedMultiple,
-        }
+                this.BindCommand(ViewModel,
+                    vm => vm.AddFilter,
+                    v => v.AddFilterButton)
+                    .DisposeWith(disposableRegistration);
 
-        ProcessFramesResult ProcessFrames(CanFrame frame, FrameModel model)
-        {
-            var nowUs = (ulong)_stopwatch.ElapsedMilliseconds * 1000;
-            CanFramesProcessingResult processorResult;
-            try
-            {
-                processorResult = _framesProcessor.HandleRxFrame(frame, nowUs);
-            }
-            catch (CanFramesProcessingException ex)
-            {
-                Apply(ex.SourceFrames, m => m.AccociatedFrameProcessorException = ex);
+                this.BindCommand(ViewModel,
+                    vm => vm.ClearItems,
+                    v => v.ClearButton)
+                    .DisposeWith(disposableRegistration);
 
-                return ProcessFramesResult.UpdatedSingle;
-            }
-
-            if (processorResult.Transfer != null)
-            {
-                Apply(processorResult.Transfer, model);
-
-                if (processorResult.SourceFrames.Count > 1 &&
-                    _framesMap.Count != 0)
-                {
-                    Apply(processorResult.SourceFrames, m => Apply(processorResult.Transfer, m));
-
-                    return ProcessFramesResult.UpdatedMultiple;
-                }
-
-                return ProcessFramesResult.UpdatedSingle;
-            }
-            else
-            {
-                _framesMap.AddLast((frame, model));
-                return ProcessFramesResult.UpdatedNone;
-            }
-        }
-
-        void Apply(IEnumerable<CanFrame> frames, Action<FrameModel> action)
-        {
-            var hashset = new HashSet<CanFrame>(frames);
-            var node = _framesMap.First;
-            while (node != null)
-            {
-                var next = node.Next;
-                if (hashset.Contains(node.Value.Frame))
-                {
-                    _framesMap.Remove(node);
-                    action(node.Value.Model);
-                }
-                node = next;
-            }
-        }
-
-        void Apply(UavcanRxTransfer transfer, FrameModel frame)
-        {
-            frame.AssociatedTransfer = transfer;
-
-            var typeKind = transfer.TransferType == UavcanTransferType.Broadcast ?
-                UavcanTypeKind.Message :
-                UavcanTypeKind.Service;
-            var type = _typeResolver.TryResolveType((int)transfer.DataTypeId, typeKind);
-            if (type != null)
-            {
-                frame.DataType = type;
-            }
-        }
-
-        static byte[] GetData(CanFrame msg)
-        {
-            if (msg.DataOffset == 0 && msg.Data.Length == msg.DataLength)
-            {
-                return msg.Data;
-            }
-            else
-            {
-                var bytes = new byte[msg.DataLength];
-                Buffer.BlockCopy(msg.Data, msg.DataOffset, bytes, 0, bytes.Length);
-                return bytes;
-            }
-        }
-
-        void Driver_MessageReceived(object sender, CanMessageEventArgs e)
-        {
-            if (!_enabled)
-                return;
-
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                ProcessMessageCore(e, FrameDirection.Rx);
-            }));
-        }
-
-        void ProcessMessageCore(CanMessageEventArgs e, FrameDirection direction)
-        {
-            var frame = e.Message;
-            var bytes = GetData(frame);
-
-            var canIdInfo = new CanIdInfo(frame.Id);
-
-            var model = new FrameModel
-            {
-                Direction = direction,
-                CanId = frame.Id,
-                Data = bytes,
-                SourceNodeId = canIdInfo.SourceId,
-                Time = DateTime.Now,
-            };
-
-            if (canIdInfo.IsServiceNotMessage)
-                model.DestinationNodeId = canIdInfo.DestinationId;
-
-            var processFramesResult = ProcessFrames(frame, model);
-
-            _items.Push(model);
-
-            if (processFramesResult == ProcessFramesResult.UpdatedMultiple &&
-                _filters.Count > 0)
-            {
-                _itemsViewSource.View.Refresh();
-            }
+                this.Bind(ViewModel,
+                    vm => vm.Enabled,
+                    v => v.EnabledButton.IsChecked)
+                    .DisposeWith(disposableRegistration);
+            });
         }
 
         public void Dispose()
         {
-            if (_uavcan != null)
-            {
-                var driver = _uavcan.CanDriver;
-                driver.MessageReceived -= Driver_MessageReceived;
-                driver.MessageTransmitted -= Driver_MessageTransmitted;
-            }
-        }
-
-        void EnabledButton_Click(object sender, RoutedEventArgs e)
-        {
-            _enabled = ((ToggleButton)sender).IsChecked == true;
-        }
-
-        void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            _items.Clear();
-        }
-
-        List<FilterModel> _filters = new List<FilterModel>();
-
-        bool FilterItem(object obj)
-        {
-            if (_filters.Count == 0)
-                return true;
-
-            var item = (FrameModel)obj;
-
-            foreach (var filter in _filters)
-            {
-                if (!FilterItem(filter, item))
-                    return false;
-            }
-
-            return true;
-        }
-
-        bool FilterItem(FilterModel filter, FrameModel item)
-        {
-            if (filter == null)
-                return true;
-            if (!filter.Enabled)
-                return true;
-            var content = filter.Content;
-            if (string.IsNullOrEmpty(content))
-                return true;
-
-            var negate = filter.Negate;
-
-            foreach (var str in EnumerateStrings(item))
-            {
-                bool isMatch;
-                if (filter.Regex)
-                {
-                    if (filter.RegexCache == null)
-                        return true;
-                    isMatch = filter.RegexCache.IsMatch(str);
-                }
-                else
-                {
-                    var stringComparison = filter.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                    isMatch = str.IndexOf(filter.Content, stringComparison) != -1;
-                }
-
-                if (isMatch)
-                {
-                    return !negate;
-                }
-            }
-
-            return negate;
-        }
-
-        IEnumerable<string> EnumerateStrings(FrameModel item)
-        {
-            yield return Convert.ToString(item.CanId.Value, 16);
-            if (item.SourceNodeId != null)
-                yield return item.SourceNodeId.Value.ToString();
-            if (item.DestinationNodeId != null)
-                yield return item.DestinationNodeId.ToString();
-            if (item.DataType != null)
-                yield return item.DataType.ToString();
-            if (item.Data != null)
-            {
-                yield return ByteArrayToHexConverter.ToString(item.Data);
-                yield return ByteArrayToTextConverter.ToString(item.Data);
-            }
-        }
-
-        void AddFilterButton_Click(object sender, RoutedEventArgs e)
-        {
-            var filterControl = new TableFilterControl();
-
-            spFilters.Children.Add(filterControl);
-
-            filterControl.RemoveButtonClicked += (o, args) =>
-            {
-                _filters.Remove(filterControl.Value);
-                spFilters.Children.Remove(filterControl);
-                _itemsViewSource.View.Refresh();
-            };
-
-            filterControl.Value.PropertyChanged += (o, args) =>
-            {
-                var filter = filterControl.Value;
-
-                if (string.Equals(args.PropertyName, nameof(FilterModel.Enabled), StringComparison.Ordinal))
-                {
-                    if (filter.Enabled)
-                        _filters.Add(filter);
-                    else
-                        _filters.Remove(filter);
-                }
-
-                if (filter.Regex)
-                {
-                    var regexOptions = RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
-                    if (!filter.CaseSensitive)
-                        regexOptions |= RegexOptions.IgnoreCase;
-                    try
-                    {
-                        filter.RegexCache = new Regex(filter.Content ?? string.Empty, regexOptions);
-                    }
-                    catch (ArgumentException) { }
-                }
-
-                _itemsViewSource.View.Refresh();
-            };
+            ViewModel?.Dispose();
         }
 
         void DgFrames_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedModel = dgFrames.SelectedItem as FrameModel;
+            var selectedModel = dgFrames.SelectedItem as FrameViewModel;
             if (selectedModel != null)
             {
                 var str = GetPayloadString(selectedModel) ?? string.Empty;
@@ -349,7 +63,7 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
             }
         }
 
-        string GetPayloadString(FrameModel model)
+        string GetPayloadString(FrameViewModel model)
         {
             var exception = model.AccociatedFrameProcessorException;
             if (exception != null)
@@ -379,7 +93,7 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
                 return null;
 
             var bytes = transfer.Payload;
-            var obj = _uavcan.Serializer.Deserialize(bytes, 0, bytes.Length, scheme);
+            var obj = _serializer.Deserialize(bytes, 0, bytes.Length, scheme);
             try
             {
                 return ObjectPrinter.PrintToString(obj, scheme);

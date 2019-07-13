@@ -2,6 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using System.Windows;
+using Uavcan.NET.Drivers;
 using Uavcan.NET.Drivers.Slcan;
 using Uavcan.NET.Studio.Engine;
 
@@ -9,13 +10,11 @@ namespace Uavcan.NET.Studio
 {
     sealed class StudioApp : Application, IDisposable, IPartImportsSatisfiedNotification
     {
-        UavcanInstance _uavcan;
-
-        [Import]
-        TypeResolvingService _typeResolvingService = null;
-
         [Import]
         MainWindow _mainWindow = null;
+
+        [Import]
+        UavcanService _uavcan = null;
 
         public StudioApp()
         {
@@ -42,11 +41,11 @@ namespace Uavcan.NET.Studio
                 usbTin.Connect(connectionSettings.InterfaceName);
                 usbTin.OpenCanChannel(connectionSettings.BitRate, UsbTinOpenMode.Active);
 
-                _uavcan = new UavcanInstance(usbTin, _typeResolvingService);
+                _uavcan.AddDriver(usbTin);
 
                 _mainWindow.Dispatcher.Invoke(() =>
                 {
-                    ((MainWindow)MainWindow).Initialize(_uavcan);
+                    ((MainWindow)MainWindow).Active = true;
                 });
             });
         }
@@ -73,16 +72,6 @@ namespace Uavcan.NET.Studio
 
         public void Dispose()
         {
-            if (MainWindow is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-
-            if (_uavcan != null)
-            {
-                _uavcan.Dispose();
-                _uavcan = null;
-            }
         }
 
         public void OnImportsSatisfied()

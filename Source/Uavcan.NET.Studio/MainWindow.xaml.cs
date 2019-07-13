@@ -12,36 +12,26 @@ namespace Uavcan.NET.Studio
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     [Export]
-    public partial class MainWindow : MetroWindow, IDisposable
+    public partial class MainWindow : MetroWindow, IDisposable, IPartImportsSatisfiedNotification
     {
-        UavcanInstance _uavcan;
+        [Import]
+        UavcanService _uavcan = null;
+
+        [ImportMany]
+        IEnumerable<IUavcanStudioToolProvider> _tools = null;
 
         OnlineNodesTool _onlineNodesTool;
 
         List<IDisposable> _disposables = new List<IDisposable>();
 
-        [ImportingConstructor]
-        public MainWindow(
-            [ImportMany] IEnumerable<IUavcanStudioToolProvider> tools)
+        public MainWindow()
         {
             InitializeComponent();
 
-            IsBusy = false;
-
-            foreach (var tool in tools)
-            {
-                var menuItem = new MenuItem
-                {
-                    Header = tool.ToolTitle,
-                };
-
-                miTools.Items.Add(menuItem);
-
-                menuItem.Click += (o, e) => RunTool(tool);
-            }
+            _IsBusy = false;
         }
 
-        public bool IsBusy
+        bool _IsBusy
         {
             get => bBusyIndicator.Visibility == Visibility.Visible;
             set => bBusyIndicator.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
@@ -49,7 +39,7 @@ namespace Uavcan.NET.Studio
 
         void RunTool(IUavcanStudioToolProvider tool)
         {
-            var uiElement = tool.CreateUIElement(_uavcan);
+            var uiElement = tool.CreateUIElement(_uavcan.Engine);
             if (uiElement != null)
             {
                 var toolWindow = new ToolWindow(uiElement);
@@ -63,18 +53,15 @@ namespace Uavcan.NET.Studio
             }
         }
 
-        public void Initialize(UavcanInstance uavcan)
+        public bool Active
         {
-            _uavcan = uavcan;
-
-            InitializeWndTools();
-
-            IsBusy = false;
+            get => !_IsBusy;
+            set => _IsBusy = !value;
         }
 
         void InitializeWndTools()
         {
-            _onlineNodesTool = new OnlineNodesTool(_uavcan);
+            _onlineNodesTool = new OnlineNodesTool(_uavcan.Engine);
             dgNodes.ItemsSource = _onlineNodesTool.OnlineNodes;
         }
 
@@ -92,7 +79,7 @@ namespace Uavcan.NET.Studio
         void ApplyNodeIdButton_Click(object sender, RoutedEventArgs e)
         {
             var nodeId = (byte)nudNodeId.Value;
-            _uavcan.NodeID = nodeId;
+            _uavcan.Engine.NodeID = nodeId;
         }
 
         public void Dispose()
@@ -111,6 +98,23 @@ namespace Uavcan.NET.Studio
                 }
                 _disposables = null;
             }
+        }
+
+        public void OnImportsSatisfied()
+        {
+            foreach (var tool in _tools)
+            {
+                var menuItem = new MenuItem
+                {
+                    Header = tool.ToolTitle,
+                };
+
+                miTools.Items.Add(menuItem);
+
+                menuItem.Click += (o, e) => RunTool(tool);
+            }
+
+            InitializeWndTools();
         }
     }
 }

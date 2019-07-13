@@ -19,7 +19,6 @@ namespace Uavcan.NET
         readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         readonly DateTime _stopwatchOffset = DateTime.Now;
 
-        ICanDriver _canDriver;
         IUavcanTypeResolver _typeResolver;
         DsdlSerializer _serializer;
         CanFramesProcessor _framesProcessor;
@@ -28,17 +27,27 @@ namespace Uavcan.NET
 
         public IUavcanTypeResolver TypeResolver => _typeResolver;
         public DsdlSerializer Serializer => _serializer;
-        public ICanDriver CanDriver => _canDriver;
 
-        public UavcanInstance(ICanDriver canDriver, IUavcanTypeResolver typeResolver)
+        List<ICanDriver> _drivers = new List<ICanDriver>();
+        public IEnumerable<ICanDriver> Drivers => _drivers;
+
+        public UavcanInstance(IUavcanTypeResolver typeResolver)
         {
             _typeResolver = typeResolver;
             _serializer = new DsdlSerializer(typeResolver);
             _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
+        }
 
-            _canDriver = canDriver;
+        public void AddDriver(ICanDriver driver)
+        {
+            driver.MessageReceived += CanDriver_MessageReceived;
+            _drivers.Add(driver);
+        }
 
-            _canDriver.MessageReceived += CanDriver_MessageReceived;
+        public void RemoveDriver(ICanDriver driver)
+        {
+            driver.MessageReceived -= CanDriver_MessageReceived;
+            _drivers.Remove(driver);
         }
 
         public event UnhandledExceptionEventHandler ErrorOccurred;
@@ -199,11 +208,13 @@ namespace Uavcan.NET
 
         public void Dispose()
         {
-            if (_canDriver != null)
+            if (_drivers != null)
             {
-                _canDriver.Dispose();
-                _canDriver = null;
+                foreach (var driver in _drivers)
+                    driver.Dispose();
+                _drivers = null;
             }
+
             if (_responseTickets != null)
             {
                 var values = _responseTickets.Values.ToList();
@@ -341,7 +352,8 @@ namespace Uavcan.NET
         {
             foreach (var frame in frames)
             {
-                _canDriver.Send(frame);
+                foreach (var driver in _drivers)
+                    driver.Send(frame);
             }
         }
 

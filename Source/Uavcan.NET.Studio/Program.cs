@@ -26,12 +26,13 @@ namespace Uavcan.NET.Studio
 
         void Run()
         {
-            LoadPackages();
-
-            _shellService.RunApplication();
+            using (CreateContainer())
+            {
+                _shellService.RunApplication();
+            }
         }
 
-        void LoadPackages()
+        CompositionContainer CreateContainer()
         {
             var assembly = typeof(Program).Assembly;
             var rootPath = Path.GetDirectoryName(new Uri(assembly.EscapedCodeBase).LocalPath);
@@ -48,6 +49,8 @@ namespace Uavcan.NET.Studio
             container.ComposeExportedValue<CompositionContainer>(container);
             container.ComposeExportedValue<ICompositionService>(container);
             container.SatisfyImportsOnce(this);
+
+            return container;
         }
 
         static IEnumerable<string> _EnumerateCatalogAssemblies(string rootPath)

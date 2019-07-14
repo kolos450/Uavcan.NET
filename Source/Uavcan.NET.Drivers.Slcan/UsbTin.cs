@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Uavcan.NET.Drivers.Slcan
 {
@@ -95,7 +96,7 @@ namespace Uavcan.NET.Drivers.Slcan
         enum TxState
         {
             Initial,
-            Normal,
+            Pending,
             Accepted,
             Rejected
         }
@@ -202,23 +203,29 @@ namespace Uavcan.NET.Drivers.Slcan
                         case TxState.Initial:
                         case TxState.Accepted:
                             {
-                                _txState = TxState.Normal;
                                 CanFrame message = null;
                                 lock (_txQueue)
                                 {
-                                    _txQueue.TryDequeue(out message);
+                                    var dequeueResult = _txQueue.TryDequeue(out message);
+                                    Debug.Assert(!dequeueResult || message != null);
+                                    Debug.Assert(dequeueResult || _txQueue.Count == 0);
                                 }
                                 if (message != null)
                                 {
                                     _txCurrentMessage = message;
                                     await SendMessageAsync(message).ConfigureAwait(false);
+                                    _txState = TxState.Pending;
+                                }
+                                else
+                                {
+                                    _txState = TxState.Initial;
                                 }
                             }
                             break;
 
                         case TxState.Rejected:
                             {
-                                _txState = TxState.Normal;
+                                _txState = TxState.Pending;
                                 var message = _txCurrentMessage;
                                 if (message == null)
                                     throw new InvalidOperationException("Unexpected UsbTin response.");
@@ -226,8 +233,11 @@ namespace Uavcan.NET.Drivers.Slcan
                             }
                             break;
 
-                        case TxState.Normal:
+                        case TxState.Pending:
                             break;
+
+                        default:
+                            throw new InvalidOperationException();
                     }
 
                     txTask = null;
@@ -367,6 +377,7 @@ namespace Uavcan.NET.Drivers.Slcan
                     else if ((cmd == 'z') || (cmd == 'Z'))
                     {
                         _txEventQueue.Enqueue(_txCurrentMessage);
+                        _txCurrentMessage = null;
                         SignalEvents();
 
                         _txState = TxState.Accepted;

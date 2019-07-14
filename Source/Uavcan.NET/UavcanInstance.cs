@@ -23,7 +23,8 @@ namespace Uavcan.NET
         DsdlSerializer _serializer;
         CanFramesProcessor _framesProcessor;
 
-        ConcurrentDictionary<long, ResponseTicket> _responseTickets = new ConcurrentDictionary<long, ResponseTicket>();
+        ConcurrentDictionary<long, TaskCompletionSource<TransferReceivedArgs>> _responseTickets =
+            new ConcurrentDictionary<long, TaskCompletionSource<TransferReceivedArgs>>();
 
         public IUavcanTypeResolver TypeResolver => _typeResolver;
         public DsdlSerializer Serializer => _serializer;
@@ -123,8 +124,7 @@ namespace Uavcan.NET
             if (_responseTickets.TryRemove(responseTickedId, out var ticket))
             {
                 var args = CreateTransferReceivedArgs(transfer);
-                ticket.SetResponse(args);
-                ticket.Dispose();
+                ticket.SetResult(args);
             }
         }
 
@@ -220,8 +220,7 @@ namespace Uavcan.NET
                 var values = _responseTickets.Values.ToList();
                 foreach (var i in values)
                 {
-                    i.Cancel();
-                    i.Dispose();
+                    i.TrySetCanceled();
                 }
                 _responseTickets = null;
             }
@@ -285,7 +284,7 @@ namespace Uavcan.NET
 
         readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
 
-        public Task<TransferReceivedArgs> SendServiceRequest(
+        public async Task<TransferReceivedArgs> SendServiceRequest(
             int destinationNodeId,
             object value,
             ServiceType valueType = null,
@@ -300,7 +299,7 @@ namespace Uavcan.NET
 
             var dsdlType = valueType.Request;
 
-            ResponseTicket ticket;
+            TaskCompletionSource<TransferReceivedArgs> ticket;
             var buffer = _arrayPool.Rent(dsdlType.MaxBitlen);
             try
             {
@@ -327,20 +326,18 @@ namespace Uavcan.NET
 
                 SendFrames(frames);
 
-                ticket = new ResponseTicket();
                 var responseTickedId = transferDescriptor | (transferId << 32);
-                if (!_responseTickets.TryAdd(responseTickedId, ticket))
-                {
-                    ticket.Dispose();
-                    throw new InvalidOperationException($"Transfer descriptor {responseTickedId} is registered already.");
-                }
+                ticket = _responseTickets.GetOrAdd(responseTickedId, _ => new TaskCompletionSource<TransferReceivedArgs>());
             }
             finally
             {
                 _arrayPool.Return(buffer);
             }
 
-            return ticket.WaitForResponse(ct);
+            using (ct.Register(() => ticket.SetCanceled()))
+            {
+                return await ticket.Task.ConfigureAwait(false);
+            }
         }
 
         private byte GetNextTransferId(int transferDescriptor)

@@ -267,7 +267,7 @@ namespace Uavcan.NET
 
                 var frames = CanFramesGenerator.Broadcast(valueType.GetDataTypeSignature().Value,
                     valueType.Meta.DefaultDTID.Value,
-                    (byte)(transferId - 1),
+                    transferId,
                     NodeID,
                     priority,
                     buffer,
@@ -342,7 +342,7 @@ namespace Uavcan.NET
 
         private byte GetNextTransferId(int transferDescriptor)
         {
-            return (byte)(_transferIdRegistry.AddOrUpdate(transferDescriptor, 1, (_, id) => (byte)(id + 1)) - 1);
+            return (byte)((_transferIdRegistry.AddOrUpdate(transferDescriptor, 1, (_, id) => (byte)((id + 1) & 0x1F)) - 1) & 0x1F);
         }
 
         void SendFrames(IEnumerable<CanFrame> frames)

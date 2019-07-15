@@ -11,7 +11,13 @@ namespace Uavcan.NET
 
         public TransferDescriptor TransferDescriptor;
 
-        public byte TransferId;
+        byte _transferId;
+        public byte TransferId
+        {
+            get => _transferId;
+            set => _transferId = (byte)(value & 0x1F);
+        }
+
         public bool NextToggle;
 
         public void PrepareForNextTransfer()

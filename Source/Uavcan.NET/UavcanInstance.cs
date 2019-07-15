@@ -124,7 +124,7 @@ namespace Uavcan.NET
             if (_responseTickets.TryRemove(responseTickedId, out var ticket))
             {
                 var args = CreateTransferReceivedArgs(transfer);
-                ticket.SetResult(args);
+                ticket.TrySetResult(args);
             }
         }
 

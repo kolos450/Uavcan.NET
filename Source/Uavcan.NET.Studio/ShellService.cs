@@ -1,7 +1,9 @@
 ﻿using ReactiveUI;
 using Splat;
+using System;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
+using System.Reactive;
 using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 
@@ -24,14 +26,18 @@ namespace Uavcan.NET.Studio
                 app.Properties["CCS"] = _compositionContainer;
                 _compositionContainer.SatisfyImportsOnce(app);
 
-                InitializeRxUIContainer(_compositionContainer);
+                InitializeRxUI(_compositionContainer);
 
                 app.Run();
             }
         }
 
-        static void InitializeRxUIContainer(CompositionContainer container)
+        static void InitializeRxUI(CompositionContainer container)
         {
+            RxApp.DefaultExceptionHandler = Observer.Create<Exception>(
+                ex => { if (!(ex is OperationCanceledException)) Logger.Log(ex); },
+                ex => { if (!(ex is OperationCanceledException)) Logger.Log(ex); });
+
             var mefResolver = new MefDependencyResolver(container);
             mefResolver.InitializeSplat();
             mefResolver.InitializeReactiveUI();

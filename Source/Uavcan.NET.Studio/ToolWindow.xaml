@@ -8,7 +8,7 @@
         GlowBrush="{DynamicResource AccentColorBrush}"
         mc:Ignorable="d"
         Title="ToolWindow" Height="450" Width="800">
-    <DockPanel>
+    <DockPanel LastChildFill="True">
         <ContentControl x:Name="ContentArea" />
     </DockPanel>
 </Controls:MetroWindow>

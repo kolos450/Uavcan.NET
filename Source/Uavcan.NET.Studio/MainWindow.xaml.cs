@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Windows;
 using System.Windows.Controls;
+using System.Linq;
 
 namespace Uavcan.NET.Studio
 {
@@ -43,6 +44,13 @@ namespace Uavcan.NET.Studio
             if (uiElement != null)
             {
                 var toolWindow = new ToolWindow(uiElement);
+                if (uiElement is UserControl uc)
+                {
+                    toolWindow.Height = uc.Height;
+                    toolWindow.Width = uc.Width;
+                    uc.Height = double.NaN;
+                    uc.Width = double.NaN;
+                }
                 toolWindow.Title = tool.ToolTitle;
                 toolWindow.Show();
 
@@ -51,6 +59,13 @@ namespace Uavcan.NET.Studio
                     _disposables.Add(disposable);
                 }
             }
+        }
+
+        public void RunTool(string toolTitle)
+        {
+            var tool = _tools.Where(x => x.ToolTitle == toolTitle)
+                .Single();
+            RunTool(tool);
         }
 
         public bool Active

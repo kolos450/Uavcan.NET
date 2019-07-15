@@ -1,4 +1,5 @@
 ﻿using MahApps.Metro.Controls;
+using System;
 using System.Windows;
 
 namespace Uavcan.NET.Studio
@@ -12,6 +13,14 @@ namespace Uavcan.NET.Studio
         {
             InitializeComponent();
             ContentArea.Content = element;
+
+            if (element is IDisposable disposable)
+            {
+                this.Closed += (o, e) =>
+                {
+                    disposable.Dispose();
+                };
+            }
         }
     }
 }

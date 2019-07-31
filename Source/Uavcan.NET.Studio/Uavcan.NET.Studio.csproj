@@ -83,7 +83,6 @@
     <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
     <Compile Include="DataTypes\Timestamp.cs" />
     <Compile Include="DsdlSerializerExtensions.cs" />
-    <Compile Include="Framework\ExportViewForAttribute.cs" />
     <Compile Include="MefDependencyResolver.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToTextConverter.cs" />

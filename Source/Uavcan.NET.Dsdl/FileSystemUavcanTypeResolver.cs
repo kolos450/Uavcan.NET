@@ -12,15 +12,15 @@ namespace Uavcan.NET.Dsdl
     {
         public const string DsdlExtension = "uavcan";
 
-        static Regex _fileNameRegex = new Regex(
+        static readonly Regex _fileNameRegex = new Regex(
                 @"^((?<DTID>[0-9]+)\.)?((?<NAME>[^\.]+)\.)((?<VER>[0-9]+\.[0-9]+)\.)?" + DsdlExtension + "$",
                 RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        static Regex _namespaceRegex = new Regex(
+        static readonly Regex _namespaceRegex = new Regex(
                 @"^([a-z][a-z0-9_]*\.)*[a-z][a-z0-9_]*$",
                 RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        string _root;
-        string _rootNamespace;
+        readonly string _root;
+        readonly string _rootNamespace;
 
         public FileSystemUavcanTypeResolver(string root)
         {
@@ -130,10 +130,21 @@ namespace Uavcan.NET.Dsdl
                 return null;
 
             var meta = ParseMeta(definitionPath);
-            using (var stream = File.Open(definitionPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var reader = new StreamReader(stream))
+
+            Stream stream = null;
+            try
             {
-                return DsdlParser.Parse(reader, meta);
+                stream = File.Open(definitionPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using (var reader = new StreamReader(stream))
+                {
+                    stream = null;
+                    return DsdlParser.Parse(reader, meta);
+                }
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Dispose();
             }
         }
 

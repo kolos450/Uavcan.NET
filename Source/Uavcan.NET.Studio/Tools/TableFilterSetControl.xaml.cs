@@ -28,7 +28,7 @@ namespace Uavcan.NET.Studio.Tools
         {
             InitializeComponent();
 
-            ViewModel = new TableFilterSetViewModel(this);
+            ViewModel = new TableFilterSetViewModel();
 
             this.WhenActivated(d =>
             {

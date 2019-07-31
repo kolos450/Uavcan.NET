@@ -20,7 +20,7 @@ namespace Uavcan.NET.Studio.Tools
         readonly ReadOnlyObservableCollection<TableFilterControl> _filterViews;
         public ReadOnlyObservableCollection<TableFilterControl> FilterViews => _filterViews;
 
-        public TableFilterSetViewModel(TableFilterSetControl tableFilterSetControl)
+        public TableFilterSetViewModel()
         {
             var filterViewsFiller = _filterViewsSource
                 .Connect()
@@ -91,6 +91,11 @@ namespace Uavcan.NET.Studio.Tools
 
         public void Dispose()
         {
+            if (_filterViewsSource != null)
+                _filterViewsSource.Dispose();
+            if (_filters != null)
+                _filters.Dispose();
+
             _cleanUp.Dispose();
         }
     }

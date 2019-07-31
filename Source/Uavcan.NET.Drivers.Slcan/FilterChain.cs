@@ -12,34 +12,24 @@ namespace Uavcan.NET.Drivers.Slcan
     public class FilterChain
     {
         /// <summary>
-        /// Filter mask.
-        /// </summary>
-        readonly FilterMask _mask;
-
-        /// <summary>
-        /// Filters.
-        /// </summary>
-        readonly FilterValue[] _filters;
-
-        /// <summary>
         /// Create filter chain with one mask and filters.
         /// </summary>
         /// <param name="mask">Mask</param>
         /// <param name="filters">Filters</param>
         public FilterChain(FilterMask mask, FilterValue[] filters)
         {
-            _mask = mask;
-            _filters = filters;
+            Mask = mask;
+            Filters = filters;
         }
 
         /// <summary>
         /// Get mask of this filter chain.
         /// </summary>
-        public FilterMask Mask => _mask;
+        public FilterMask Mask { get; }
 
         /// <summary>
         /// Get filters of this filter chain.
         /// </summary>
-        public FilterValue[] Filters => _filters;
+        public FilterValue[] Filters { get; }
     }
 }

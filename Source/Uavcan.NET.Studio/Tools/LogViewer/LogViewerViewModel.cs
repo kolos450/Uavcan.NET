@@ -105,6 +105,9 @@ namespace Uavcan.NET.Studio.Tools.LogViewer
 
         public void Dispose()
         {
+            if (_logItemsSource != null)
+                _logItemsSource.Dispose();
+
             _cleanUp.Dispose();
         }
     }

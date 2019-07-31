@@ -37,7 +37,7 @@ namespace Uavcan.NET.Dsdl.DataTypes
                     case ArrayDsdlTypeMode.Static:
                         return _maxSize * _elementType.MaxBitlen;
                     default:
-                        throw new ArgumentException();
+                        throw new InvalidOperationException("Unexpected array mode.");
                 }
             }
         }
@@ -53,7 +53,7 @@ namespace Uavcan.NET.Dsdl.DataTypes
                     case ArrayDsdlTypeMode.Static:
                         return _maxSize * _elementType.MinBitlen;
                     default:
-                        throw new ArgumentException();
+                        throw new InvalidOperationException("Unexpected array mode.");
                 }
             }
         }

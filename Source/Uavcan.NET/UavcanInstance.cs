@@ -19,23 +19,21 @@ namespace Uavcan.NET
         readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         readonly DateTime _stopwatchOffset = DateTime.Now;
 
-        IUavcanTypeResolver _typeResolver;
-        DsdlSerializer _serializer;
-        CanFramesProcessor _framesProcessor;
+        readonly CanFramesProcessor _framesProcessor;
 
         ConcurrentDictionary<long, TaskCompletionSource<TransferReceivedArgs>> _responseTickets =
             new ConcurrentDictionary<long, TaskCompletionSource<TransferReceivedArgs>>();
 
-        public IUavcanTypeResolver TypeResolver => _typeResolver;
-        public DsdlSerializer Serializer => _serializer;
+        public IUavcanTypeResolver TypeResolver { get; }
+        public DsdlSerializer Serializer { get; }
 
         List<ICanDriver> _drivers = new List<ICanDriver>();
         public IEnumerable<ICanDriver> Drivers => _drivers;
 
         public UavcanInstance(IUavcanTypeResolver typeResolver)
         {
-            _typeResolver = typeResolver;
-            _serializer = new DsdlSerializer(typeResolver);
+            TypeResolver = typeResolver;
+            Serializer = new DsdlSerializer(typeResolver);
             _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
         }
 
@@ -145,7 +143,7 @@ namespace Uavcan.NET
             var typeKind = transfer.TransferType == UavcanTransferType.Broadcast ?
                 UavcanTypeKind.Message :
                 UavcanTypeKind.Service;
-            var uavcanType = _typeResolver.TryResolveType((int)transfer.DataTypeId, typeKind);
+            var uavcanType = TypeResolver.TryResolveType((int)transfer.DataTypeId, typeKind);
             if (uavcanType == null)
                 throw new InvalidOperationException($"Cannot resolve uavcan type with id = {transfer.DataTypeId}.");
 
@@ -166,7 +164,7 @@ namespace Uavcan.NET
         private Lazy<object> CreateUnknownObjectFactory(byte[] payload, DsdlType scheme)
         {
             return new Lazy<object>(() =>
-                _serializer.Deserialize(payload, 0, payload.Length, scheme));
+                Serializer.Deserialize(payload, 0, payload.Length, scheme));
         }
 
         static CompositeDsdlTypeBase GetScheme(IUavcanType uavcanType, UavcanTransferType transferType)
@@ -194,7 +192,7 @@ namespace Uavcan.NET
             var typeKind = transferType == UavcanTransferType.Broadcast ?
                 UavcanTypeKind.Message :
                 UavcanTypeKind.Service;
-            var type = _typeResolver.TryResolveType((int)dataTypeId, typeKind);
+            var type = TypeResolver.TryResolveType((int)dataTypeId, typeKind);
             if (type == null)
                 return false;
 
@@ -206,24 +204,39 @@ namespace Uavcan.NET
             return true;
         }
 
+        bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    if (_drivers != null)
+                    {
+                        foreach (var driver in _drivers)
+                            driver.Dispose();
+                        _drivers = null;
+                    }
+
+                    if (_responseTickets != null)
+                    {
+                        var values = _responseTickets.Values.ToList();
+                        foreach (var i in values)
+                        {
+                            i.TrySetCanceled();
+                        }
+                        _responseTickets = null;
+                    }
+                }
+
+                _disposed = true;
+            }
+        }
+
         public void Dispose()
         {
-            if (_drivers != null)
-            {
-                foreach (var driver in _drivers)
-                    driver.Dispose();
-                _drivers = null;
-            }
-
-            if (_responseTickets != null)
-            {
-                var values = _responseTickets.Values.ToList();
-                foreach (var i in values)
-                {
-                    i.TrySetCanceled();
-                }
-                _responseTickets = null;
-            }
+            Dispose(true);
         }
 
         static int GetTransferDescriptor(UavcanTransferType transferType, int dataTypeId, int sourceNodeId, int destinationNodeId)
@@ -234,7 +247,7 @@ namespace Uavcan.NET
                 (dataTypeId & 0xFFFF);
         }
 
-        ConcurrentDictionary<int, byte> _transferIdRegistry = new ConcurrentDictionary<int, byte>();
+        readonly ConcurrentDictionary<int, byte> _transferIdRegistry = new ConcurrentDictionary<int, byte>();
 
         public event EventHandler<TransferReceivedArgs> MessageReceived;
         public event EventHandler<TransferReceivedArgs> RequestReceived;
@@ -255,7 +268,7 @@ namespace Uavcan.NET
             var buffer = _arrayPool.Rent(dsdlType.MaxBitlen);
             try
             {
-                int payloadLen = _serializer.Serialize(value, dsdlType, buffer);
+                int payloadLen = Serializer.Serialize(value, dsdlType, buffer);
 
                 var transferDescriptor = GetTransferDescriptor(
                     UavcanTransferType.Request,
@@ -303,7 +316,7 @@ namespace Uavcan.NET
             var buffer = _arrayPool.Rent(dsdlType.MaxBitlen);
             try
             {
-                int payloadLen = _serializer.Serialize(value, dsdlType, buffer);
+                int payloadLen = Serializer.Serialize(value, dsdlType, buffer);
 
                 var transferDescriptor = GetTransferDescriptor(
                     UavcanTransferType.Request,
@@ -356,7 +369,7 @@ namespace Uavcan.NET
 
         T GetUavcanType<T>(object value) where T : class, IUavcanType
         {
-            var contract = _serializer.ContractResolver.ResolveContract(value.GetType());
+            var contract = Serializer.ContractResolver.ResolveContract(value.GetType());
             if (!(contract.UavcanType is T valueType))
                 throw new ArgumentException($"Cannot resolve Uavcan type for '{value.GetType().FullName}'.", nameof(value));
             if (valueType.Meta?.DefaultDTID == null)
@@ -382,7 +395,7 @@ namespace Uavcan.NET
             var buffer = _arrayPool.Rent(dsdlType.MaxBitlen);
             try
             {
-                int payloadLen = _serializer.Serialize(value, dsdlType, buffer);
+                int payloadLen = Serializer.Serialize(value, dsdlType, buffer);
                 var transferId = request.TransferId;
 
                 var frames = CanFramesGenerator.RequestOrRespond(destinationNodeId,

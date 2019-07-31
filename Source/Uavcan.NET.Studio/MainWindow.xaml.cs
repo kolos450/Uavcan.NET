@@ -13,7 +13,7 @@ namespace Uavcan.NET.Studio
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     [Export]
-    public partial class MainWindow : MetroWindow, IDisposable, IPartImportsSatisfiedNotification
+    public sealed partial class MainWindow : MetroWindow, IDisposable, IPartImportsSatisfiedNotification
     {
         [Import]
         UavcanService _uavcan = null;
@@ -29,10 +29,10 @@ namespace Uavcan.NET.Studio
         {
             InitializeComponent();
 
-            _IsBusy = false;
+            IsBusy = false;
         }
 
-        bool _IsBusy
+        bool IsBusy
         {
             get => bBusyIndicator.Visibility == Visibility.Visible;
             set => bBusyIndicator.Visibility = value ? Visibility.Visible : Visibility.Collapsed;
@@ -70,8 +70,8 @@ namespace Uavcan.NET.Studio
 
         public bool Active
         {
-            get => !_IsBusy;
-            set => _IsBusy = !value;
+            get => !IsBusy;
+            set => IsBusy = !value;
         }
 
         void InitializeWndTools()
@@ -87,8 +87,10 @@ namespace Uavcan.NET.Studio
 
         void MenuItem_Help_About_Click(object sender, RoutedEventArgs e)
         {
-            var aboutBox = new AboutBox();
-            aboutBox.ShowDialog(new WpfWindowWrapper(this));
+            using (var aboutBox = new AboutBox())
+            {
+                aboutBox.ShowDialog(new WpfWindowWrapper(this));
+            }
         }
 
         void ApplyNodeIdButton_Click(object sender, RoutedEventArgs e)

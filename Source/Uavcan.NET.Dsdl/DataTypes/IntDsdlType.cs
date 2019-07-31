@@ -10,11 +10,13 @@ namespace Uavcan.NET.Dsdl.DataTypes
     {
         public IntDsdlType(int bitlen, CastMode castMode) : base(bitlen, castMode)
         {
+            if (!ValidateBitlen(bitlen))
+                throw new ArgumentException($"Invalid bit length: {bitlen}.", nameof(bitlen));
             if (castMode != CastMode.Saturated)
                 throw new ArgumentException("Invalid cast mode for signed integer.", nameof(CastMode));
         }
 
-        protected override bool ValidateBitlen(int bitlen)
+        static bool ValidateBitlen(int bitlen)
         {
             return bitlen >= 2 && bitlen <= 64;
         }

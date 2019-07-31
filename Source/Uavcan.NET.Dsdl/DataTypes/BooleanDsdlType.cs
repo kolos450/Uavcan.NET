@@ -14,11 +14,6 @@ namespace Uavcan.NET.Dsdl.DataTypes
                 throw new ArgumentException("Invalid cast mode for boolean.", nameof(CastMode));
         }
 
-        protected override bool ValidateBitlen(int bitlen)
-        {
-            return bitlen == 1;
-        }
-
         public override string GetNormalizedMemberDefinition()
         {
             var castMode = _castMode == CastMode.Saturated ? "saturated" : "truncated";

@@ -23,12 +23,11 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
         readonly IDisposable _cleanUp;
 
         readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-        DsdlSerializer _serializer;
-        IEnumerable<ICanDriver> _drivers;
-        CanFramesProcessor _framesProcessor;
-        IUavcanTypeResolver _typeResolver;
+        readonly IEnumerable<ICanDriver> _drivers;
+        readonly CanFramesProcessor _framesProcessor;
+        readonly IUavcanTypeResolver _typeResolver;
 
-        LinkedList<(CanFrame Frame, FrameViewModel Model)> _framesMap = new LinkedList<(CanFrame, FrameViewModel)>();
+        readonly LinkedList<(CanFrame Frame, FrameViewModel Model)> _framesMap = new LinkedList<(CanFrame, FrameViewModel)>();
 
         readonly SourceList<FrameViewModel> _itemsSource = new SourceList<FrameViewModel>();
 
@@ -49,9 +48,6 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
 
         public BusMonitorViewModel(UavcanInstance uavcan, TableFilterSetViewModel filter)
         {
-            _serializer = uavcan.Serializer;
-
-            _serializer = uavcan.Serializer;
             _typeResolver = uavcan.TypeResolver;
             _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
 
@@ -234,6 +230,9 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
 
         public void Dispose()
         {
+            if (_itemsSource != null)
+                _itemsSource.Dispose();
+
             _cleanUp.Dispose();
         }
 

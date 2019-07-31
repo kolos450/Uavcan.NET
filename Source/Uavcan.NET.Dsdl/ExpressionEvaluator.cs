@@ -456,7 +456,7 @@ namespace CodingSeb.ExpressionEvaluator
         /// All assemblies needed to resolves Types
         /// by default all Assemblies loaded in the current AppDomain
         /// </summary>
-        public virtual IList<Assembly> Assemblies { get; set; } = new List<Assembly>();
+        public IList<Assembly> Assemblies { get; set; }
 
         /// <summary>
         /// All Namespaces Where to find types
@@ -484,7 +484,7 @@ namespace CodingSeb.ExpressionEvaluator
         /// <summary>
         /// A list of type to block an keep un usable in Expression Evaluation for security purpose
         /// </summary>
-        public virtual IList<Type> TypesToBlock { get; set; } = new List<Type>();
+        public virtual ISet<Type> TypesToBlock { get; set; } = new HashSet<Type>();
 
         /// <summary>
         /// A list of statics types where to find extensions methods
@@ -836,8 +836,6 @@ namespace CodingSeb.ExpressionEvaluator
             AssembliesInit();
 
             DefaultDecimalSeparatorInit();
-
-            Init();
         }
 
         /// <summary>
@@ -849,20 +847,17 @@ namespace CodingSeb.ExpressionEvaluator
             Variables = variables;
         }
 
-        protected virtual void AssembliesInit()
+        void AssembliesInit()
         {
             Assemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
         }
 
-        protected virtual void DefaultDecimalSeparatorInit()
+        void DefaultDecimalSeparatorInit()
         {
             numberRegexPattern = string.Format(numberRegexOrigPattern, @"\.", string.Empty);
 
             CultureInfoForNumberParsing.NumberFormat.NumberDecimalSeparator = ".";
         }
-
-        protected virtual void Init()
-        { }
 
         #endregion
 
@@ -2990,6 +2985,7 @@ namespace CodingSeb.ExpressionEvaluator
         public Type Type { get; set; }
     }
 
+    [Serializable]
     public partial class ExpressionEvaluatorSyntaxErrorException : Exception
     {
         public ExpressionEvaluatorSyntaxErrorException() : base()
@@ -3002,6 +2998,7 @@ namespace CodingSeb.ExpressionEvaluator
         { }
     }
 
+    [Serializable]
     public partial class ExpressionEvaluatorSecurityException : Exception
     {
         public ExpressionEvaluatorSecurityException() : base()

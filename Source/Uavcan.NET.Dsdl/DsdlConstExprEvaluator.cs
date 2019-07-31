@@ -21,9 +21,18 @@ namespace Uavcan.NET.Dsdl
             _expectedReturnType = expectedReturnType;
 
             OptionEvaluateFunctionActive = false;
+        }
 
-            TypesToBlock.Add(typeof(ExpressionEvaluator));
-            TypesToBlock.Add(typeof(DsdlConstExprEvaluator));
+        static readonly HashSet<Type> _typesToBlock = new HashSet<Type>()
+        {
+            typeof(ExpressionEvaluator),
+            typeof(DsdlConstExprEvaluator)
+        };
+
+        public override ISet<Type> TypesToBlock
+        {
+            get => _typesToBlock;
+            set => throw new NotSupportedException();
         }
 
         protected override bool EvaluateNumber(string expression, Stack<object> stack, ref int i)

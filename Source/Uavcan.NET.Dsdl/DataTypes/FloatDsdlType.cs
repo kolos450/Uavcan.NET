@@ -11,10 +11,11 @@ namespace Uavcan.NET.Dsdl.DataTypes
         public FloatDsdlType(int bitlen, CastMode castMode)
             : base(bitlen, castMode)
         {
-            
+            if (!ValidateBitlen(bitlen))
+                throw new ArgumentException($"Invalid bit length: {bitlen}.", nameof(bitlen));
         }
 
-        protected override bool ValidateBitlen(int bitlen)
+        static bool ValidateBitlen(int bitlen)
         {
             return bitlen == 16 || bitlen == 32 || bitlen == 64;
         }

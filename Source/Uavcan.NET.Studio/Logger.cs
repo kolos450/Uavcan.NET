@@ -28,6 +28,8 @@ namespace Uavcan.NET.Studio
             Trace.WriteLine(message);
 
             Console.WriteLine(message);
+
+            Debug.Assert(false);
         }
 
         public static void Info(string v)

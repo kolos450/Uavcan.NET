@@ -42,12 +42,10 @@ namespace Uavcan.NET
             return Crc16.Add(crc, data, 0, data.Length);
         }
 
-        static readonly byte[] _emptyPayload = new byte[0];
-
         public byte[] BuildTransferPayload()
         {
             if (Frames.Count == 0)
-                return _emptyPayload;
+                return Array.Empty<byte>();
 
             ushort expectedCrc = 0;
             byte[] transferPayload;
@@ -59,7 +57,7 @@ namespace Uavcan.NET
                     if (i == 0)
                     {
                         if (currentFrame.DataLength <= 3)
-                            throw new CanFramesProcessingException("RX_SHORT_FRAME", Frames);
+                            throw new CanFramesProcessingException("Frame too short.", Frames);
                         expectedCrc = (ushort)((currentFrame.Data[0]) | (ushort)(currentFrame.Data[1] << 8));
                         ms.Write(currentFrame.Data, 2, currentFrame.DataLength - 3);
                     }
@@ -74,7 +72,7 @@ namespace Uavcan.NET
 
             var actualCrc = CalculateCrc(transferPayload);
             if (actualCrc != expectedCrc)
-                throw new CanFramesProcessingException("RX_BAD_CRC", Frames);
+                throw new CanFramesProcessingException("Bad CRC.", Frames);
 
             return transferPayload;
         }

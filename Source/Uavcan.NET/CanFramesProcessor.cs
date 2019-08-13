@@ -66,7 +66,7 @@ namespace Uavcan.NET
                 canIdFlags.HasFlag(CanIdFlags.ERR) ||
                 (frame.DataLength < 1))
             {
-                throw new CanFramesProcessingException("RX_INCOMPATIBLE_PACKET", frame);
+                throw new CanFramesProcessingException("A frame with incompatible CAN ID received.", frame);
             }
 
             var priority = canIdInfo.Priority;
@@ -109,7 +109,7 @@ namespace Uavcan.NET
                 if (!frameInfo.IsStartOfTransfer)
                 {
                     rxState.TransferId++;
-                    throw new CanFramesProcessingException("RX_MISSED_START", frame);
+                    throw new CanFramesProcessingException("Missed RX start.", frame);
                 }
             }
 
@@ -137,10 +137,10 @@ namespace Uavcan.NET
             rxState.Frames.Add(frame);
 
             if (frameInfo.ToggleBit != rxState.NextToggle)
-                throw new CanFramesProcessingException("RX_WRONG_TOGGLE", rxState.Frames);
+                throw new CanFramesProcessingException("Wrong toggle bit.", rxState.Frames);
 
             if (frameInfo.TransferId != rxState.TransferId)
-                throw new CanFramesProcessingException("RX_UNEXPECTED_TID", rxState.Frames);
+                throw new CanFramesProcessingException("Unexpected transfer ID.", rxState.Frames);
 
             // Beginning of multi frame transfer.
             if (frameInfo.IsStartOfTransfer && !frameInfo.IsEndOfTransfer)

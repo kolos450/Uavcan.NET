@@ -42,7 +42,7 @@ namespace Uavcan.NET
             {
                 if (payloadLen > 7)
                 {
-                    throw new Exception("NODE_ID_NOT_SET");
+                    throw new ArgumentException("Node ID expected.", nameof(nodeId));
                 }
 
                 const ushort DTIDMask = (ushort)(1U << UavcanConstants.AnonymousMessageDataTypeIdBitLen) - 1;

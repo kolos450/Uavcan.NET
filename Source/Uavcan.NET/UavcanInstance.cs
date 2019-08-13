@@ -147,39 +147,16 @@ namespace Uavcan.NET
             if (uavcanType == null)
                 throw new InvalidOperationException($"Cannot resolve uavcan type with id = {transfer.DataTypeId}.");
 
-            var scheme = GetScheme(uavcanType, transfer.TransferType);
-
             return new TransferReceivedArgs
             {
                 Type = uavcanType,
-                Content = CreateUnknownObjectFactory(transfer.Payload, scheme),
                 ContentBytes = transfer.Payload,
                 Priority = transfer.Priority,
                 ReceivedTime = _stopwatchOffset + TimeSpan.FromMilliseconds(transfer.TimestampUsec / 1000),
                 SourceNodeId = transfer.SourceNodeId,
-                TransferId = transfer.TransferId
+                TransferId = transfer.TransferId,
+                TransferType = transfer.TransferType,
             };
-        }
-
-        private Lazy<object> CreateUnknownObjectFactory(byte[] payload, DsdlType scheme)
-        {
-            return new Lazy<object>(() =>
-                Serializer.Deserialize(payload, 0, payload.Length, scheme));
-        }
-
-        static CompositeDsdlTypeBase GetScheme(IUavcanType uavcanType, UavcanTransferType transferType)
-        {
-            switch (transferType)
-            {
-                case UavcanTransferType.Broadcast:
-                    return uavcanType as MessageType;
-                case UavcanTransferType.Request:
-                    return (uavcanType as ServiceType).Request;
-                case UavcanTransferType.Response:
-                    return (uavcanType as ServiceType).Response;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(transferType));
-            }
         }
 
         bool ShouldAcceptTransfer(out ulong dataTypeSignature, uint dataTypeId, UavcanTransferType transferType, byte sourceNodeId, byte destinationNodeId)

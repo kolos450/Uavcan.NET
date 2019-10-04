@@ -45,7 +45,7 @@ namespace Uavcan.NET.Studio
 
                 _mainWindow.Dispatcher.Invoke(() =>
                 {
-                    ((MainWindow)MainWindow).Active = true;
+                    _mainWindow.Active = true;
                 });
             });
         }
@@ -63,10 +63,11 @@ namespace Uavcan.NET.Studio
             if (wnd.ShowDialog() != true)
                 return null;
 
+            var vm = wnd.ViewModel;
             return new ConnectionSettings
             {
-                InterfaceName = wnd.InterfaceName,
-                BitRate = wnd.BitRate,
+                InterfaceName = vm.InterfaceName,
+                BitRate = (int)vm.BitRate,
             };
         }
 

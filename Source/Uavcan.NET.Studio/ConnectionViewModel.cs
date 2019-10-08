@@ -4,14 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
-using System.IO.Ports;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using Uavcan.NET.Drivers;
 
@@ -45,16 +41,16 @@ namespace Uavcan.NET.Studio
                         Interface = changeSet.GetFirstAddedItemOrDefault();
                 });
 
+            var stateIsValid = this.WhenAnyValue(
+                x => x.Interface,
+                x => x.BitRate,
+                (iface, bitRate) => iface != null && bitRate != null);
+
             Connect = ReactiveCommand.Create<Window>(window =>
             {
-                if (Interface == null)
-                    return;
-                if (BitRate == null)
-                    return;
-
                 window.DialogResult = true;
                 window.Close();
-            });
+            }, canExecute: stateIsValid);
 
             _cleanUp = new CompositeDisposable(interfacesBindingDisposable);
         }

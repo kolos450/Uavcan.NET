@@ -87,6 +87,7 @@
     <Compile Include="DsdlSerializerExtensions.cs" />
     <Compile Include="MefDependencyResolver.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Presentation\Converters\LogicalNotConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToTextConverter.cs" />
     <Compile Include="Presentation\Converters\ByteArrayToHexConverter.cs" />
     <Compile Include="Presentation\Converters\IsNullConverter.cs" />

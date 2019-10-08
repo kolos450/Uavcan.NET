@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 
 namespace Uavcan.NET.Studio.Presentation.Converters
 {
-    sealed class IsNullConverter : IValueConverter
+    sealed class LogicalNotConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value == null);
+            var v = (bool)value;
+            return !v;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new InvalidOperationException("IsNullConverter can only be used OneWay.");
+            throw new NotImplementedException();
         }
     }
 }

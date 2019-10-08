@@ -67,6 +67,7 @@
     <Compile Include="..\Versioning\VersionAssemblyInfo.cs">
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ChangeSetExtensions.cs" />
     <Compile Include="ConnectionViewModel.cs" />
     <Compile Include="DataTypes\Protocol\DataTypeKind.cs" />
     <Compile Include="DataTypes\Protocol\Debug\LogLevel.cs" />
@@ -141,7 +142,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Compile Include="ConnectionSettings.cs" />
     <Compile Include="ConnectionWindow.xaml.cs">
       <DependentUpon>ConnectionWindow.xaml</DependentUpon>
     </Compile>

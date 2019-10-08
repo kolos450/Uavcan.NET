@@ -3,6 +3,8 @@ using ReactiveUI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Reactive;
@@ -11,32 +13,42 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Uavcan.NET.Drivers;
 
 namespace Uavcan.NET.Studio
 {
     sealed class ConnectionViewModel : ReactiveObject, IDisposable
     {
         readonly IDisposable _cleanUp;
-        readonly ChangesetHelper<string> _changesetHelper;
+        readonly ChangesetHelper<ICanDriverPort> _changesetHelper;
 
-        public ConnectionViewModel()
+        [ImportMany]
+        IEnumerable<ICanDriverPortProvider> _driverProviders = null;
+
+        public ConnectionViewModel(ICompositionService compositionService)
         {
-            _changesetHelper = new ChangesetHelper<string>(
-                SerialPort.GetPortNames(),
-                StringComparer.Ordinal);
+            compositionService.SatisfyImportsOnce(this);
 
-            var bindingDisposable = Observable.Interval(TimeSpan.FromMilliseconds(500))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Select(_ => _changesetHelper.GetChanges(SerialPort.GetPortNames()))
+            _changesetHelper = new ChangesetHelper<ICanDriverPort>();
+
+            var interfacesBindingDisposable = Observable.Timer(
+                    TimeSpan.Zero,
+                    TimeSpan.FromMilliseconds(500),
+                    RxApp.MainThreadScheduler)
+                .Select(_ => _changesetHelper.ApplyChanges(GetPorts()))
                 .Bind(out _interfaces)
-                .Subscribe();
+                .Subscribe(changeSet =>
+                {
+                    if (Interface != null && changeSet.Removes(Interface))
+                        Interface = null;
+                    if (Interface == null && changeSet.Adds > 0)
+                        Interface = changeSet.GetFirstAddedItemOrDefault();
+                });
 
             Connect = ReactiveCommand.Create<Window>(window =>
             {
-                var portName = InterfaceName as string;
-                if (string.IsNullOrEmpty(portName))
+                if (Interface == null)
                     return;
-
                 if (BitRate == null)
                     return;
 
@@ -44,17 +56,24 @@ namespace Uavcan.NET.Studio
                 window.Close();
             });
 
-            _cleanUp = new CompositeDisposable(bindingDisposable);
+            _cleanUp = new CompositeDisposable(interfacesBindingDisposable);
         }
 
-        readonly ReadOnlyObservableCollection<string> _interfaces;
-        public ReadOnlyObservableCollection<string> Interfaces => _interfaces;
+        IEnumerable<ICanDriverPort> GetPorts()
+        {
+            return _driverProviders
+                .SelectMany(x => x.GetDriverPorts())
+                .ToList();
+        }
+
+        readonly ReadOnlyObservableCollection<ICanDriverPort> _interfaces;
+        public ReadOnlyObservableCollection<ICanDriverPort> Interfaces => _interfaces;
 
         bool _busy;
         public bool Busy { get => _busy; set => this.RaiseAndSetIfChanged(ref _busy, value); }
 
-        string _interfaceName;
-        public string InterfaceName { get => _interfaceName; set => this.RaiseAndSetIfChanged(ref _interfaceName, value); }
+        ICanDriverPort _interface;
+        public ICanDriverPort Interface { get => _interface; set => this.RaiseAndSetIfChanged(ref _interface, value); }
 
         int? _bitRate;
         public int? BitRate { get => _bitRate; set => this.RaiseAndSetIfChanged(ref _bitRate, value); }
@@ -87,12 +106,13 @@ namespace Uavcan.NET.Studio
                 _equalityComparer = equalityComparer;
             }
 
-            public IChangeSet<T> GetChanges(IEnumerable<T> items)
+            public IChangeSet<T> ApplyChanges(IEnumerable<T> items)
             {
                 var removed = _items.Except(items, _equalityComparer)
                     .Select(x => new Change<T>(ListChangeReason.Remove, x));
                 var added = items.Except(_items, _equalityComparer)
                     .Select(x => new Change<T>(ListChangeReason.Add, x));
+                _items = items;
                 return new ChangeSet<T>(removed.Concat(added));
             }
         }

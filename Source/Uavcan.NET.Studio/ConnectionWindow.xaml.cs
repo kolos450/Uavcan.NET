@@ -1,9 +1,15 @@
 ﻿using MahApps.Metro.Controls;
 using ReactiveUI;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO.Ports;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Windows;
+using Uavcan.NET.Drivers;
 
 namespace Uavcan.NET.Studio
 {
@@ -12,11 +18,11 @@ namespace Uavcan.NET.Studio
     /// </summary>
     partial class ConnectionWindow : MetroWindow, IViewFor<ConnectionViewModel>
     {
-        public ConnectionWindow()
+        public ConnectionWindow(ICompositionService compositionService)
         {
             InitializeComponent();
 
-            ViewModel = new ConnectionViewModel();
+            ViewModel = new ConnectionViewModel(compositionService);
 
             this.WhenActivated(d =>
             {
@@ -30,17 +36,15 @@ namespace Uavcan.NET.Studio
                     view => view.cbInterfaces.ItemsSource)
                     .DisposeWith(d);
 
-                this.WhenAnyValue(v => v.cbInterfaces.SelectedItem)
-                    .BindTo(this, v => v.ViewModel.InterfaceName)
+                this.OneWayBind(ViewModel,
+                    viewModel => viewModel.Interface,
+                    view => view.cbInterfaces.SelectedItem)
                     .DisposeWith(d);
 
                 this.WhenAnyValue(v => v.upBitRate.Value)
                     .Select(x => x.HasValue ? (int?)x.Value : null)
                     .BindTo(this, v => v.ViewModel.BitRate)
                     .DisposeWith(d);
-
-                if (cbInterfaces.Items.Count > 0)
-                    cbInterfaces.SelectedIndex = 0;
 
                 this.BindCommand(ViewModel,
                     vm => vm.Connect,

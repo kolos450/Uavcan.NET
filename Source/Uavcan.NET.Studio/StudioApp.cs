@@ -16,6 +16,9 @@ namespace Uavcan.NET.Studio
         [Import]
         UavcanService _uavcan = null;
 
+        [Import]
+        ICompositionService _compositionService = null;
+
         public StudioApp()
         {
             SetupThemes();
@@ -26,23 +29,18 @@ namespace Uavcan.NET.Studio
 
         void StudioApp_Startup(object sender, StartupEventArgs e)
         {
-            var connectionSettings = GetConnectionSettings();
-            if (connectionSettings == null)
+            var driver = GetCanDriver();
+            if (driver == null)
             {
                 Shutdown();
                 return;
             }
+            _uavcan.AddDriver(driver);
 
             MainWindow.Show();
 
             Task.Factory.StartNew(() =>
             {
-                var usbTin = new UsbTin();
-                usbTin.Connect(connectionSettings.InterfaceName);
-                usbTin.OpenCanChannel(connectionSettings.BitRate, UsbTinOpenMode.Active);
-
-                _uavcan.AddDriver(usbTin);
-
                 _mainWindow.Dispatcher.Invoke(() =>
                 {
                     _mainWindow.Active = true;
@@ -57,18 +55,14 @@ namespace Uavcan.NET.Studio
             Resources.MergedDictionaries.Add(resDictionary);
         }
 
-        static ConnectionSettings GetConnectionSettings()
+        ICanDriver GetCanDriver()
         {
-            var wnd = new ConnectionWindow();
+            var wnd = new ConnectionWindow(_compositionService);
             if (wnd.ShowDialog() != true)
                 return null;
 
             var vm = wnd.ViewModel;
-            return new ConnectionSettings
-            {
-                InterfaceName = vm.InterfaceName,
-                BitRate = (int)vm.BitRate,
-            };
+            return vm.Interface.Open((int)vm.BitRate);
         }
 
         public void Dispose()

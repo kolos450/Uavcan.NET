@@ -45,6 +45,8 @@
     <Compile Include="..\Versioning\VersionAssemblyInfo.cs">
       <Link>Properties\VersionAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CanDriverPort.cs" />
+    <Compile Include="CanDriverPortProvider.cs" />
     <Compile Include="CanFrameConverter.cs" />
     <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="FilterChain.cs" />

@@ -1,0 +1,62 @@
+﻿<Controls:MetroWindow 
+        x:Class="Uavcan.NET.Studio.ErrorWindow"
+        x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:Uavcan.NET.Studio"
+        mc:Ignorable="d"
+        GlowBrush="{DynamicResource AccentColorBrush}"
+        Title="Error Occurred" Height="Auto" Width="500"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="ToolWindow"
+        SizeToContent="Height"
+        ResizeMode="CanMinimize">
+    <Controls:MetroWindow.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Accents/Red.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="DescriptionHeaderStyle" TargetType="Label">
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+            </Style>
+            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+                <Setter Property="Margin" Value="7,0,0,0" />
+                <Setter Property="Padding" Value="9,3" />
+                <Setter Property="MinWidth" Value="80" />
+            </Style>
+            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                <Setter Property="Padding" Value="9,3" />
+                <Setter Property="MinWidth" Value="80" />
+            </Style>
+        </ResourceDictionary>
+    </Controls:MetroWindow.Resources>
+    <StackPanel>
+        <TextBlock 
+            TextWrapping="WrapWithOverflow" 
+            Margin="12 7 12 5"
+            FontSize="14"
+            Name="tbDescription" 
+            Text="Error description" />
+        <Grid Margin="12 5 10 12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <ToggleButton Grid.Column="0" x:Name="bToggleDetailsVisibility">DETAILS</ToggleButton>
+            <Button Grid.Column="2" IsCancel="True" IsDefault="True">CLOSE</Button>
+        </Grid>
+        <TextBox
+            Margin="12 0 10 12"
+            Height="150"
+            IsReadOnly="True"
+            HorizontalScrollBarVisibility="Visible"
+            VerticalScrollBarVisibility="Visible" 
+            Name="tbDetails"
+            Text="Error details" />
+    </StackPanel>
+</Controls:MetroWindow>

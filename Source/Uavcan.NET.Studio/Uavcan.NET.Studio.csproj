@@ -85,6 +85,7 @@
     <Compile Include="DataTypes\Protocol\SoftwareVersion.cs" />
     <Compile Include="DataTypes\Timestamp.cs" />
     <Compile Include="DsdlSerializerExtensions.cs" />
+    <Compile Include="ErrorViewModel.cs" />
     <Compile Include="MefDependencyResolver.cs" />
     <Compile Include="Presentation\Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Presentation\Converters\LogicalNotConverter.cs" />
@@ -126,6 +127,9 @@
       <DependentUpon>ToolWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="UavcanService.cs" />
+    <Compile Include="ErrorWindow.xaml.cs">
+      <DependentUpon>ErrorWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WpfWindowWrapper.cs" />
     <Page Include="ConnectionWindow.xaml">
       <SubType>Designer</SubType>
@@ -169,6 +173,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ToolWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ErrorWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

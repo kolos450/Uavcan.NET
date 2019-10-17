@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Uavcan.NET.Drivers
 {
-    public interface ICanDriverPort : IEquatable<ICanDriverPort>
+    public interface ICanPortProvider
     {
-        string DisplayName { get; }
-        ICanDriver Open(int bitrate);
+        string Name { get; }
+        IEnumerable<ICanPort> GetDriverPorts();
     }
 }

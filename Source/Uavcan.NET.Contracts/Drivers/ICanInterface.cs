@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Uavcan.NET.Drivers
 {
-    public interface ICanDriver : IDisposable
+    public interface ICanInterface : IDisposable
     {
         event EventHandler<CanMessageEventArgs> MessageReceived;
         event EventHandler<CanMessageEventArgs> MessageTransmitted;

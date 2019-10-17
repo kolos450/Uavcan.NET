@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Uavcan.NET.Drivers.Slcan
 {
-    sealed class CanDriverPort : ICanDriverPort
+    sealed class CanPort : ICanPort
     {
-        public CanDriverPort(string name)
+        public CanPort(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -17,17 +18,17 @@ namespace Uavcan.NET.Drivers.Slcan
 
         public string DisplayName { get; }
 
-        public bool Equals(ICanDriverPort other)
+        public bool Equals(ICanPort other)
         {
-            return Equals(this, other as CanDriverPort);
+            return Equals(this, other as CanPort);
         }
 
         public override bool Equals(object other)
         {
-            return Equals(this, other as CanDriverPort);
+            return Equals(this, other as CanPort);
         }
 
-        static bool Equals(CanDriverPort a, CanDriverPort b)
+        static bool Equals(CanPort a, CanPort b)
         {
             if (ReferenceEquals(a, b))
                 return true;
@@ -40,11 +41,11 @@ namespace Uavcan.NET.Drivers.Slcan
 
         public override string ToString() => DisplayName;
 
-        public ICanDriver Open(int bitrate)
+        public async Task<ICanInterface> OpenAsync(int bitrate, CancellationToken cancellationToken)
         {
             var usbTin = new UsbTin();
-            usbTin.Connect(DisplayName);
-            usbTin.OpenCanChannel(bitrate, UsbTinOpenMode.Active);
+            await usbTin.ConnectAsync(DisplayName, cancellationToken).ConfigureAwait(false);
+            await usbTin.OpenCanChannelAsync(bitrate, UsbTinOpenMode.Active, cancellationToken).ConfigureAwait(false);
             return usbTin;
         }
     }

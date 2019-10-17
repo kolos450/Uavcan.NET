@@ -8,13 +8,15 @@ using System.Threading.Tasks;
 
 namespace Uavcan.NET.Drivers.Slcan
 {
-    [Export(typeof(ICanDriverPortProvider))]
-    sealed class CanDriverPortProvider : ICanDriverPortProvider
+    [Export(typeof(ICanPortProvider))]
+    sealed class CanPortProvider : ICanPortProvider
     {
-        public IEnumerable<ICanDriverPort> GetDriverPorts()
+        public string Name => "Serial line CAN interface driver";
+
+        public IEnumerable<ICanPort> GetDriverPorts()
         {
             return SerialPort.GetPortNames()
-                .Select(x => new CanDriverPort(x));
+                .Select(x => new CanPort(x));
         }
     }
 }

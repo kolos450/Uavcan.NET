@@ -16,16 +16,16 @@ namespace Uavcan.NET.Studio
     sealed class ConnectionViewModel : ReactiveObject, IDisposable
     {
         readonly IDisposable _cleanUp;
-        readonly ChangesetHelper<ICanDriverPort> _changesetHelper;
+        readonly ChangesetHelper<ICanPort> _changesetHelper;
 
         [ImportMany]
-        IEnumerable<ICanDriverPortProvider> _driverProviders = null;
+        IEnumerable<ICanPortProvider> _driverProviders = null;
 
         public ConnectionViewModel(ICompositionService compositionService)
         {
             compositionService.SatisfyImportsOnce(this);
 
-            _changesetHelper = new ChangesetHelper<ICanDriverPort>();
+            _changesetHelper = new ChangesetHelper<ICanPort>();
 
             var interfacesBindingDisposable = Observable.Timer(
                     TimeSpan.Zero,
@@ -55,21 +55,21 @@ namespace Uavcan.NET.Studio
             _cleanUp = new CompositeDisposable(interfacesBindingDisposable);
         }
 
-        IEnumerable<ICanDriverPort> GetPorts()
+        IEnumerable<ICanPort> GetPorts()
         {
             return _driverProviders
                 .SelectMany(x => x.GetDriverPorts())
                 .ToList();
         }
 
-        readonly ReadOnlyObservableCollection<ICanDriverPort> _interfaces;
-        public ReadOnlyObservableCollection<ICanDriverPort> Interfaces => _interfaces;
+        readonly ReadOnlyObservableCollection<ICanPort> _interfaces;
+        public ReadOnlyObservableCollection<ICanPort> Interfaces => _interfaces;
 
         bool _busy;
         public bool Busy { get => _busy; set => this.RaiseAndSetIfChanged(ref _busy, value); }
 
-        ICanDriverPort _interface;
-        public ICanDriverPort Interface { get => _interface; set => this.RaiseAndSetIfChanged(ref _interface, value); }
+        ICanPort _interface;
+        public ICanPort Interface { get => _interface; set => this.RaiseAndSetIfChanged(ref _interface, value); }
 
         int? _bitRate;
         public int? BitRate { get => _bitRate; set => this.RaiseAndSetIfChanged(ref _bitRate, value); }

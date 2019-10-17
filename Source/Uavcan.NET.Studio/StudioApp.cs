@@ -55,7 +55,7 @@ namespace Uavcan.NET.Studio
             Resources.MergedDictionaries.Add(resDictionary);
         }
 
-        ICanDriver GetCanDriver()
+        ICanInterface GetCanDriver()
         {
             var wnd = new ConnectionWindow(_compositionService);
             if (wnd.ShowDialog() != true)

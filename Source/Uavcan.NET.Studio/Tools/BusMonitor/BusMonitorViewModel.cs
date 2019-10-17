@@ -23,7 +23,7 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
         readonly IDisposable _cleanUp;
 
         readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-        readonly IEnumerable<ICanDriver> _drivers;
+        readonly IEnumerable<ICanInterface> _drivers;
         readonly CanFramesProcessor _framesProcessor;
         readonly IUavcanTypeResolver _typeResolver;
 

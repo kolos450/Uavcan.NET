@@ -27,8 +27,8 @@ namespace Uavcan.NET
         public IUavcanTypeResolver TypeResolver { get; }
         public DsdlSerializer Serializer { get; }
 
-        List<ICanDriver> _drivers = new List<ICanDriver>();
-        public IEnumerable<ICanDriver> Drivers => _drivers;
+        List<ICanInterface> _drivers = new List<ICanInterface>();
+        public IEnumerable<ICanInterface> Drivers => _drivers;
 
         public UavcanInstance(IUavcanTypeResolver typeResolver)
         {
@@ -37,13 +37,13 @@ namespace Uavcan.NET
             _framesProcessor = new CanFramesProcessor(ShouldAcceptTransfer);
         }
 
-        public void AddDriver(ICanDriver driver)
+        public void AddDriver(ICanInterface driver)
         {
             driver.MessageReceived += CanDriver_MessageReceived;
             _drivers.Add(driver);
         }
 
-        public void RemoveDriver(ICanDriver driver)
+        public void RemoveDriver(ICanInterface driver)
         {
             driver.MessageReceived -= CanDriver_MessageReceived;
             _drivers.Remove(driver);

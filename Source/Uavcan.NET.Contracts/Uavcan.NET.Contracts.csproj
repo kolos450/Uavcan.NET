@@ -48,9 +48,9 @@
     <Compile Include="CanId.cs" />
     <Compile Include="CanIdFlags.cs" />
     <Compile Include="Drivers\CanMessageEventArgs.cs" />
-    <Compile Include="Drivers\ICanDriver.cs" />
-    <Compile Include="Drivers\ICanDriverPort.cs" />
-    <Compile Include="Drivers\ICanDriverPortProvider.cs" />
+    <Compile Include="Drivers\ICanInterface.cs" />
+    <Compile Include="Drivers\ICanPort.cs" />
+    <Compile Include="Drivers\ICanPortProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

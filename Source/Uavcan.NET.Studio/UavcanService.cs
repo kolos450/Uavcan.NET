@@ -18,7 +18,7 @@ namespace Uavcan.NET.Studio
             Engine = new UavcanInstance(typeResolvingService);
         }
 
-        public void AddDriver(ICanDriver driver)
+        public void AddDriver(ICanInterface driver)
         {
             Engine.AddDriver(driver);
         }

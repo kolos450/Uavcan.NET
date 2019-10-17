@@ -15,7 +15,7 @@ namespace Uavcan.NET.Drivers.Slcan
     /// <summary>
     /// Represents an USBtin device.
     /// </summary>
-    public class UsbTin : ICanDriver, IDisposable
+    public class UsbTin : ICanInterface, IDisposable
     {
         readonly Encoding _encoding = Encoding.ASCII;
 
@@ -107,7 +107,7 @@ namespace Uavcan.NET.Drivers.Slcan
         /// to make sure that we are in configuration mode.
         /// </summary>
         /// <param name="portName">Name of virtual serial port</param>
-        public void Connect(string portName)
+        public async Task ConnectAsync(string portName, CancellationToken cancellationToken)
         {
             // Create serial port object.
             _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One)
@@ -270,7 +270,7 @@ namespace Uavcan.NET.Drivers.Slcan
         /// </summary>
         /// <param name="baudrate">Baudrate in bits/second</param>
         /// <param name="mode">CAN bus accessing mode</param>
-        public void OpenCanChannel(int baudrate, UsbTinOpenMode mode)
+        public async Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken)
         {
             // Set baudrate.
             char baudCh = ' ';

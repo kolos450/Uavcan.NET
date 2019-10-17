@@ -8,6 +8,8 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Uavcan.NET.Drivers;
 
@@ -15,6 +17,8 @@ namespace Uavcan.NET.Studio
 {
     sealed class ConnectionViewModel : ReactiveObject, IDisposable
     {
+        const int ConnectionTimeout = 5000;
+
         readonly IDisposable _cleanUp;
         readonly ChangesetHelper<ICanPort> _changesetHelper;
 
@@ -46,13 +50,42 @@ namespace Uavcan.NET.Studio
                 x => x.BitRate,
                 (iface, bitRate) => iface != null && bitRate != null);
 
-            Connect = ReactiveCommand.Create<Window>(window =>
-            {
-                window.DialogResult = true;
-                window.Close();
-            }, canExecute: stateIsValid);
+            Connect = ReactiveCommand.CreateFromTask<Window>(async window =>
+                {
+                    Busy = true;
 
-            _cleanUp = new CompositeDisposable(interfacesBindingDisposable);
+                    try
+                    {
+                        await Task.Factory.StartNew(async () =>
+                        {
+                            using (var cts = new CancellationTokenSource(ConnectionTimeout))
+                            {
+                                Driver = await Interface.OpenAsync(BitRate.Value, cts.Token).ConfigureAwait(false);
+                            }
+                        });
+
+                        window.DialogResult = true;
+                        window.Close();
+                    }
+                    catch
+                    {
+                        Busy = false;
+                        throw;
+                    }
+                },
+                canExecute: stateIsValid);
+
+            var connectThrownExceptionsDisposable = Connect.ThrownExceptions
+                .Subscribe(ex =>
+                {
+                    ErrorWindow.Show(
+                        $"Cannot connect to {Interface.DisplayName} at bitrate {BitRate?.ToString() ?? "<Invalid>"}.",
+                        ex.ToString());
+                });
+
+            _cleanUp = new CompositeDisposable(
+                interfacesBindingDisposable,
+                connectThrownExceptionsDisposable);
         }
 
         IEnumerable<ICanPort> GetPorts()
@@ -75,6 +108,8 @@ namespace Uavcan.NET.Studio
         public int? BitRate { get => _bitRate; set => this.RaiseAndSetIfChanged(ref _bitRate, value); }
 
         public ReactiveCommand<Window, Unit> Connect { get; }
+
+        public ICanInterface Driver { get; private set; }
 
         public void Dispose()
         {

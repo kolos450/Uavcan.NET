@@ -38,14 +38,7 @@ namespace Uavcan.NET.Studio
             _uavcan.AddDriver(driver);
 
             MainWindow.Show();
-
-            Task.Factory.StartNew(() =>
-            {
-                _mainWindow.Dispatcher.Invoke(() =>
-                {
-                    _mainWindow.Active = true;
-                });
-            });
+            _mainWindow.Active = true;
         }
 
         void SetupThemes()
@@ -61,8 +54,7 @@ namespace Uavcan.NET.Studio
             if (wnd.ShowDialog() != true)
                 return null;
 
-            var vm = wnd.ViewModel;
-            return vm.Interface.Open((int)vm.BitRate);
+            return wnd.ViewModel.Driver;
         }
 
         public void Dispose()

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- =================================================================== -->
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AssemblyMetadata.cs" Link="Properties\AssemblyMetadata.cs" />
+  </ItemGroup>
+
+  <!-- =================================================================== -->
+
+  <Import Project="AssemblySignature.props" />
+
+</Project>

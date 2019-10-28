@@ -31,3 +31,4 @@ Source/packages/MSTest.*
 Source/packages/Microsoft.VSSDK.BuildTools.*
 Source/Testing/Standalone/packages/System.*
 Source/obj/*
+*.snk

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.28729.10
+VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET", "Uavcan.NET\Uavcan.NET.csproj", "{504820BF-A958-4679-B1D5-5B4BA9F340A6}"
 EndProject
@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Dsdl.Testing", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Testing", "Testing\Uavcan.NET.Testing\Uavcan.NET.Testing.csproj", "{39668E15-4FC1-429E-929B-CBC162274F5B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Harness", "Uavcan.NET.Harness\Uavcan.NET.Harness.csproj", "{B68AFC80-67FA-486A-8E5C-429FBA47ADE0}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Drivers.Slcan", "Uavcan.NET.Drivers.Slcan\Uavcan.NET.Drivers.Slcan.csproj", "{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializationTestGenerator", "Testing\SerializationTestGenerator\SerializationTestGenerator.csproj", "{991C2FD6-24A5-49D3-86D7-109397BDCBA8}"
@@ -25,13 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Studio", "Uavcan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Contracts", "Uavcan.NET.Contracts\Uavcan.NET.Contracts.csproj", "{5E61E183-3176-4E17-A383-C4A28D019011}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Studio.Tools.EfeDebugger", "Uavcan.NET.Studio.Tools.EfeDebugger\Uavcan.NET.Studio.Tools.EfeDebugger.csproj", "{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTypeGenerator", "Testing\DataTypeGenerator\DataTypeGenerator.csproj", "{316FF227-E6AE-4152-A7E7-0AFF71B128C7}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StudioTools", "StudioTools", "{C99C3251-E27E-4917-A94E-6C7C7EA26A60}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConvX219", "..\..\..\Chip\Lathes\FSS 400\X219\ConvX219\ConvX219\ConvX219.csproj", "{A4307042-997E-4D81-992E-D97FDBE9F33F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,10 +47,6 @@ Global
 		{39668E15-4FC1-429E-929B-CBC162274F5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39668E15-4FC1-429E-929B-CBC162274F5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39668E15-4FC1-429E-929B-CBC162274F5B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B68AFC80-67FA-486A-8E5C-429FBA47ADE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B68AFC80-67FA-486A-8E5C-429FBA47ADE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B68AFC80-67FA-486A-8E5C-429FBA47ADE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B68AFC80-67FA-486A-8E5C-429FBA47ADE0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -79,18 +67,10 @@ Global
 		{5E61E183-3176-4E17-A383-C4A28D019011}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E61E183-3176-4E17-A383-C4A28D019011}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E61E183-3176-4E17-A383-C4A28D019011}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75}.Release|Any CPU.Build.0 = Release|Any CPU
 		{316FF227-E6AE-4152-A7E7-0AFF71B128C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{316FF227-E6AE-4152-A7E7-0AFF71B128C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{316FF227-E6AE-4152-A7E7-0AFF71B128C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{316FF227-E6AE-4152-A7E7-0AFF71B128C7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A4307042-997E-4D81-992E-D97FDBE9F33F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A4307042-997E-4D81-992E-D97FDBE9F33F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A4307042-997E-4D81-992E-D97FDBE9F33F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A4307042-997E-4D81-992E-D97FDBE9F33F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,12 +78,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{FEE2E789-1EAE-466B-A254-29EDAADF02EB} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
 		{39668E15-4FC1-429E-929B-CBC162274F5B} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
-		{B68AFC80-67FA-486A-8E5C-429FBA47ADE0} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
 		{991C2FD6-24A5-49D3-86D7-109397BDCBA8} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
 		{556FC114-3629-42B7-89CC-C55E078CBF44} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
-		{D2DC21CF-8AA5-4E35-A11E-9F08AC591C75} = {C99C3251-E27E-4917-A94E-6C7C7EA26A60}
 		{316FF227-E6AE-4152-A7E7-0AFF71B128C7} = {8BE8F561-F138-49C5-BC04-CB6977B32983}
-		{A4307042-997E-4D81-992E-D97FDBE9F33F} = {C99C3251-E27E-4917-A94E-6C7C7EA26A60}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {ECD6CA83-2AC1-4F3F-9957-2805E8C39A99}

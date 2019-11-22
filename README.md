@@ -3,7 +3,7 @@ UAVCAN v0 protocol stack implementation for .NET platform.
 
 ## Features
 - Flexible and fast serializer for converting between .NET objects and UAVCAN data structures.
-- Built-In asynchronous I/O support.
+- Built-in asynchronous I/O support.
 - SLCAN adapters support.
 - Extensible GUI Tool for bus management and diagnostics.
 

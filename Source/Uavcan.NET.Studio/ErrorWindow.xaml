@@ -23,12 +23,12 @@
                 <Setter Property="FontSize" Value="22" />
                 <Setter Property="HorizontalAlignment" Value="Center" />
             </Style>
-            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MahApps.Styles.Button}">
                 <Setter Property="Margin" Value="7,0,0,0" />
                 <Setter Property="Padding" Value="9,3" />
                 <Setter Property="MinWidth" Value="80" />
             </Style>
-            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MahApps.Styles.ToggleButton}">
                 <Setter Property="Padding" Value="9,3" />
                 <Setter Property="MinWidth" Value="80" />
             </Style>

@@ -39,6 +39,9 @@ namespace Uavcan.NET.Studio
             }
         }
 
+        public bool HasRegistration(Type serviceType, string contract = null) =>
+            _container.GetExports(serviceType, null, contract).Any();
+
         public void Register(Func<object> factory, Type serviceType, string contract = null)
         {
             var batch = new CompositionBatch();

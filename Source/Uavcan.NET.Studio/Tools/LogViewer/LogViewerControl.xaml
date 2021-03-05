@@ -15,7 +15,7 @@
         <StackPanel DockPanel.Dock="Top">
             <WrapPanel>
                 <WrapPanel.Resources>
-                    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MahApps.Styles.ToggleButton}">
                         <Setter Property="Margin" Value="3,3" />
                         <Setter Property="Padding" Value="2,2" />
                         <Setter Property="Width" Value="25" />
@@ -26,7 +26,7 @@
                             </Trigger>
                         </Style.Triggers>
                     </Style>
-                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MahApps.Styles.Button}">
                         <Setter Property="Margin" Value="3,3" />
                         <Setter Property="Padding" Value="2,2" />
                         <Setter Property="Width" Value="25" />

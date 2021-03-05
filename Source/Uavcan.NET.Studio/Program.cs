@@ -5,6 +5,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using Uavcan.NET.IO.Can.Drivers.Slcan;
 
 namespace Uavcan.NET.Studio
 {
@@ -37,11 +38,10 @@ namespace Uavcan.NET.Studio
             var assembly = typeof(Program).Assembly;
             var rootPath = Path.GetDirectoryName(new Uri(assembly.EscapedCodeBase).LocalPath);
 
-            var currentAssemblyCatalog = new AssemblyCatalog(typeof(Program).Assembly);
-
             var catalogs = _EnumerateCatalogAssemblies(rootPath)
                 .Select(x => new AssemblyCatalog(x))
-                .Concat(new[] { currentAssemblyCatalog });
+                .Concat(new[] { new AssemblyCatalog(typeof(UsbTin).Assembly) })
+                .Concat(new[] { new AssemblyCatalog(typeof(Program).Assembly) });
 
             var container = new CompositionContainer(new AggregateCatalog(catalogs), true);
 
@@ -55,17 +55,15 @@ namespace Uavcan.NET.Studio
 
         static IEnumerable<string> _EnumerateCatalogAssemblies(string rootPath)
         {
-            string filePattern = "Uavcan.NET.*.dll";
-
-            var query = Directory.EnumerateFiles(rootPath, filePattern);
-
-            string packagesPath = Path.Combine(rootPath, "Plugins");
-            if (Directory.Exists(packagesPath))
-                query = query.Concat(Directory.EnumerateFiles(packagesPath, filePattern));
-
-            query = query.Where(path => !path.EndsWith(".Contracts.dll", StringComparison.OrdinalIgnoreCase));
-
-            return query;
+            string pluginsPath = Path.Combine(rootPath, "Plugins");
+            const string pluginEntryPattern = "Uavcan.NET.*.dll";
+            if (Directory.Exists(pluginsPath))
+            {
+                foreach (var path in Directory.EnumerateFiles(pluginsPath, pluginEntryPattern, SearchOption.TopDirectoryOnly))
+                {
+                    yield return path;
+                }
+            }
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

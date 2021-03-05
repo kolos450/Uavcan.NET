@@ -37,7 +37,7 @@
                         <WrapPanel>
                             <Label>Node ID:</Label>
                             <Controls:NumericUpDown Grid.Column="1" Value="127" Maximum="127" Width="30" MinWidth="20" Minimum="1"
-                                                HideUpDownButtons="True" HasDecimals="False" Interval="1" Name="nudNodeId" />
+                                                HideUpDownButtons="True" NumericInputMode="Numbers" Interval="1" Name="nudNodeId" />
 
                             <Button Click="ApplyNodeIdButton_Click">Apply</Button>
                         </WrapPanel>

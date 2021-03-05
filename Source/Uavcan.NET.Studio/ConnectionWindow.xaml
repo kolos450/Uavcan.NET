@@ -14,7 +14,7 @@
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MahApps.Styles.Button}">
             <Setter Property="Margin" Value="7,0,0,0" />
             <Setter Property="Padding" Value="9,3" />
         </Style>
@@ -40,7 +40,7 @@
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">CAN bus bit rate:</Label>
                         <Controls:NumericUpDown Grid.Column="1" Value="125000" Maximum="1000000" Width="75" Name="upBitRate"
-                                                    HideUpDownButtons="True" HasDecimals="False" Interval="1" />
+                                                    HideUpDownButtons="True" NumericInputMode="Numbers" Interval="1" />
                     </Grid>
                 </StackPanel>
             </DockPanel>

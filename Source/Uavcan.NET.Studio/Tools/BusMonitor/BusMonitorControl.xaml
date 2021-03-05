@@ -35,7 +35,7 @@
                     </Grid.ColumnDefinitions>
                     <WrapPanel DockPanel.Dock="Top">
                         <WrapPanel.Resources>
-                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MetroToggleButton}">
+                            <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource MahApps.Styles.ToggleButton}">
                                 <Setter Property="Margin" Value="3,3" />
                                 <Setter Property="Padding" Value="2,2" />
                                 <Setter Property="Width" Value="25" />
@@ -46,7 +46,7 @@
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
-                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MetroButton}">
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MahApps.Styles.Button}">
                                 <Setter Property="Margin" Value="3,3" />
                                 <Setter Property="Padding" Value="2,2" />
                                 <Setter Property="Width" Value="25" />
@@ -69,7 +69,7 @@
             <DataGrid Name="dgFrames" AutoGenerateColumns="False" Grid.Row="1" EnableRowVirtualization="True"
                       IsReadOnly="True" SelectionMode="Single" SelectionChanged="DgFrames_SelectionChanged">
                 <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow" BasedOn="{StaticResource MetroDataGridRow}">
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource MahApps.Styles.DataGridRow}">
                         <Setter Property="FontFamily" Value="Consolas,Courier New" />
                     </Style>
                 </DataGrid.RowStyle>
@@ -81,28 +81,28 @@
                     <tconv:NodeIdToBrushConverter x:Key="NodeIdToBrushConverter" />
                     <tconv:TransferIdToBrushConverter x:Key="TransferIdToBrushConverter" />
                     <tconv:DataTypeToBrushConverter x:Key="DataTypeToBrushConverter" />
-                    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource MetroTextBlock}" x:Key="RightCell">
+                    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource MahApps.Styles.TextBlock}" x:Key="RightCell">
                         <Setter Property="HorizontalAlignment" Value="Stretch"/>
                         <Setter Property="TextAlignment" Value="Right"/>
                         <Setter Property="Padding" Value="0,0,3,0"/>
                     </Style>
-                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DataCell">
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MahApps.Styles.DataGridCell}" x:Key="DataCell">
                         <Setter Property="Background" Value="{Binding Path=., Converter={StaticResource TransferIdToBrushConverter}}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                     </Style>
-                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="SrcNodeIdCell">
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MahApps.Styles.DataGridCell}" x:Key="SrcNodeIdCell">
                         <Setter Property="Background" Value="{Binding SourceNodeId, Converter={StaticResource NodeIdToBrushConverter}}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                     </Style>
-                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DstNodeIdCell">
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MahApps.Styles.DataGridCell}" x:Key="DstNodeIdCell">
                         <Setter Property="Background" Value="{Binding DestinationNodeId, Converter={StaticResource NodeIdToBrushConverter}}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                     </Style>
-                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="CanIdCell">
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MahApps.Styles.DataGridCell}" x:Key="CanIdCell">
                         <Setter Property="Background" Value="{Binding CanId, Converter={StaticResource CanIdToBrushConverter}}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                     </Style>
-                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MetroDataGridCell}" x:Key="DataTypeCell">
+                    <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource MahApps.Styles.DataGridCell}" x:Key="DataTypeCell">
                         <Setter Property="Background" Value="{Binding DataType, Converter={StaticResource DataTypeToBrushConverter}}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                     </Style>

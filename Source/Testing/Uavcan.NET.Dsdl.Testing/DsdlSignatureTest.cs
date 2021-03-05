@@ -1,9 +1,8 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Uavcan.NET.Dsdl.Testing
 {
-    [TestClass]
     public class DsdlSignatureTest
     {
         static UavcanTypeMeta Meta(string fullName)
@@ -16,7 +15,7 @@ namespace Uavcan.NET.Dsdl.Testing
             };
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDsdlSignatureEmptyMessage()
         {
             var resolver = new StringUavcanTypeResolver(new[]
@@ -25,10 +24,10 @@ namespace Uavcan.NET.Dsdl.Testing
             });
             var type = resolver.ResolveType(string.Empty, "uavcan.protocol.param.Empty");
 
-            Assert.AreEqual(type.GetDataTypeSignature(), 0x6C4D0E8EF37361DFUL);
+            Assert.Equal(0x6C4D0E8EF37361DFUL, type.GetDataTypeSignature());
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDsdlSignatureSimpleMessage()
         {
             var resolver = new StringUavcanTypeResolver(new[]
@@ -41,10 +40,10 @@ uint3 value")
             });
             var type = resolver.ResolveType(string.Empty, "uavcan.protocol.debug.LogLevel");
 
-            Assert.AreEqual(type.GetDataTypeSignature(), 0x711BF141AF572346UL);
+            Assert.Equal(0x711BF141AF572346UL, type.GetDataTypeSignature());
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDsdlSignatureCompoundMessage()
         {
             var resolver = new StringUavcanTypeResolver(new[]
@@ -60,10 +59,10 @@ uint8[<=90] text"),
             });
             var type = resolver.ResolveType(string.Empty, "uavcan.protocol.debug.LogMessage");
 
-            Assert.AreEqual(type.GetDataTypeSignature(), 0xD654A48E0C049D75UL);
+            Assert.Equal(0xD654A48E0C049D75UL, type.GetDataTypeSignature());
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDsdlSignatureSimpleService()
         {
             var resolver = new StringUavcanTypeResolver(new[]
@@ -78,10 +77,10 @@ bool ok")
             });
             var type = resolver.ResolveType(string.Empty, "uavcan.protocol.param.ExecuteOpcode");
 
-            Assert.AreEqual(type.GetDataTypeSignature(), 0x3B131AC5EB69D2CDUL);
+            Assert.Equal(0x3B131AC5EB69D2CDUL, type.GetDataTypeSignature());
         }
 
-        [TestMethod]
+        [Fact]
         public void TestDsdlSignatureCompoundService()
         {
             var resolver = new StringUavcanTypeResolver(new[]
@@ -113,7 +112,7 @@ uint8[<=92] name"),
             });
             var type = resolver.ResolveType(string.Empty, "uavcan.protocol.param.GetSet");
 
-            Assert.AreEqual(type.GetDataTypeSignature(), 0xA7B622F939D1A4D5UL);
+            Assert.Equal(0xA7B622F939D1A4D5UL, type.GetDataTypeSignature());
         }
     }
 }

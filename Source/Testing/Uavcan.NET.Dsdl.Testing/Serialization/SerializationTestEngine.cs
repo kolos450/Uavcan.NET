@@ -1,13 +1,13 @@
 ﻿using Uavcan.NET.Testing.Framework;
 using Irony.Parsing;
 using KellermanSoftware.CompareNetObjects;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Uavcan.NET.Dsdl.Testing.Serialization
 {
@@ -51,7 +51,7 @@ namespace Uavcan.NET.Dsdl.Testing.Serialization
             var size = serializer.Serialize(data, buffer);
             buffer = buffer.Take(size).ToArray();
 
-            Assert.IsTrue(expectedBytes.SequenceEqual(buffer), "Serialized payload mismatch.");
+            Assert.True(expectedBytes.SequenceEqual(buffer), "Serialized payload mismatch.");
 
             var deserialized = serializer.Deserialize(data.GetType(), buffer, 0, buffer.Length);
 
@@ -78,8 +78,7 @@ namespace Uavcan.NET.Dsdl.Testing.Serialization
                         }
                     }
 
-                    if (!ignoreInequality)
-                        Assert.Fail(comparisonResult.DifferencesString);
+                    Assert.True(ignoreInequality, comparisonResult.DifferencesString);
                 }
             }
         }

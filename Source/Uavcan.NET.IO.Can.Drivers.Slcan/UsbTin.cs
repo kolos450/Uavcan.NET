@@ -107,7 +107,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// to make sure that we are in configuration mode.
         /// </summary>
         /// <param name="portName">Name of virtual serial port</param>
-        public async Task ConnectAsync(string portName, CancellationToken cancellationToken)
+        public Task ConnectAsync(string portName, CancellationToken cancellationToken)
         {
             // Create serial port object.
             _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One)
@@ -142,6 +142,8 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
             // Reset overflow error flags.
             Transmit("W2D00");
+
+            return Task.CompletedTask;
         }
 
         async Task RaiseEvents(CancellationToken ct)
@@ -270,7 +272,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// </summary>
         /// <param name="baudrate">Baudrate in bits/second</param>
         /// <param name="mode">CAN bus accessing mode</param>
-        public async Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken)
+        public Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken)
         {
             // Set baudrate.
             char baudCh = ' ';
@@ -351,6 +353,8 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             _backgroundTasksCancellationTokenSource = new CancellationTokenSource();
             _readerTask = ReadSerialBytesAsync(_backgroundTasksCancellationTokenSource.Token);
             _eventsTask = RaiseEvents(_backgroundTasksCancellationTokenSource.Token);
+
+            return Task.CompletedTask;
         }
 
         void ProcessReceivedData(byte[] buffer, int offset, int length)

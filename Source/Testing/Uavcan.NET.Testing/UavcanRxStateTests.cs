@@ -1,18 +1,17 @@
 ﻿using Uavcan.NET.Testing.Framework;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Uavcan.NET.IO.Can;
+using Xunit;
 
 namespace Uavcan.NET.Testing
 {
-    [TestClass]
     public class UavcanRxStateTests
     {
-        [TestMethod]
+        [Fact]
         public void UavcanRxStateTest0()
         {
             var state = new UavcanRxState();
@@ -20,7 +19,7 @@ namespace Uavcan.NET.Testing
             state.DataTypeDescriptor = new DataTypeDescriptor(1, 0xEE468A8121C46A9E);
             var payload = state.BuildTransferPayload();
             var expectedPayload = Hex.Decode("88160000000000010000000000000000000000000000010000000000000000000000000000000000006b706c632e6d61696e");
-            Assert.IsTrue(expectedPayload.SequenceEqual(payload));
+            Assert.True(expectedPayload.SequenceEqual(payload));
         }
 
         static void AddFrames(UavcanRxState state, string hex)

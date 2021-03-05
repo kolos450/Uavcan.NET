@@ -1,20 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- Product Information -->
+  <PropertyGroup>
+    <Company>Kyrylo Rode</Company>
+    <Product>Uavcan.NET</Product>
+    <Description>UAVCAN protocol stack implementation for .NET platform.</Description>
+    <Copyright>Copyright © 2021 Kyrylo Rode</Copyright>
+  </PropertyGroup>
+
+  <!-- Assembly Information -->
+  <PropertyGroup>
+    <AssemblyVersion>0.1</AssemblyVersion>
+    <FileVersion>0.1</FileVersion>
+    <InformationalVersion>0.1 (Alpha build)</InformationalVersion>
+  </PropertyGroup>
+
   <PropertyGroup>
     <NeutralLanguage>en-US</NeutralLanguage>
   </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-  </PropertyGroup>
-
-  <!-- =================================================================== -->
-
-  <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)AssemblyMetadata.cs" Link="Properties\AssemblyMetadata.cs" />
-  </ItemGroup>
 
   <!-- =================================================================== -->
 

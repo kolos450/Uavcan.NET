@@ -1,5 +1,4 @@
-﻿using Uavcan.NET;
-using Uavcan.NET.Dsdl.DataTypes;
+﻿using Uavcan.NET.Dsdl.DataTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;

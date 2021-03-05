@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Uavcan.NET.IO.Can;
 
 namespace Uavcan.NET
 {

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Uavcan.NET.IO.Can;
 
 namespace Uavcan.NET.Studio.Tools.BusMonitor.Presentation
 {

@@ -2,9 +2,7 @@
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using System.Windows;
-using Uavcan.NET.Drivers;
-using Uavcan.NET.Drivers.Slcan;
-using Uavcan.NET.Studio.Engine;
+using Uavcan.NET.IO.Can.Drivers;
 
 namespace Uavcan.NET.Studio
 {

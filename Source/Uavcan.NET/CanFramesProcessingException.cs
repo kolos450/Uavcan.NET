@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
+using Uavcan.NET.IO.Can;
 
 namespace Uavcan.NET
 {

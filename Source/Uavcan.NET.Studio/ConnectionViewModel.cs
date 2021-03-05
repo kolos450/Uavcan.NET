@@ -11,7 +11,7 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Uavcan.NET.Drivers;
+using Uavcan.NET.IO.Can.Drivers;
 
 namespace Uavcan.NET.Studio
 {

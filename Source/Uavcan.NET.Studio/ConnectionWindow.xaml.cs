@@ -9,7 +9,6 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Windows;
-using Uavcan.NET.Drivers;
 
 namespace Uavcan.NET.Studio
 {

@@ -11,8 +11,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Uavcan.NET.Drivers;
 using Uavcan.NET.Dsdl;
+using Uavcan.NET.IO.Can;
+using Uavcan.NET.IO.Can.Drivers;
 using Uavcan.NET.Studio.Presentation.Converters;
 using Uavcan.NET.Studio.Tools.BusMonitor.Presentation;
 

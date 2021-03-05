@@ -1,6 +1,4 @@
-﻿using Uavcan.NET;
-using Uavcan.NET.Drivers;
-using Uavcan.NET.Dsdl;
+﻿using Uavcan.NET.Dsdl;
 using Uavcan.NET.Dsdl.DataTypes;
 using System;
 using System.Buffers;
@@ -11,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Uavcan.NET.IO.Can.Drivers;
+using Uavcan.NET.IO.Can;
 
 namespace Uavcan.NET
 {

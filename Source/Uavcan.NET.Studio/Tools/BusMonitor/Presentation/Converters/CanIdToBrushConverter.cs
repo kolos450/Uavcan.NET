@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
+using Uavcan.NET.IO.Can;
 
 namespace Uavcan.NET.Studio.Tools.BusMonitor.Presentation.Converters
 {

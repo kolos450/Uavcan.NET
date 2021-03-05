@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Dsdl.Testing", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Testing", "Testing\Uavcan.NET.Testing\Uavcan.NET.Testing.csproj", "{39668E15-4FC1-429E-929B-CBC162274F5B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Drivers.Slcan", "Uavcan.NET.Drivers.Slcan\Uavcan.NET.Drivers.Slcan.csproj", "{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.IO.Can.Drivers.Slcan", "Uavcan.NET.IO.Can.Drivers.Slcan\Uavcan.NET.IO.Can.Drivers.Slcan.csproj", "{A9F1AA7D-70E3-473F-B1F3-F52A3FAF67E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializationTestGenerator", "Testing\SerializationTestGenerator\SerializationTestGenerator.csproj", "{991C2FD6-24A5-49D3-86D7-109397BDCBA8}"
 EndProject
@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Testing.Framewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Studio", "Uavcan.NET.Studio\Uavcan.NET.Studio.csproj", "{7DB9B91A-9203-41BE-AFC0-530271E8007B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.Contracts", "Uavcan.NET.Contracts\Uavcan.NET.Contracts.csproj", "{5E61E183-3176-4E17-A383-C4A28D019011}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uavcan.NET.IO.Can", "Uavcan.NET.IO.Can\Uavcan.NET.IO.Can.csproj", "{5E61E183-3176-4E17-A383-C4A28D019011}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTypeGenerator", "Testing\DataTypeGenerator\DataTypeGenerator.csproj", "{316FF227-E6AE-4152-A7E7-0AFF71B128C7}"
 EndProject

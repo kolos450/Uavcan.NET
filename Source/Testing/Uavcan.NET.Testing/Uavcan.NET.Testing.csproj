@@ -56,9 +56,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Uavcan.NET.Contracts\Uavcan.NET.Contracts.csproj">
+    <ProjectReference Include="..\..\Uavcan.NET.IO.Can\Uavcan.NET.IO.Can.csproj">
       <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
-      <Name>Uavcan.NET.Contracts</Name>
+      <Name>Uavcan.NET.IO.Can</Name>
     </ProjectReference>
     <ProjectReference Include="..\Uavcan.NET.Testing.Framework\Uavcan.NET.Testing.Framework.csproj">
       <Project>{556fc114-3629-42b7-89cc-c55e078cbf44}</Project>

@@ -218,13 +218,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Uavcan.NET.Contracts\Uavcan.NET.Contracts.csproj">
+    <ProjectReference Include="..\Uavcan.NET.IO.Can\Uavcan.NET.IO.Can.csproj">
       <Project>{5e61e183-3176-4e17-a383-c4a28d019011}</Project>
-      <Name>Uavcan.NET.Contracts</Name>
+      <Name>Uavcan.NET.IO.Can</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Uavcan.NET.Drivers.Slcan\Uavcan.NET.Drivers.Slcan.csproj">
+    <ProjectReference Include="..\Uavcan.NET.IO.Can.Drivers.Slcan\Uavcan.NET.IO.Can.Drivers.Slcan.csproj">
       <Project>{a9f1aa7d-70e3-473f-b1f3-f52a3faf67e2}</Project>
-      <Name>Uavcan.NET.Drivers.Slcan</Name>
+      <Name>Uavcan.NET.IO.Can.Drivers.Slcan</Name>
     </ProjectReference>
     <ProjectReference Include="..\Uavcan.NET.Dsdl\Uavcan.NET.Dsdl.csproj">
       <Project>{46eb0c5d-dfeb-4567-8928-63496ec618a3}</Project>

@@ -4,7 +4,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Uavcan.NET.Drivers;
+using Uavcan.NET.IO.Can.Drivers;
 using Uavcan.NET.Studio.Engine;
 
 namespace Uavcan.NET.Studio

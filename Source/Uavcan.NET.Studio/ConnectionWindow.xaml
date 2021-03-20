@@ -19,6 +19,7 @@
             <Setter Property="Padding" Value="9,3" />
         </Style>
         <Converters:LogicalNotConverter x:Key="LogicalNotConverter" />
+        <Converters:IntToDoubleConverter x:Key="IntToDoubleConverter" />
     </Window.Resources>
     <Grid>
         <Border Padding="8,2,8,10">
@@ -39,8 +40,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Label Grid.Column="0">CAN bus bit rate:</Label>
-                        <Controls:NumericUpDown Grid.Column="1" Value="125000" Maximum="1000000" Width="75" Name="upBitRate"
-                                                    HideUpDownButtons="True" NumericInputMode="Numbers" Interval="1" />
+                        <Controls:NumericUpDown Grid.Column="1" 
+                                                Value="{Binding Converter={StaticResource IntToDoubleConverter}, ConverterParameter={x:Static local:Constants.DefaultCanBitrate}, Mode=OneTime}" 
+                                                Maximum="1000000" Width="75" Name="upBitRate"
+                                                HideUpDownButtons="True" NumericInputMode="Numbers" Interval="1" />
                     </Grid>
                 </StackPanel>
             </DockPanel>

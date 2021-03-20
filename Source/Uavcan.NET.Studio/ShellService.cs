@@ -15,7 +15,7 @@ namespace Uavcan.NET.Studio
         [Import]
         CompositionContainer _compositionContainer = null;
 
-        public void RunApplication()
+        public void RunApplication(ApplicationOptions options)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -28,7 +28,7 @@ namespace Uavcan.NET.Studio
 
                 InitializeRxUI(_compositionContainer);
 
-                app.Run();
+                app.Run(options);
             }
         }
 

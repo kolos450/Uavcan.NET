@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.IO;
+using System.CommandLine.Parsing;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
@@ -7,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Uavcan.NET.IO.Can.Drivers.Slcan;
+using Uavcan.NET.Studio.CommandLine;
+using Uavcan.NET.Studio.Framework;
 
 namespace Uavcan.NET.Studio
 {
@@ -16,7 +22,7 @@ namespace Uavcan.NET.Studio
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static int Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -24,23 +30,75 @@ namespace Uavcan.NET.Studio
 
             try
             {
-                new Program().Run();
+                return new Program().Run(args);
             }
             catch (Exception ex)
             {
                 LogUnhandledException(ex);
+                return 1;
             }
         }
 
         [Import]
         ShellService _shellService = null;
 
-        void Run()
+        int Run(string[] args)
         {
+            var options = ApplicationOptions.Default;
+
+            if (args.Length != 0)
+            {
+                int exitCode = ProcessCommandLineArgs(args, out options);
+
+                if (exitCode is not 0)
+                {
+                    return exitCode;
+                }
+            }
+
             using (CreateContainer())
             {
-                _shellService.RunApplication();
+                _shellService.RunApplication(options);
             }
+
+            return 0;
+        }
+
+        private static int ProcessCommandLineArgs(string[] args, out ApplicationOptions options)
+        {
+            var connectionStringOption = new Option<string>(
+                "--connection-string",
+                description: "Connection string.");
+            var toolOption = new Option<string>(
+                "--tool",
+                "Open a specific custom tool.");
+
+            var rootCommand = new RootCommand
+            {
+                connectionStringOption,
+                toolOption
+            };
+
+            rootCommand.Description = Constants.ProductName;
+
+            var commandHandler = new ArgumentsCommandHandler();
+            rootCommand.Handler = commandHandler;
+
+            var console = new ArgumentsConsole();
+            var exitCode = rootCommand.Invoke(args, console);
+
+            if (console.Out.Builder.Length != 0)
+            {
+                FlexibleMessageBox.FONT = FontUtilities.GetFont(new[] { "Consolas", "Courier New" }, 9);
+                FlexibleMessageBox.Show(console.Out.ToString(), Constants.ProductName, MessageBoxButtons.OK);
+            }
+
+            var parseResult = commandHandler.ParseResult;
+            options = new ApplicationOptions(
+                parseResult.FindResultFor(connectionStringOption)?.GetValueOrDefault<string>(),
+                parseResult.FindResultFor(toolOption)?.GetValueOrDefault<string>());
+
+            return exitCode;
         }
 
         CompositionContainer CreateContainer()

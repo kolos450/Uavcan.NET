@@ -17,8 +17,6 @@ namespace Uavcan.NET.Studio
 {
     sealed class ConnectionViewModel : ReactiveObject, IDisposable
     {
-        const int ConnectionTimeout = 5000;
-
         readonly IDisposable _cleanUp;
         readonly ChangesetHelper<ICanPort> _changesetHelper;
 
@@ -58,7 +56,7 @@ namespace Uavcan.NET.Studio
                     {
                         await Task.Factory.StartNew(async () =>
                         {
-                            using (var cts = new CancellationTokenSource(ConnectionTimeout))
+                            using (var cts = new CancellationTokenSource(Constants.InterfaceConnectionTimeoutMs))
                             {
                                 Driver = await Interface.OpenAsync(BitRate.Value, cts.Token).ConfigureAwait(false);
                             }

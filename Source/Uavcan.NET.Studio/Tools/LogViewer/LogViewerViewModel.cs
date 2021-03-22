@@ -91,12 +91,12 @@ namespace Uavcan.NET.Studio.Tools.LogViewer
 
             if (e.Type == _logMessageType)
             {
-                var data = _serializer.Deserialize<LogMessage>(e.ContentBytes, 0, e.ContentBytes.Length);
+                var data = _serializer.Deserialize<LogMessage>(e.ContentBytes);
                 return new LogViewerItemViewModel(e.SourceNodeId, DateTime.Now, data);
             }
             else if (e.Type == _panicMessageType)
             {
-                var data = _serializer.Deserialize<Panic>(e.ContentBytes, 0, e.ContentBytes.Length);
+                var data = _serializer.Deserialize<Panic>(e.ContentBytes);
                 return new LogViewerItemViewModel(e.SourceNodeId, DateTime.Now, data);
             }
 

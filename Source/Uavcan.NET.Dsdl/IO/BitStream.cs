@@ -67,37 +67,15 @@ namespace Uavcan.NET.IO
     public class BitStreamReader
     {
         /// <summary>
-        /// Create a new BitStreamReader to unpack the bits in a buffer of bytes
+        /// Create a new BitStreamReader to unpack the bits in a buffer of bytes.
         /// </summary>
-        /// <param name="buffer">Buffer of bytes</param>
-        public BitStreamReader(byte[] buffer)
+        public BitStreamReader(Memory<byte> memory)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            _memory = memory;
+            _memoryIndex = 0;
+            _bufferLengthInBits = (uint)memory.Length * Native.BitsPerByte;
 
-            _byteArray = buffer;
-            _bufferLengthInBits = (uint)buffer.Length * Native.BitsPerByte;
-
-            LengthInBytes = buffer.Length;
-        }
-
-        /// <summary>
-        /// Create a new BitStreamReader to unpack the bits in a buffer of bytes
-        /// </summary>
-        /// <param name="buffer">Buffer of bytes</param>
-        /// <param name="startIndex">The index to start reading at</param>
-        public BitStreamReader(byte[] buffer, int startIndex, int length)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (startIndex < 0 || startIndex + length > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
-
-            _byteArray = buffer;
-            _byteArrayIndex = startIndex;
-            _bufferLengthInBits = (uint)length * Native.BitsPerByte;
-
-            LengthInBytes = buffer.Length;
+            LengthInBytes = memory.Length;
         }
 
         /// <summary>
@@ -173,8 +151,8 @@ namespace Uavcan.NET.IO
             else
             {
                 // retrieve the next full byte from the stream
-                byte nextByte = _byteArray[_byteArrayIndex];
-                _byteArrayIndex++;
+                byte nextByte = _memory.Span[_memoryIndex];
+                _memoryIndex++;
 
                 //right shift partial byte to get it ready to or with the partial next byte
                 int rightShiftPartialByteBy = Native.BitsPerByte - countOfBits;
@@ -219,20 +197,20 @@ namespace Uavcan.NET.IO
             {
                 //_byteArrayIndex is always advanced to the next index
                 // so we always decrement before returning
-                return _byteArrayIndex - 1;
+                return _memoryIndex - 1;
             }
         }
 
 
         // Privates
         // reference to the source byte buffer to read from
-        private byte[] _byteArray = null;
+        private Memory<byte> _memory;
 
         // maximum length of buffer to read in bits
         private uint _bufferLengthInBits = 0;
 
         // the index in the source buffer for the next byte to be read
-        private int _byteArrayIndex = 0;
+        private int _memoryIndex = 0;
 
         // since the bits from multiple inputs can be packed into a single byte
         //  (e.g. 2 bits per input fits 4 per byte), we use this field as a cache
@@ -258,14 +236,9 @@ namespace Uavcan.NET.IO
         /// <summary>
         /// Create a new bit writer that writes to the target buffer
         /// </summary>
-        /// <param name="bufferToWriteTo"></param>
-        public BitStreamWriter(List<byte> bufferToWriteTo)
+        public BitStreamWriter(Memory<byte> bufferToWriteTo)
         {
-            if (bufferToWriteTo == null)
-                throw new ArgumentNullException("bufferToWriteTo");
-
             _targetBuffer = bufferToWriteTo;
-            _targetBufferOffset = bufferToWriteTo.Count;
         }
 
         /// <summary>
@@ -285,7 +258,7 @@ namespace Uavcan.NET.IO
             if (_remaining > 0)
             {
                 // retrieve the last byte from the stream, update it, and then replace it
-                buffer = _targetBuffer[_targetBuffer.Count - 1];
+                buffer = _targetBuffer.Span[_targetBufferOffset];
                 // if the remaining bits aren't enough then just copy the significant bits
                 //      of the input into the remainder
                 if (countOfBits > _remaining)
@@ -297,7 +270,7 @@ namespace Uavcan.NET.IO
                 {
                     buffer |= (byte)((bits & (0xFF >> (Native.BitsPerByte - countOfBits))) << (_remaining - countOfBits));
                 }
-                _targetBuffer[_targetBuffer.Count - 1] = buffer;
+                _targetBuffer.Span[_targetBufferOffset] = buffer;
             }
 
             // if the remainder wasn't large enough to hold the entire input set
@@ -311,7 +284,7 @@ namespace Uavcan.NET.IO
                     buffer = (byte)(bits << _remaining);
                 }
                 // and add it to the target buffer
-                _targetBuffer.Add(buffer);
+                _targetBuffer.Span[_targetBufferOffset++] = buffer;
             }
             else
             {
@@ -320,14 +293,15 @@ namespace Uavcan.NET.IO
             }
         }
 
-
         // the buffer that the bits are written into
-        readonly List<byte> _targetBuffer;
-        readonly int _targetBufferOffset;
+        readonly Memory<byte> _targetBuffer;
+        int _targetBufferOffset;
 
         // number of free bits remaining in the last byte added to the target buffer
         private int _remaining = 0;
 
-        public int Position => _targetBuffer.Count - _targetBufferOffset;
+        public int Position => _targetBufferOffset;
+
+        public int Length => _targetBufferOffset + 1;
     }
 }

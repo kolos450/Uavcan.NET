@@ -53,7 +53,7 @@ namespace Uavcan.NET.Dsdl.Testing.Serialization
 
             Assert.True(expectedBytes.SequenceEqual(buffer), "Serialized payload mismatch.");
 
-            var deserialized = serializer.Deserialize(data.GetType(), buffer, 0, buffer.Length);
+            var deserialized = serializer.Deserialize(data.GetType(), buffer);
 
             if (doRoundtripTest)
             {

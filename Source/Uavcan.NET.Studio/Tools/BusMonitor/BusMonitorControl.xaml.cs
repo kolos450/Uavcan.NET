@@ -93,7 +93,7 @@ namespace Uavcan.NET.Studio.Tools.BusMonitor
                 return null;
 
             var bytes = transfer.Payload;
-            var obj = _serializer.Deserialize(bytes, 0, bytes.Length, scheme);
+            var obj = _serializer.Deserialize(bytes, scheme);
             try
             {
                 return ObjectPrinter.PrintToString(obj, scheme);

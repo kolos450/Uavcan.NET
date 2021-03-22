@@ -48,7 +48,7 @@ namespace Uavcan.NET.Studio.Tools
         {
             var request = new GetNodeInfo_Request();
             var response = await _uavcan.SendServiceRequest(nodeId, request, _getNodeInfoService, ct: _cts.Token).ConfigureAwait(false);
-            var data = _uavcan.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes, 0, response.ContentBytes.Length);
+            var data = _uavcan.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes);
             Application.Current?.Dispatcher.Invoke(() =>
             {
                 if (_nodesLookup.TryGetValue(response.SourceNodeId, out var model))
@@ -91,7 +91,7 @@ namespace Uavcan.NET.Studio.Tools
         {
             if (e.Type == _nodeStatusMessage)
             {
-                var data = _uavcan.Serializer.Deserialize<NodeStatus>(e.ContentBytes, 0, e.ContentBytes.Length);
+                var data = _uavcan.Serializer.Deserialize<NodeStatus>(e.ContentBytes);
 
                 Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
                 {

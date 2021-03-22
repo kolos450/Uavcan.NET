@@ -20,96 +20,74 @@ namespace Uavcan.NET.Dsdl
             ContractResolver = new ContractResolver(schemeResolver);
         }
 
-        public T Deserialize<T>(byte[] buffer, int offset, int length)
+        public T Deserialize<T>(Memory<byte> memory)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-
-            return (T)Deserialize(typeof(T), buffer, offset, length);
+            return (T)Deserialize(typeof(T), memory);
         }
 
-        public object Deserialize(Type type, byte[] buffer, int offset, int length)
+        public object Deserialize(Type type, Memory<byte> memory)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
 
             var contract = ContractResolver.ResolveContract(type);
             if (contract.DsdlType == null)
                 throw new ArgumentException($"Cannot find DSDL scheme for provided type '{type.FullName}'.", nameof(type));
 
-            return Deserialize(buffer, offset, length, contract.DsdlType, contract);
+            return Deserialize(memory, contract.DsdlType, contract);
         }
 
-        public object Deserialize(byte[] buffer, int offset, int length, DsdlType dsdlScheme, IContract contract = null)
+        public object Deserialize(Memory<byte> memory, DsdlType dsdlScheme, IContract contract = null)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
             if (dsdlScheme == null)
                 throw new ArgumentNullException(nameof(dsdlScheme));
 
-            var stream = new BitStreamReader(buffer, offset, length);
+            var stream = new BitStreamReader(memory);
             var reader = new DsdlSerializerReader(this);
             return reader.Deserialize(stream, dsdlScheme, contract);
         }
 
-        public int Serialize<T>(T value, byte[] buffer, int offset = 0)
+        public int Serialize<T>(T value, Memory<byte> memory)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
 
-            return Serialize(value, typeof(T), buffer, offset);
+            return Serialize(value, typeof(T), memory);
         }
 
-        public int Serialize(object value, byte[] buffer, int offset = 0)
+        public int Serialize(object value, Memory<byte> memory)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
 
-            return Serialize(value, value.GetType(), buffer, offset);
+            return Serialize(value, value.GetType(), memory);
         }
 
-        public int Serialize(object value, Type type, byte[] buffer, int offset = 0)
+        public int Serialize(object value, Type type, Memory<byte> memory)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
 
             var contract = ContractResolver.ResolveContract(type);
             if (contract.DsdlType == null)
                 throw new ArgumentException($"Cannot find DSDL scheme for provided type '{type.FullName}'.", nameof(type));
 
-            return Serialize(value, contract.DsdlType, buffer, offset);
+            return Serialize(value, contract.DsdlType, memory);
         }
 
-        public int Serialize(object value, DsdlType dsdlScheme, byte[] buffer, int offset = 0)
+        public int Serialize(object value, DsdlType dsdlScheme, Memory<byte> memory)
         {
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
 
-            var bytesList = new List<byte>();
-            var stream = new BitStreamWriter(bytesList);
+            var streamWriter = new BitStreamWriter(memory);
 
             var writer = new DsdlSerializerWriter(this);
-            writer.Serialize(stream, value, dsdlScheme);
-            var bytesCount = bytesList.Count;
+            writer.Serialize(streamWriter, value, dsdlScheme);
 
-            for (int i = 0; i < bytesCount; i++)
-            {
-                buffer[offset + i] = bytesList[i];
-            }
-
-            return bytesCount;
+            return streamWriter.Length;
         }
 
         public int GetMaxBufferLength<T>()

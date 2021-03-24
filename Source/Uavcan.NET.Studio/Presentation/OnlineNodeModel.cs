@@ -10,8 +10,8 @@ namespace Uavcan.NET.Studio.Presentation
     {
         int _nodeId;
         string _name;
-        NodeStatus.ModeKind _mode;
-        NodeStatus.HealthKind _health;
+        NodeMode _mode;
+        NodeHealth _health;
         TimeSpan _uptime;
         ushort _vssc;
 
@@ -31,8 +31,8 @@ namespace Uavcan.NET.Studio.Presentation
 
         public int NodeId { get => _nodeId; set => SetField(ref _nodeId, value); }
         public string Name { get => _name; set => SetField(ref _name, value); }
-        public NodeStatus.ModeKind Mode { get => _mode; set => SetField(ref _mode, value); }
-        public NodeStatus.HealthKind Health { get => _health; set => SetField(ref _health, value); }
+        public NodeMode Mode { get => _mode; set => SetField(ref _mode, value); }
+        public NodeHealth Health { get => _health; set => SetField(ref _health, value); }
         public TimeSpan Uptime { get => _uptime; set => SetField(ref _uptime, value); }
         public ushort VSSC { get => _vssc; set => SetField(ref _vssc, value); }
 

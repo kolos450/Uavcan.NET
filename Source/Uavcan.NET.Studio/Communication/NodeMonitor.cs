@@ -3,10 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using Uavcan.NET.Dsdl;
 using Uavcan.NET.Dsdl.DataTypes;
 using Uavcan.NET.Studio.DataTypes.Protocol;
@@ -89,6 +89,10 @@ namespace Uavcan.NET.Studio.Communication
                 _nodeWaitingList.AddKey(handle);
                 AddActiveNode(handle);
             }
+            else
+            {
+                PulseActiveNode(handle);
+            }
         }
 
         private void UpdateDescriptor(NodeDescriptor descriptor, DateTime receivedTime, NodeStatus status)
@@ -156,25 +160,30 @@ namespace Uavcan.NET.Studio.Communication
 
         private async Task UpdateNodeInfo(NodeHandle handle)
         {
-            var request = new GetNodeInfo_Request();
-            var response = await _uavcan.SendServiceRequest(
-                handle.NodeId,
-                request,
-                _getNodeInfoService,
-                ct: _cts.Token)
-                .ConfigureAwait(false);
-            var data = _uavcan.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes);
-
-            if (_registry.TryGetValue(handle, out var descriptor))
+            try
             {
-                var nodeDescriptor = (NodeDescriptor)descriptor;
-                lock (descriptor)
+                var request = new GetNodeInfo_Request();
+                var response = await _uavcan.SendServiceRequest(
+                    handle.NodeId,
+                    request,
+                    _getNodeInfoService,
+                    ct: _cts.Token)
+                    .ConfigureAwait(false);
+                var data = _uavcan.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes);
+
+                if (_registry.TryGetValue(handle, out var descriptor))
                 {
-                    nodeDescriptor.Updated = response.ReceivedTime;
-                    ((NodeData)nodeDescriptor.Status).Update(data.Status);
-                    ((NodeInfo)nodeDescriptor.Info).Update(data);
+                    var nodeDescriptor = (NodeDescriptor)descriptor;
+                    lock (descriptor)
+                    {
+                        nodeDescriptor.Updated = response.ReceivedTime;
+                        ((NodeData)nodeDescriptor.Status).Update(data.Status);
+                        ((NodeInfo)nodeDescriptor.Info).Update(data);
+                    }
                 }
             }
+            catch (TaskCanceledException)
+            { }
         }
 
         private void CleanupTasks()
@@ -198,11 +207,34 @@ namespace Uavcan.NET.Studio.Communication
             }
         }
 
+        readonly ConcurrentDictionary<NodeHandle, bool> _inactiveNodes = new();
         readonly ObservableCollection<NodeHandle> _activeNodes = new();
         ReadOnlyObservableCollection<NodeHandle> _activeNodesRO;
 
         public ReadOnlyObservableCollection<NodeHandle> GetActiveNodes() =>
             _activeNodesRO ??= new(_activeNodes);
+
+        private void PulseActiveNode(NodeHandle handle)
+        {
+            if (_inactiveNodes.TryGetValue(handle, out var removed) && removed)
+            {
+                lock (_syncRoot)
+                {
+                    _inactiveNodes[handle] = false;
+                    bool added = false;
+                    foreach (var collection in ActiveNodesCollections)
+                    {
+                        if (collection.Add(handle))
+                            added = true;
+                    }
+
+                    if (added)
+                    {
+                        ResetActiveNodesTimer();
+                    }
+                }
+            }
+        }
 
         private void AddActiveNode(NodeHandle handle)
         {
@@ -216,7 +248,7 @@ namespace Uavcan.NET.Studio.Communication
                     collection.Add(handle);
                 }
 
-                if (_activeNodesTimer?.Enabled == false)
+                if (_activeNodesTimer?.Enabled == false) // Check if any observable collection was acquired.
                 {
                     ResetActiveNodesTimer();
                 }
@@ -227,29 +259,30 @@ namespace Uavcan.NET.Studio.Communication
         private System.Timers.Timer _activeNodesTimer;
         private readonly Dictionary<TimeSpan, WeakReference<ActiveNodesCollection>> _activeNodesCollections = new();
 
-        private void ResetActiveNodesTimer()
+        private void ResetActiveNodesTimer() =>
+            ResetActiveNodesTimer(DateTimeOffset.Now - _minActiveNodesTimeout);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsActiveNode(INodeDescriptor descriptor, DateTimeOffset threshold) =>
+            descriptor.Updated > threshold;
+
+        private void ResetActiveNodesTimer(DateTimeOffset expirationTime)
         {
-            lock (_syncRoot)
+            _activeNodesTimer.Stop();
+
+            var expiresNext = _registry
+                .OrderByDescending(kv => kv.Value.Updated)
+                .LastOrDefault(kv => IsActiveNode(kv.Value, expirationTime))
+                .Value?.Updated;
+
+            if (expiresNext is not null)
             {
-                _activeNodesTimer.Stop();
-
-                var minTimeout = _minActiveNodesTimeout;
-                var now = DateTimeOffset.Now;
-                var expiresAt = now - minTimeout;
-                var expiresNext = _registry
-                    .OrderByDescending(kv => kv.Value.Updated)
-                    .LastOrDefault(kv => kv.Value.Updated > expiresAt)
-                    .Value?.Updated;
-
-                if (expiresNext is not null)
+                var interval = expiresNext.Value - expirationTime;
+                var intervalMs = interval.TotalMilliseconds;
+                if (intervalMs < int.MaxValue)
                 {
-                    var interval = expiresNext.Value + minTimeout - now;
-                    var intervalMs = interval.TotalMilliseconds;
-                    if (intervalMs < int.MaxValue)
-                    {
-                        _activeNodesTimer.Interval = interval.TotalMilliseconds;
-                        _activeNodesTimer.Start();
-                    }
+                    _activeNodesTimer.Interval = interval.TotalMilliseconds;
+                    _activeNodesTimer.Start();
                 }
             }
         }
@@ -265,7 +298,17 @@ namespace Uavcan.NET.Studio.Communication
                     _activeNodesTimer = new() { AutoReset = false };
                     _activeNodesTimer.Elapsed += (o, e) =>
                     {
-                        ResetActiveNodesTimer();
+                        lock (_syncRoot)
+                        {
+                            var now = DateTimeOffset.Now;
+
+                            foreach (var collection in ActiveNodesCollections)
+                            {
+                                collection.Filter(now);
+                            }
+
+                            ResetActiveNodesTimer(now - _minActiveNodesTimeout);
+                        }
                     };
                 }
 
@@ -333,23 +376,64 @@ namespace Uavcan.NET.Studio.Communication
 
         private sealed class ActiveNodesCollection : ObservableCollection<NodeHandle>
         {
+            readonly NodeMonitor _monitor;
+            readonly HashSet<NodeHandle> _nodesSet = new();
+
             public ActiveNodesCollection(
                 NodeMonitor monitor,
                 IEnumerable<NodeHandle> nodes,
                 TimeSpan timeout)
             {
+                _monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
+
                 Timeout = timeout;
 
                 var expiresAt = DateTimeOffset.Now - timeout;
                 foreach (var node in nodes)
                 {
-                    var updated = monitor._registry[node].Updated;
-                    if (updated > expiresAt)
+                    if (IsActiveNode(monitor._registry[node], expiresAt))
                         Add(node);
                 }
             }
 
+            public new bool Add(NodeHandle handle)
+            {
+                if (_nodesSet.Add(handle))
+                {
+                    base.Add(handle);
+                    return true;
+                }
+
+                return false;
+            }
+
             public TimeSpan Timeout { get; }
+
+            public void Filter(DateTimeOffset now)
+            {
+                var threshold = now - Timeout;
+
+                List<int> toRemove = null;
+                for (int i = 0; i < Count; i++)
+                {
+                    var handle = this[i];
+                    if (_monitor.TryGetRegisteredNodeDescriptor(handle, out var descriptor) &&
+                        !IsActiveNode(descriptor, threshold))
+                    {
+                        (toRemove ??= new List<int>()).Add(i);
+                        _monitor._inactiveNodes[handle] = true;
+                        _nodesSet.Remove(handle);
+                    }
+                }
+
+                if (toRemove is not null)
+                {
+                    for (int i = toRemove.Count - 1; i >= 0; i--)
+                    {
+                        RemoveAt(toRemove[i]);
+                    }
+                }
+            }
         }
     }
 }

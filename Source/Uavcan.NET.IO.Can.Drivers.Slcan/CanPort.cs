@@ -18,15 +18,9 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
         public string DisplayName { get; }
 
-        public bool Equals(ICanPort other)
-        {
-            return Equals(this, other as CanPort);
-        }
-
-        public override bool Equals(object other)
-        {
-            return Equals(this, other as CanPort);
-        }
+        public bool Equals(CanPort other) => Equals(this, other);
+        public bool Equals(ICanPort other) => Equals(this, other as CanPort);
+        public override bool Equals(object other) => Equals(this, other as CanPort);
 
         static bool Equals(CanPort a, CanPort b)
         {

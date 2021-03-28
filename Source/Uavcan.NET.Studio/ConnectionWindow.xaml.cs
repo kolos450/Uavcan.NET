@@ -35,7 +35,7 @@ namespace Uavcan.NET.Studio
                     view => view.cbInterfaces.ItemsSource)
                     .DisposeWith(d);
 
-                this.OneWayBind(ViewModel,
+                this.Bind(ViewModel,
                     viewModel => viewModel.Interface,
                     view => view.cbInterfaces.SelectedItem)
                     .DisposeWith(d);

@@ -54,7 +54,7 @@ namespace Uavcan.NET.Studio
 
                     try
                     {
-                        await Task.Factory.StartNew(async () =>
+                        await Task.Run(async () =>
                         {
                             using (var cts = new CancellationTokenSource(Constants.InterfaceConnectionTimeoutMs))
                             {

@@ -9,7 +9,10 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Threading;
 using Uavcan.NET.IO.Can.Drivers.Slcan;
 using Uavcan.NET.Studio.CommandLine;
 using Uavcan.NET.Studio.Framework;
@@ -25,8 +28,6 @@ namespace Uavcan.NET.Studio
         static int Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-            Application.ThreadException += Application_ThreadException;
 
             try
             {
@@ -144,12 +145,6 @@ namespace Uavcan.NET.Studio
                 LogUnhandledException(e.ExceptionObject);
                 Environment.Exit(1);
             }
-        }
-
-        private static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
-        {
-            LogUnhandledException(e.Exception);
-            Environment.Exit(1);
         }
 
         private static void LogUnhandledException(object exceptionObject)

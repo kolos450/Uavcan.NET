@@ -110,7 +110,7 @@ namespace Uavcan.NET.Studio
             ICanInterface result = null;
             try
             {
-                Task.Factory.StartNew(async () =>
+                Task.Run(async () =>
                 {
                     using (var cts = new CancellationTokenSource(Constants.InterfaceConnectionTimeoutMs))
                     {

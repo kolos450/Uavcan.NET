@@ -69,7 +69,7 @@ namespace Uavcan.NET.Studio.Framework
                 {
                     for (int i = valuesToRemove.Count - 1; i >= 0; i--)
                     {
-                        bag.RemoveAt(i);
+                        bag.RemoveAt(valuesToRemove[i]);
                     }
                 }
 

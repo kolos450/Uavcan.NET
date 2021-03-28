@@ -12,5 +12,8 @@ namespace Uavcan.NET.Studio.Communication
         }
 
         public readonly int NodeId;
+
+        public override string ToString() =>
+            NodeId.ToString();
     }
 }

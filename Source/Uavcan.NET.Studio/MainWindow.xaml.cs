@@ -1,11 +1,21 @@
-﻿using Uavcan.NET.Studio.Tools;
-using MahApps.Metro.Controls;
+﻿using DynamicData;
+using DynamicData.Binding;
+using ReactiveUI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using Uavcan.NET.Studio.Tools;
+using MahApps.Metro.Controls;
 using System.ComponentModel.Composition;
 using System.Windows;
 using System.Windows.Controls;
-using System.Linq;
+using Uavcan.NET.Studio.Communication;
+using System.ComponentModel;
 
 namespace Uavcan.NET.Studio
 {
@@ -21,7 +31,10 @@ namespace Uavcan.NET.Studio
         [ImportMany]
         IEnumerable<IUavcanStudioToolProvider> _tools = null;
 
-        OnlineNodesTool _onlineNodesTool;
+        [Import]
+        CommunicationServicesProvider _communicationServicesProvider = null;
+
+        INodeMonitor _nodeMonitor;
 
         List<IDisposable> _disposables = new List<IDisposable>();
 
@@ -76,8 +89,18 @@ namespace Uavcan.NET.Studio
 
         void InitializeWndTools()
         {
-            _onlineNodesTool = new OnlineNodesTool(_uavcan.Engine);
-            dgNodes.ItemsSource = _onlineNodesTool.OnlineNodes;
+            var activeNodeHandles = _nodeMonitor.GetActiveNodes(
+                TimeSpan.FromMilliseconds(DataTypes.Protocol.NodeStatus.OfflineTimeoutMs));
+
+            var d = activeNodeHandles
+                .ToObservableChangeSet()
+                .Transform(_nodeMonitor.GetNodeDescriptor)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Bind(out var activeNodesObservable)
+                .Subscribe();
+            _disposables.Add(d);
+
+            dgNodes.ItemsSource = activeNodesObservable;
         }
 
         void MenuItem_File_Exit_Click(object sender, RoutedEventArgs e)
@@ -101,12 +124,6 @@ namespace Uavcan.NET.Studio
 
         public void Dispose()
         {
-            if (_onlineNodesTool != null)
-            {
-                _onlineNodesTool.Dispose();
-                _onlineNodesTool = null;
-            }
-
             if (_disposables != null)
             {
                 foreach (var disposable in _disposables)
@@ -119,6 +136,8 @@ namespace Uavcan.NET.Studio
 
         public void OnImportsSatisfied()
         {
+            _nodeMonitor = _communicationServicesProvider.Monitor;
+
             foreach (var tool in _tools)
             {
                 var menuItem = new MenuItem

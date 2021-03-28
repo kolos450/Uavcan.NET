@@ -127,8 +127,8 @@ namespace Uavcan.NET
             if ((canId & (uint)CanIdFlags.Mask) != 0)
                 throw new ArgumentException("Flags must be cleared.", nameof(canId));
 
-            if ((payloadLen > 0) && (payload == null))
-                throw new ArgumentException(nameof(payload));
+            if (payloadLen + payloadOffset > (payload?.Length ?? 0))
+                throw new ArgumentOutOfRangeException(nameof(payloadOffset));
 
             // Single frame transfer.
             if (payloadLen < UavcanConstants.CanFrameMaxDataLen)

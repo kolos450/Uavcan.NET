@@ -284,7 +284,7 @@ namespace Uavcan.NET.IO
                     buffer = (byte)(bits << _remaining);
                 }
                 // and add it to the target buffer
-                _targetBuffer.Span[_targetBufferOffset++] = buffer;
+                _targetBuffer.Span[++_targetBufferOffset] = buffer;
             }
             else
             {
@@ -302,6 +302,6 @@ namespace Uavcan.NET.IO
 
         public int Position => _targetBufferOffset;
 
-        public int Length => _targetBufferOffset + 1;
+        public int Length => _remaining != 0 ? _targetBufferOffset + 1 : _targetBufferOffset;
     }
 }

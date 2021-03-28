@@ -8,6 +8,7 @@ namespace Uavcan.NET.Studio.Communication
     public interface INodeMonitor
     {
         INodeDescriptor GetNodeDescriptor(NodeHandle handle);
+        ReadOnlyObservableCollection<NodeHandle> GetActiveNodes();
         ReadOnlyObservableCollection<NodeHandle> GetActiveNodes(TimeSpan activeNodeTimeout);
     }
 }

@@ -6,6 +6,7 @@ using System.Text;
 using Uavcan.NET.Dsdl;
 using Uavcan.NET.Dsdl.DataTypes;
 using Uavcan.NET.Studio.DataTypes.Protocol;
+using Uavcan.NET.Studio.Framework;
 
 namespace Uavcan.NET.Studio.Communication
 {
@@ -26,6 +27,8 @@ namespace Uavcan.NET.Studio.Communication
             //uavcan.NodeIDChanged += Uavcan_NodeIDChanged;
 
             ResolveTypes(uavcan.TypeResolver);
+
+            _nodeWaitingList = new(_registry.ContainsKey);
         }
 
         void ResolveTypes(IUavcanTypeResolver typeResolver)
@@ -65,24 +68,7 @@ namespace Uavcan.NET.Studio.Communication
 
             if (descriptorCreated)
             {
-                List<(WeakReference Context, Action<object> Callback)> waitingList;
-                lock (_syncRoot)
-                {
-                    if (_waitingList.TryGetValue(handle, out waitingList))
-                        _waitingList.Remove(handle);
-                }
-
-                if (waitingList is not null)
-                {
-                    foreach (var (context, callback) in waitingList)
-                    {
-                        if (context.IsAlive)
-                        {
-                            callback(context.Target);
-                        }
-                    }
-                }
-
+                _nodeWaitingList.AddKey(handle);
                 AddActiveNode(handle);
             }
         }
@@ -114,7 +100,7 @@ namespace Uavcan.NET.Studio.Communication
             throw new NotImplementedException();
         }
 
-        ConcurrentDictionary<NodeHandle, INodeDescriptor> _registry = new();
+        readonly ConcurrentDictionary<NodeHandle, INodeDescriptor> _registry = new();
 
         public bool TryGetRegisteredNodeDescriptor(NodeHandle handle, out INodeDescriptor descriptor)
         {
@@ -131,78 +117,9 @@ namespace Uavcan.NET.Studio.Communication
             throw new NotImplementedException();
         }
 
-        Dictionary<NodeHandle, List<(WeakReference Context, Action<object> Callback)>> _waitingList = new();
+        readonly WeakWaitingList<NodeHandle> _nodeWaitingList;
 
-        public void WaitForNode(NodeHandle handle, object context, Action<object> callback)
-        {
-            if (callback is null)
-                throw new ArgumentNullException(nameof(callback));
-
-            bool executeCallback = false;
-            lock (_syncRoot)
-            {
-                if (TryGetRegisteredNodeDescriptor(handle, out _))
-                {
-                    executeCallback = true;
-                }
-                else
-                {
-                    CleanupWaitingList();
-
-                    if (!_waitingList.TryGetValue(handle, out var bag))
-                    {
-                        bag = new();
-                        _waitingList.Add(handle, bag);
-                    }
-
-                    bag.Add((new WeakReference(context), callback));
-                }
-            }
-
-            if (executeCallback)
-            {
-                callback(context);
-            }
-        }
-
-        private void CleanupWaitingList()
-        {
-            List<NodeHandle> keysToRemove = null;
-
-            foreach (var kv in _waitingList)
-            {
-                List<int> valuesToRemove = null;
-
-                var bag = kv.Value;
-                for (int i = 0; i < bag.Count; i++)
-                {
-                    if (!bag[i].Context.IsAlive)
-                    {
-                        (valuesToRemove ??= new()).Add(i);
-                    }
-                }
-
-                if (valuesToRemove is not null)
-                {
-                    for (int i = valuesToRemove.Count - 1; i >= 0; i--)
-                    {
-                        bag.RemoveAt(i);
-                    }
-                }
-
-                if (bag.Count == 0)
-                {
-                    (keysToRemove ??= new List<NodeHandle>()).Add(kv.Key);
-                }
-            }
-
-            if (keysToRemove is not null)
-            {
-                foreach (var key in keysToRemove)
-                {
-                    _waitingList.Remove(key);
-                }
-            }
-        }
+        public void WaitForNode(NodeHandle handle, object context, Action<object> callback) =>
+            _nodeWaitingList.WaitForKey(handle, context, callback);
     }
 }

@@ -21,8 +21,7 @@ namespace Uavcan.NET.Studio.Communication
         private MessageType _nodeStatusMessage;
         private ServiceType _getNodeInfoService;
 
-        private CancellationTokenSource _cts = new();
-        private LinkedList<Task> _tasks = new();
+        private TaskBag _requestBag = new();
         private readonly object _syncRoot = new();
 
         private readonly ConcurrentDictionary<NodeHandle, INodeDescriptor> _registry = new();
@@ -56,7 +55,7 @@ namespace Uavcan.NET.Studio.Communication
                 ProcessNodeStatus(e.SourceNodeId, e.ReceivedTime, nodeStatus);
             }
 
-            CleanupTasks();
+            _requestBag.FinalizeCompletedTasks();
         }
 
         private void ProcessNodeStatus(int sourceNodeId, DateTime receivedTime, NodeStatus status)
@@ -76,7 +75,7 @@ namespace Uavcan.NET.Studio.Communication
 
                         if (_uavcan.NodeID != 0)
                         {
-                            _tasks.AddLast(UpdateNodeInfo(handle));
+                            _requestBag.Add(UpdateNodeInfo(handle));
                         }
                     }
                 }
@@ -118,17 +117,10 @@ namespace Uavcan.NET.Studio.Communication
                 _uavcan.NodeIDChanged -= Uavcan_NodeIDChanged;
             }
 
-            if (_cts is not null)
+            if (_requestBag is not null)
             {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-            }
-
-            if (_tasks is not null)
-            {
-                Task.WhenAll(_tasks.ToArray()).GetAwaiter().GetResult();
-                _tasks = null;
+                _requestBag.Dispose();
+                _requestBag = null;
             }
 
             if (_activeNodesTimer is not null)
@@ -145,17 +137,13 @@ namespace Uavcan.NET.Studio.Communication
         {
             _uavcan.NodeIDChanged -= Uavcan_NodeIDChanged;
 
-            lock (_syncRoot)
+            _requestBag.Add(Task.Factory.StartNew(() =>
             {
-                _tasks.AddLast(Task.Factory.StartNew(() =>
+                foreach (var handle in _registry.Keys)
                 {
-                    foreach (var handle in _registry.Keys)
-                    {
-                        lock (_syncRoot)
-                            _tasks.AddLast(UpdateNodeInfo(handle));
-                    }
-                }));
-            }
+                    _requestBag.Add(UpdateNodeInfo(handle));
+                }
+            }));
         }
 
         private async Task UpdateNodeInfo(NodeHandle handle)
@@ -167,7 +155,7 @@ namespace Uavcan.NET.Studio.Communication
                     handle.NodeId,
                     request,
                     _getNodeInfoService,
-                    ct: _cts.Token)
+                    ct: _requestBag.CancellationToken)
                     .ConfigureAwait(false);
                 var data = _uavcan.Serializer.Deserialize<GetNodeInfo_Response>(response.ContentBytes);
 
@@ -184,27 +172,6 @@ namespace Uavcan.NET.Studio.Communication
             }
             catch (TaskCanceledException)
             { }
-        }
-
-        private void CleanupTasks()
-        {
-            if (_tasks.Count == 0)
-                return;
-
-            lock (_syncRoot)
-            {
-                var node = _tasks.First;
-                while (node != null)
-                {
-                    var next = node.Next;
-                    if (node.Value.IsCompleted)
-                    {
-                        node.Value.GetAwaiter().GetResult();
-                        _tasks.Remove(node);
-                    }
-                    node = next;
-                }
-            }
         }
 
         readonly ConcurrentDictionary<NodeHandle, bool> _inactiveNodes = new();

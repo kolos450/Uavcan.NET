@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,7 +109,7 @@ namespace Uavcan.NET.Studio
             var rootPath = Path.GetDirectoryName(new Uri(assembly.EscapedCodeBase).LocalPath);
 
             var catalogs = _EnumerateCatalogAssemblies(rootPath)
-                .Select(x => new AssemblyCatalog(x))
+                .Select(x => new AssemblyCatalog(Assembly.LoadFrom(x)))
                 .Concat(new[] { new AssemblyCatalog(typeof(UsbTin).Assembly) })
                 .Concat(new[] { new AssemblyCatalog(typeof(Program).Assembly) });
 

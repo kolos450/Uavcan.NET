@@ -21,7 +21,6 @@ namespace Uavcan.NET.Studio
                     {
                         foreach (var dir in Directory.EnumerateDirectories(dsdlDefinitionsPath))
                             yield return dir;
-                        yield break;
                     }
 
                     rootPath = Path.GetDirectoryName(rootPath);

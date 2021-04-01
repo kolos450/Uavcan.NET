@@ -324,7 +324,7 @@ namespace Uavcan.NET
                 _arrayPool.Return(buffer);
             }
 
-            using (ct.Register(() => ticket.SetCanceled()))
+            using (ct.Register(() => ticket.TrySetCanceled()))
             {
                 return await ticket.Task.ConfigureAwait(false);
             }

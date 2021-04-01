@@ -26,7 +26,12 @@ namespace Uavcan.NET.Studio.Communication
 
             if (_tasks is not null)
             {
-                Task.WhenAll(_tasks.ToArray()).GetAwaiter().GetResult();
+                try
+                {
+                    Task.WhenAll(_tasks.ToArray()).GetAwaiter().GetResult();
+                }
+                catch (TaskCanceledException) { }
+
                 _tasks = null;
             }
         }

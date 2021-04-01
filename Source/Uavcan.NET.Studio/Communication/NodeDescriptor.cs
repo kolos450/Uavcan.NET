@@ -12,9 +12,9 @@ namespace Uavcan.NET.Studio.Communication
             _monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
             Handle = handle;
             Registered = registered;
-            _updated = registered;
-            _info = new NodeInfo();
-            _status = new NodeData();
+            Updated = registered;
+            Info = new NodeInfo();
+            Status = new NodeData();
         }
 
         public NodeHandle Handle { get; }

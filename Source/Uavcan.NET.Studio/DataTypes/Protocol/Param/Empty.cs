@@ -6,7 +6,7 @@ namespace Uavcan.NET.Studio.DataTypes.Protocol.Param
     /// Ex nihilo nihil fit.
     /// </summary>
     [DataContract(Name = "Empty", Namespace = "uavcan.protocol.param")]
-    sealed class Empty
+    public sealed class Empty
     {
     }
 }

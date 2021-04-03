@@ -100,10 +100,17 @@ namespace Uavcan.NET.Studio
             }
 
             var parseResult = commandHandler.ParseResult;
-            options = new ApplicationOptions(
-                parseResult.FindResultFor(connectionStringOption)?.GetValueOrDefault<string>(),
-                parseResult.FindResultFor(toolOption)?.GetValueOrDefault<string>(),
-                parseResult.FindResultFor(nodeIdOption)?.GetValueOrDefault<byte>());
+            if (parseResult is null)
+            {
+                options = ApplicationOptions.Default;
+            }
+            else
+            {
+                options = new ApplicationOptions(
+                    parseResult.FindResultFor(connectionStringOption)?.GetValueOrDefault<string>(),
+                    parseResult.FindResultFor(toolOption)?.GetValueOrDefault<string>(),
+                    parseResult.FindResultFor(nodeIdOption)?.GetValueOrDefault<byte>());
+            }
 
             return exitCode;
         }

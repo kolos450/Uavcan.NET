@@ -45,6 +45,12 @@ namespace Uavcan.NET.Studio
             }
             _uavcan.AddDriver(driver);
 
+            if (_options.NodeId is not null)
+            {
+                _uavcan.Engine.NodeID = _options.NodeId.Value;
+                _mainWindow.SyncState();
+            }
+
             MainWindow.Show();
             _mainWindow.Active = true;
 

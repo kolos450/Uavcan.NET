@@ -87,6 +87,11 @@ namespace Uavcan.NET.Studio
             set => IsBusy = !value;
         }
 
+        public void SyncState()
+        {
+            nudNodeId.Value = _uavcan.Engine.NodeID;
+        }
+
         void InitializeWndTools()
         {
             var activeNodeHandles = _nodeMonitor.GetActiveNodes(

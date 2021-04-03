@@ -74,11 +74,15 @@ namespace Uavcan.NET.Studio
             var toolOption = new Option<string>(
                 "--tool",
                 "Open a specific custom tool.");
+            var nodeIdOption = new Option<byte>(
+                "--node-id",
+                description: "Node ID");
 
             var rootCommand = new RootCommand
             {
                 connectionStringOption,
-                toolOption
+                toolOption,
+                nodeIdOption
             };
 
             rootCommand.Description = Constants.ProductName;
@@ -98,7 +102,8 @@ namespace Uavcan.NET.Studio
             var parseResult = commandHandler.ParseResult;
             options = new ApplicationOptions(
                 parseResult.FindResultFor(connectionStringOption)?.GetValueOrDefault<string>(),
-                parseResult.FindResultFor(toolOption)?.GetValueOrDefault<string>());
+                parseResult.FindResultFor(toolOption)?.GetValueOrDefault<string>(),
+                parseResult.FindResultFor(nodeIdOption)?.GetValueOrDefault<byte>());
 
             return exitCode;
         }

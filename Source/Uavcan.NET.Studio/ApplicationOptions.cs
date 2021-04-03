@@ -4,8 +4,12 @@ using System.Text;
 
 namespace Uavcan.NET.Studio
 {
-    record ApplicationOptions(string ConnectionString, string ToolName)
+    record ApplicationOptions(
+        string ConnectionString,
+        string ToolName,
+        byte? NodeId)
     {
-        public static ApplicationOptions Default { get; } = new ApplicationOptions(null, null);
+        public static ApplicationOptions Default { get; } =
+            new ApplicationOptions(null, null, null);
     }
 }

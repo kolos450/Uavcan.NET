@@ -35,6 +35,7 @@ namespace Uavcan.NET.Studio
         CommunicationServicesProvider _communicationServicesProvider = null;
 
         INodeMonitor _nodeMonitor;
+        HeartbeatService _heartbeatService;
 
         List<IDisposable> _disposables = new List<IDisposable>();
 
@@ -125,6 +126,11 @@ namespace Uavcan.NET.Studio
         {
             var nodeId = (byte)nudNodeId.Value;
             _uavcan.Engine.NodeID = nodeId;
+
+            if (nodeId is 0)
+                _heartbeatService.Stop();
+            else
+                _heartbeatService.Start();
         }
 
         public void Dispose()
@@ -142,6 +148,7 @@ namespace Uavcan.NET.Studio
         public void OnImportsSatisfied()
         {
             _nodeMonitor = _communicationServicesProvider.Monitor;
+            _heartbeatService = _communicationServicesProvider.HeartbeatService;
 
             foreach (var tool in _tools)
             {

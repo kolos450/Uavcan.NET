@@ -10,7 +10,7 @@ namespace Uavcan.NET.Studio.DataTypes.Protocol.Param
     /// discouraged to use it for anything else, because persistent ordering is not guaranteed.
     /// </remarks>
     [DataContract(Name = "GetSet.Request", Namespace = "uavcan.protocol.param")]
-    sealed class GetSet_Request
+    public sealed class GetSet_Request
     {
         /// <summary>
         /// Index of the parameter starting from 0; ignored if name is nonempty.

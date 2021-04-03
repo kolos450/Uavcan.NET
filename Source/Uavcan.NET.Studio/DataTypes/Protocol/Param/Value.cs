@@ -72,7 +72,7 @@ namespace Uavcan.NET.Studio.DataTypes.Protocol.Param
                 counter++;
             if (StringValue is not null)
                 counter++;
-            if (counter != 0)
+            if (counter != 1)
                 throw new InvalidOperationException("Union type must contain exactly 1 non-null value.");
 
             if (Empty is not null)

@@ -104,7 +104,7 @@ namespace Uavcan.NET.Studio.Communication
         public Task Set(string parameterName, string value, CancellationToken ct = default) =>
             Set(parameterName, r => r.Value.StringValue = Encoding.GetBytes(value), ct);
 
-        async Task Set(string parameterName, Action<GetSet_Request> modifier, CancellationToken ct)
+        public async Task Set(string parameterName, Action<GetSet_Request> modifier, CancellationToken ct = default)
         {
             var request = new GetSet_Request
             {

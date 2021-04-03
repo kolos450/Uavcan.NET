@@ -35,7 +35,7 @@ namespace Uavcan.NET.Studio
         CommunicationServicesProvider _communicationServicesProvider = null;
 
         INodeMonitor _nodeMonitor;
-        HeartbeatService _heartbeatService;
+        IHeartbeatService _heartbeatService;
 
         List<IDisposable> _disposables = new List<IDisposable>();
 
@@ -91,6 +91,7 @@ namespace Uavcan.NET.Studio
         public void SyncState()
         {
             nudNodeId.Value = _uavcan.Engine.NodeID;
+            SetupHeartbeatService(_uavcan.Engine.NodeID);
         }
 
         void InitializeWndTools()
@@ -126,7 +127,11 @@ namespace Uavcan.NET.Studio
         {
             var nodeId = (byte)nudNodeId.Value;
             _uavcan.Engine.NodeID = nodeId;
+            SetupHeartbeatService(nodeId);
+        }
 
+        private void SetupHeartbeatService(byte nodeId)
+        {
             if (nodeId is 0)
                 _heartbeatService.Stop();
             else

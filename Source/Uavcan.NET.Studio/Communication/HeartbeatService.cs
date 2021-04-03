@@ -6,7 +6,7 @@ using Uavcan.NET.Studio.DataTypes.Protocol;
 
 namespace Uavcan.NET.Studio.Communication
 {
-    sealed class HeartbeatService : IDisposable
+    sealed class HeartbeatService : IDisposable, IHeartbeatService
     {
         private UavcanInstance _uavcan;
         private Timer _timer;
@@ -19,7 +19,7 @@ namespace Uavcan.NET.Studio.Communication
             _timer = new Timer
             {
                 Interval = Interval.TotalMilliseconds,
-                AutoReset = true,
+                AutoReset = false,
             };
 
             _timer.Elapsed += Timer_Elapsed;
@@ -38,9 +38,15 @@ namespace Uavcan.NET.Studio.Communication
                 VendorSpecificStatusCode = VendorSpecificStatusCode,
             };
             _uavcan.SendBroadcastMessage(message);
+
+            if (_running)
+            {
+                _timer.Stop();
+                _timer.Start();
+            }
         }
 
-        TimeSpan _interval = TimeSpan.FromMilliseconds(500);
+        TimeSpan _interval = TimeSpan.FromMilliseconds(1175);
         public TimeSpan Interval
         {
             get => _interval;
@@ -56,13 +62,17 @@ namespace Uavcan.NET.Studio.Communication
         public byte SubMode { get; set; }
         public ushort VendorSpecificStatusCode { get; set; }
 
+        volatile bool _running;
+
         public void Start()
         {
+            _running = true;
             _timer.Start();
         }
 
         public void Stop()
         {
+            _running = false;
             _timer.Stop();
         }
 

@@ -34,7 +34,7 @@ namespace Uavcan.NET.Studio.Communication
             }
         }
 
-        internal HeartbeatService HeartbeatService
+        public IHeartbeatService HeartbeatService
         {
             get
             {
@@ -44,7 +44,7 @@ namespace Uavcan.NET.Studio.Communication
             }
         }
 
-        internal IParametersService ParametersService
+        public IParametersService ParametersService
         {
             get
             {

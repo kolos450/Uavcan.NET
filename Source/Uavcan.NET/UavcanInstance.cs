@@ -290,7 +290,7 @@ namespace Uavcan.NET
             var dsdlType = valueType.Request;
 
             TaskCompletionSource<TransferReceivedArgs> ticket;
-            var buffer = _arrayPool.Rent(dsdlType.MaxBitlen);
+            var buffer = _arrayPool.Rent((dsdlType.MaxBitlen + 7) / 8);
             try
             {
                 int payloadLen = Serializer.Serialize(value, dsdlType, buffer);
@@ -337,10 +337,14 @@ namespace Uavcan.NET
 
         void SendFrames(IEnumerable<CanFrame> frames)
         {
-            foreach (var frame in frames)
+            var drivers = _drivers;
+            if (drivers is not null)
             {
-                foreach (var driver in _drivers)
-                    driver.Send(frame);
+                foreach (var frame in frames)
+                {
+                    foreach (var driver in _drivers)
+                        driver.Send(frame);
+                }
             }
         }
 

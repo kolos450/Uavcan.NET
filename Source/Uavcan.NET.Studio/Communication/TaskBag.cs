@@ -44,6 +44,9 @@ namespace Uavcan.NET.Studio.Communication
             }
         }
 
+        public void Add(Func<Task> func) =>
+            Add(func());
+
         public void FinalizeCompletedTasks()
         {
             if (_tasks.Count == 0)

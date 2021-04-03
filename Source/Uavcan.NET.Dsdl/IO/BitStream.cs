@@ -252,25 +252,24 @@ namespace Uavcan.NET.IO
             if (countOfBits <= 0 || countOfBits > Native.BitsPerByte)
                 throw new ArgumentOutOfRangeException("countOfBits");
 
-            byte buffer;
+            //byte buffer;
             // if there is remaining bits in the last byte in the stream
             //      then use those first
             if (_remaining > 0)
             {
-                // retrieve the last byte from the stream, update it, and then replace it
-                buffer = _targetBuffer.Span[_targetBufferOffset];
-                // if the remaining bits aren't enough then just copy the significant bits
-                //      of the input into the remainder
+                // Retrieve the last byte from the stream and update it.
+                ref var buffer = ref _targetBuffer.Span[_targetBufferOffset];
+                // If the remaining bits aren't enough then just copy the significant bits
+                //      of the input into the remainder.
                 if (countOfBits > _remaining)
                 {
                     buffer |= (byte)((bits & (0xFF >> (Native.BitsPerByte - countOfBits))) >> (countOfBits - _remaining));
                 }
-                // otherwise, copy the entire set of input bits into the remainder
+                // Otherwise, copy the entire set of input bits into the remainder.
                 else
                 {
                     buffer |= (byte)((bits & (0xFF >> (Native.BitsPerByte - countOfBits))) << (_remaining - countOfBits));
                 }
-                _targetBuffer.Span[_targetBufferOffset] = buffer;
             }
 
             // if the remainder wasn't large enough to hold the entire input set
@@ -278,6 +277,7 @@ namespace Uavcan.NET.IO
             {
                 // then copy the uncontained portion of the input set into a temporary byte
                 _remaining = Native.BitsPerByte - (countOfBits - _remaining);
+                byte buffer;
                 unchecked // disable overflow checking since we are intentionally throwing away
                           //  the significant bits
                 {
@@ -298,10 +298,15 @@ namespace Uavcan.NET.IO
         int _targetBufferOffset;
 
         // number of free bits remaining in the last byte added to the target buffer
-        private int _remaining = 0;
+        private int _remaining = Native.BitsPerByte;
 
         public int Position => _targetBufferOffset;
 
-        public int Length => _remaining != 0 ? _targetBufferOffset + 1 : _targetBufferOffset;
+        public int Length =>
+            (_targetBufferOffset, _remaining) switch
+            {
+                (0, Native.BitsPerByte) => 0,
+                (_, _) => _targetBufferOffset + 1,
+            };
     }
 }

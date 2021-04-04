@@ -10,15 +10,16 @@ UAVCAN v0 protocol stack implementation for .NET platform.
 ## Usage
 ```C#
 using var driver = new UsbTin();
-await usbTin.ConnectAsync("COM1").ConfigureAwait(false);
-await usbTin.OpenCanChannelAsync(125000, UsbTinOpenMode.Active).ConfigureAwait(false);
+await driver.ConnectAsync("COM1").ConfigureAwait(false);
+await driver.OpenCanChannelAsync(125000, UsbTinOpenMode.Active).ConfigureAwait(false);
 
 var typeResolver = new FileSystemUavcanTypeResolver(@"Path to DSDL definitions");
 
-using var engine = new UavcanInstance(typeResolver, driver)
+using var engine = new UavcanInstance(typeResolver)
 {
     NodeID = 5
 };
+engine.AddDriver(driver);
 
 var response = await engine.SendServiceRequestAsync(
     destinationNodeId: 1,

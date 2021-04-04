@@ -107,7 +107,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// to make sure that we are in configuration mode.
         /// </summary>
         /// <param name="portName">Name of virtual serial port</param>
-        public Task ConnectAsync(string portName, CancellationToken cancellationToken)
+        public Task ConnectAsync(string portName, CancellationToken cancellationToken = default)
         {
             // Create serial port object.
             _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One)
@@ -272,7 +272,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// </summary>
         /// <param name="baudrate">Baudrate in bits/second</param>
         /// <param name="mode">CAN bus accessing mode</param>
-        public Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken)
+        public Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken = default)
         {
             // Set baudrate.
             char baudCh = ' ';

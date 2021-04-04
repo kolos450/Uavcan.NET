@@ -27,7 +27,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <summary>
         /// Characters coming from USBtin are collected in this StringBuilder.
         /// </summary>
-        protected StringBuilder _incomingMessage = new StringBuilder();
+        protected StringBuilder _incomingMessage = new();
 
         /// <summary>
         /// Listener for CAN messages.
@@ -83,13 +83,13 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         Task _readerTask;
         Task _eventsTask;
         CancellationTokenSource _backgroundTasksCancellationTokenSource;
-        SemaphoreSlim _txSemaphore = new SemaphoreSlim(0, 1);
-        PriorityQueue<CanFrame> _txQueue = new PriorityQueue<CanFrame>();
+        SemaphoreSlim _txSemaphore = new(0, 1);
+        PriorityQueue<CanFrame> _txQueue = new();
         CanFrame _txCurrentMessage = null;
 
-        SemaphoreSlim _eventsSemaphore = new SemaphoreSlim(0, 1);
-        ConcurrentQueue<CanFrame> _rxEventQueue = new ConcurrentQueue<CanFrame>();
-        ConcurrentQueue<CanFrame> _txEventQueue = new ConcurrentQueue<CanFrame>();
+        SemaphoreSlim _eventsSemaphore = new(0, 1);
+        ConcurrentQueue<CanFrame> _rxEventQueue = new();
+        ConcurrentQueue<CanFrame> _txEventQueue = new();
 
         volatile TxState _txState = TxState.Initial;
 
@@ -215,7 +215,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                                 if (message != null)
                                 {
                                     _txCurrentMessage = message;
-                                    await SendMessageAsync(message).ConfigureAwait(false);
+                                    await SendMessageAsync(message, ct).ConfigureAwait(false);
                                     _txState = TxState.Pending;
                                 }
                                 else
@@ -231,7 +231,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                                 var message = _txCurrentMessage;
                                 if (message == null)
                                     throw new InvalidOperationException("Unexpected UsbTin response.");
-                                await SendMessageAsync(message).ConfigureAwait(false);
+                                await SendMessageAsync(message, ct).ConfigureAwait(false);
                             }
                             break;
 
@@ -487,10 +487,10 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             return ReadResponse();
         }
 
-        Task SendMessageAsync(CanFrame message)
+        Task SendMessageAsync(CanFrame message, CancellationToken ct)
         {
             var bytes = _encoding.GetBytes(CanFrameConverter.ToString(message) + "\r");
-            return _serialPort.WriteAsync(bytes, 0, bytes.Length);
+            return _serialPort.WriteAsync(bytes, 0, bytes.Length, ct);
         }
 
         /// <summary>

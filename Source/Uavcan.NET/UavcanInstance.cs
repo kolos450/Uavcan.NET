@@ -224,12 +224,12 @@ namespace Uavcan.NET
                 (dataTypeId & 0xFFFF);
         }
 
-        readonly ConcurrentDictionary<int, byte> _transferIdRegistry = new ConcurrentDictionary<int, byte>();
+        readonly ConcurrentDictionary<int, byte> _transferIdRegistry = new();
 
         public event EventHandler<TransferReceivedArgs> MessageReceived;
         public event EventHandler<TransferReceivedArgs> RequestReceived;
 
-        public void SendBroadcastMessage(
+        public TxToken SendBroadcastMessage(
             object value,
             MessageType valueType = null,
             UavcanPriority priority = UavcanPriority.Medium)
@@ -264,12 +264,21 @@ namespace Uavcan.NET
                     0,
                     payloadLen);
 
-                SendFrames(frames);
+                var ticket = CreateTicket();
+
+                SendFrames(frames, ticket);
+
+                return ticket;
             }
             finally
             {
                 _arrayPool.Return(buffer);
             }
+        }
+
+        private TxToken CreateTicket()
+        {
+            return new TxToken(_drivers);
         }
 
         readonly ArrayPool<byte> _arrayPool = ArrayPool<byte>.Shared;
@@ -335,7 +344,7 @@ namespace Uavcan.NET
             return (byte)((_transferIdRegistry.AddOrUpdate(transferDescriptor, 1, (_, id) => (byte)((id + 1) & 0x1F)) - 1) & 0x1F);
         }
 
-        void SendFrames(IEnumerable<CanFrame> frames)
+        void SendFrames(IEnumerable<CanFrame> frames, TxToken ticket = null)
         {
             var drivers = _drivers;
             if (drivers is not null)
@@ -343,7 +352,10 @@ namespace Uavcan.NET
                 foreach (var frame in frames)
                 {
                     foreach (var driver in _drivers)
+                    {
+                        ticket?.Add(frame, driver);
                         driver.Send(frame);
+                    }
                 }
             }
         }

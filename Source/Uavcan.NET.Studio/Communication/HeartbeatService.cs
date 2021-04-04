@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Timers;
 using Uavcan.NET.Studio.DataTypes.Protocol;
+
+using Timer = System.Timers.Timer;
 
 namespace Uavcan.NET.Studio.Communication
 {
@@ -11,6 +15,7 @@ namespace Uavcan.NET.Studio.Communication
         private UavcanInstance _uavcan;
         private Timer _timer;
         private readonly DateTimeOffset _initializedTime;
+        private CancellationTokenSource _cts = new();
 
         public HeartbeatService(UavcanInstance uavcan)
         {
@@ -37,7 +42,15 @@ namespace Uavcan.NET.Studio.Communication
                 UptimeSec = (uint)(DateTimeOffset.Now - _initializedTime).TotalSeconds,
                 VendorSpecificStatusCode = VendorSpecificStatusCode,
             };
-            _uavcan.SendBroadcastMessage(message);
+
+            try
+            {
+                _uavcan.SendBroadcastMessage(message).Wait(_cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
 
             if (_running)
             {
@@ -46,7 +59,7 @@ namespace Uavcan.NET.Studio.Communication
             }
         }
 
-        TimeSpan _interval = TimeSpan.FromMilliseconds(1175);
+        TimeSpan _interval = TimeSpan.FromMilliseconds(100);
         public TimeSpan Interval
         {
             get => _interval;
@@ -78,6 +91,13 @@ namespace Uavcan.NET.Studio.Communication
 
         public void Dispose()
         {
+            if (_cts is not null)
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+            }
+
             if (_timer is not null)
             {
                 _timer.Dispose();

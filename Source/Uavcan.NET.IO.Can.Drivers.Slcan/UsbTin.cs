@@ -1,14 +1,14 @@
-﻿using Uavcan.NET.IO.Can.Drivers.Slcan.Collections;
-using RJCP.IO.Ports;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using Uavcan.NET.IO.Can.Drivers.Slcan.Collections;
 
 namespace Uavcan.NET.IO.Can.Drivers.Slcan
 {
@@ -22,7 +22,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <summary>
         /// Serial port (virtual) to which USBtin is connected.
         /// </summary>
-        protected SerialPortStream _serialPort;
+        protected SerialPort _serialPort;
 
         /// <summary>
         /// Characters coming from USBtin are collected in this StringBuilder.
@@ -37,21 +37,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         public event EventHandler<CanMessageEventArgs> MessageTransmitted;
 
         /// <summary>
-        /// USBtin firmware version.
-        /// </summary>
-        protected string _firmwareVersion;
-
-        /// <summary>
-        /// USBtin hardware version.
-        /// </summary>
-        protected string _hardwareVersion;
-
-        /// <summary>
-        /// USBtin serial number.
-        /// </summary>
-        protected string _serialNumber;
-
-        /// <summary>
         /// Timeout for response from USBtin.
         /// </summary>
         protected const int TIMEOUT = 1000;
@@ -62,7 +47,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <remarks>
         /// During connect() the firmware version is requested from USBtin.
         /// </remarks>
-        public string FirmwareVersion => _firmwareVersion;
+        public string FirmwareVersion { get; private set; }
 
         /// <summary>
         /// Get hardware version string.
@@ -70,7 +55,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <remarks>
         /// During connect() the hardware version is requested from USBtin.
         /// </remarks>
-        public string HardwareVersion => _hardwareVersion;
+        public string HardwareVersion { get; private set; }
 
         /// <summary>
         /// Get serial number string.
@@ -78,7 +63,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <remarks>
         /// During connect() the serial number is requested from USBtin.
         /// </remarks>
-        public string SerialNumber => _serialNumber;
+        public string SerialNumber { get; private set; }
 
         Task _readerTask;
         Task _eventsTask;
@@ -107,12 +92,12 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// to make sure that we are in configuration mode.
         /// </summary>
         /// <param name="portName">Name of virtual serial port</param>
-        public Task ConnectAsync(string portName, CancellationToken cancellationToken = default)
+        public async Task ConnectAsync(string portName, int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken = default)
         {
             // Create serial port object.
-            _serialPort = new SerialPortStream(portName, 115200, 8, Parity.None, StopBits.One)
+            _serialPort = new SerialPort(portName, 115200, Parity.None, dataBits: 8, StopBits.One)
             {
-                ReadTimeout = SerialPortStream.InfiniteTimeout,
+                ReadTimeout = SerialPort.InfiniteTimeout,
                 WriteTimeout = TIMEOUT,
                 RtsEnable = true,
                 DtrEnable = true
@@ -122,7 +107,10 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
             // Clear port and make sure we are in configuration mode (close cmd).
             _serialPort.Write("\rC\r");
-            Thread.Sleep(100);
+
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
             _serialPort.DiscardInBuffer();
             _serialPort.DiscardOutBuffer();
             _serialPort.Write("C\r");
@@ -133,17 +121,17 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 b = _serialPort.ReadByte();
                 if (b == -1)
                     throw new IOException("USBTin communication error.");
-            } while ((b != '\r') && (b != 7));
+            } while (b is not '\r' and not 7);
 
             // Get version strings.
-            _firmwareVersion = Transmit("v").Substring(1);
-            _hardwareVersion = Transmit("V").Substring(1);
-            _serialNumber = Transmit("N").Substring(1);
+            FirmwareVersion = Transmit("v").Substring(1);
+            HardwareVersion = Transmit("V").Substring(1);
+            SerialNumber = Transmit("N").Substring(1);
 
             // Reset overflow error flags.
             Transmit("W2D00");
 
-            return Task.CompletedTask;
+            await OpenCanChannelAsync(baudrate, mode, cancellationToken).ConfigureAwait(false);
         }
 
         async Task RaiseEvents(CancellationToken ct)
@@ -173,14 +161,17 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
             Task<int> rxTask = null;
             Task txTask = null;
-            while ((!ct.IsCancellationRequested) && (_serialPort.IsOpen))
+            while ((!ct.IsCancellationRequested) && _serialPort.IsOpen)
             {
                 if (rxTask == null)
-                    rxTask = _serialPort.ReadAsync(receiveBuffer, 0, bytesToRead, ct);
+                    rxTask = _serialPort.BaseStream.ReadAsync(receiveBuffer, 0, bytesToRead, ct);
                 if (txTask == null)
                     txTask = _txSemaphore.WaitAsync(ct);
 
                 var completedTask = await Task.WhenAny(rxTask, txTask).ConfigureAwait(false);
+
+                if (ct.IsCancellationRequested)
+                    break;
 
                 if (completedTask == rxTask)
                 {
@@ -215,7 +206,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                                 if (message != null)
                                 {
                                     _txCurrentMessage = message;
-                                    await SendMessageAsync(message, ct).ConfigureAwait(false);
+                                    await SendMessageAsync(message).ConfigureAwait(false);
                                     _txState = TxState.Pending;
                                 }
                                 else
@@ -231,7 +222,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                                 var message = _txCurrentMessage;
                                 if (message == null)
                                     throw new InvalidOperationException("Unexpected UsbTin response.");
-                                await SendMessageAsync(message, ct).ConfigureAwait(false);
+                                await SendMessageAsync(message).ConfigureAwait(false);
                             }
                             break;
 
@@ -253,41 +244,26 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         }
 
         /// <summary>
-        /// Disconnect, close serial port connection.
-        /// </summary>
-        public void Disconnect()
-        {
-            CloseCanChannel();
-
-            if (_serialPort != null)
-            {
-                _serialPort.Close();
-                _serialPort.Dispose();
-                _serialPort = null;
-            }
-        }
-
-        /// <summary>
         /// Open CAN channel.
         /// </summary>
         /// <param name="baudrate">Baudrate in bits/second</param>
         /// <param name="mode">CAN bus accessing mode</param>
-        public Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken = default)
+        Task OpenCanChannelAsync(int baudrate, UsbTinOpenMode mode, CancellationToken cancellationToken)
         {
             // Set baudrate.
-            char baudCh = ' ';
-            switch (baudrate)
+            char baudCh = baudrate switch
             {
-                case 10000: baudCh = '0'; break;
-                case 20000: baudCh = '1'; break;
-                case 50000: baudCh = '2'; break;
-                case 100000: baudCh = '3'; break;
-                case 125000: baudCh = '4'; break;
-                case 250000: baudCh = '5'; break;
-                case 500000: baudCh = '6'; break;
-                case 800000: baudCh = '7'; break;
-                case 1000000: baudCh = '8'; break;
-            }
+                10000 => '0',
+                20000 => '1',
+                50000 => '2',
+                100000 => '3',
+                125000 => '4',
+                250000 => '5',
+                500000 => '6',
+                800000 => '7',
+                1000000 => '8',
+                _ => ' ',
+            };
 
             if (baudCh != ' ')
             {
@@ -307,7 +283,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 for (int x = 11; x <= 23; x++)
                 {
                     // Get next even value for baudrate factor.
-                    int xbrp = (xdesired * 10) / x;
+                    int xbrp = xdesired * 10 / x;
                     int m = xbrp % 20;
                     if (m >= 10) xbrp += 20;
                     xbrp -= m;
@@ -329,26 +305,18 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 // Mapping for CNF register values.
                 var cnfvalues = new int[] { 0x9203, 0x9303, 0x9B03, 0x9B04, 0x9C04, 0xA404, 0xA405, 0xAC05, 0xAC06, 0xAD06, 0xB506, 0xB507, 0xBD07 };
 
-                Transmit("s" + string.Format("{0:X2}", brpopt | 0xC0) + string.Format("{0:X4}", cnfvalues[xopt - 11]));
+                Transmit($"s{brpopt | 0xC0:X2}{cnfvalues[xopt - 11]:X4}");
             }
 
             // Open can channel.
-            char modeCh;
-            switch (mode)
+            var modeCh = mode switch
             {
-                case UsbTinOpenMode.Listenonly:
-                    modeCh = 'L';
-                    break;
-                case UsbTinOpenMode.Loopback:
-                    modeCh = 'l';
-                    break;
-                case UsbTinOpenMode.Active:
-                    modeCh = 'O';
-                    break;
-                default:
-                    throw new ArgumentException(nameof(mode));
-            }
-            Transmit(modeCh + "");
+                UsbTinOpenMode.Listenonly => 'L',
+                UsbTinOpenMode.Loopback => 'l',
+                UsbTinOpenMode.Active => 'O',
+                _ => throw new ArgumentException(nameof(mode)),
+            };
+            Transmit(modeCh.ToString());
 
             _backgroundTasksCancellationTokenSource = new CancellationTokenSource();
             _readerTask = ReadSerialBytesAsync(_backgroundTasksCancellationTokenSource.Token);
@@ -365,20 +333,19 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
                 if ((b == '\r') && _incomingMessage.Length > 0)
                 {
-                    var message = _incomingMessage.ToString();
-                    char cmd = message[0];
+                    char cmd = _incomingMessage[0];
 
                     // Check if this is a CAN message.
-                    if (cmd == 't' || cmd == 'T' || cmd == 'r' || cmd == 'R')
+                    if (cmd is 't' or 'T' or 'r' or 'R')
                     {
                         // Create CAN message from message string.
-                        var canmsg = CanFrameConverter.Parse(message);
+                        var canmsg = CanFrameConverter.Parse(_incomingMessage.ToString());
 
                         // Give the CAN message to the listeners.
                         _rxEventQueue.Enqueue(canmsg);
                         SignalEvents();
                     }
-                    else if ((cmd == 'z') || (cmd == 'Z'))
+                    else if (cmd is 'z' or 'Z')
                     {
                         _txEventQueue.Enqueue(_txCurrentMessage);
                         _txCurrentMessage = null;
@@ -407,7 +374,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <summary>
         /// Close CAN channel.
         /// </summary>
-        public void CloseCanChannel()
+        public void Close()
         {
             if (_backgroundTasksCancellationTokenSource != null)
             {
@@ -416,14 +383,20 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 _backgroundTasksCancellationTokenSource = null;
             }
 
+            if (_serialPort?.IsOpen == true)
+            {
+                _serialPort.Write("C\r");
+            }
+
             if (_readerTask != null)
             {
                 try
                 {
-                    _readerTask.GetAwaiter().GetResult();
+                    if (_readerTask.Wait(TIMEOUT))
+                        _readerTask = null;
                 }
                 catch (OperationCanceledException) { }
-                _readerTask = null;
+                catch (AggregateException ex) when (ex.InnerExceptions.Count == 1 && ex.InnerExceptions.Single() is OperationCanceledException) { }
             }
 
             if (_eventsTask != null)
@@ -436,13 +409,26 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 _eventsTask = null;
             }
 
-            if (_serialPort?.IsOpen == true)
+            FirmwareVersion = null;
+            HardwareVersion = null;
+            SerialNumber = null;
+
+            if (_serialPort != null)
             {
-                _serialPort.Write("C\r");
+                _serialPort.Close();
+                _serialPort.Dispose();
+                _serialPort = null;
             }
 
-            _firmwareVersion = null;
-            _hardwareVersion = null;
+            if (_readerTask != null)
+            {
+                try
+                {
+                    _readerTask.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException) { }
+                _readerTask = null;
+            }
         }
 
         /// <summary>
@@ -451,25 +437,21 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <returns>Response from USBtin</returns>
         protected string ReadResponse()
         {
-            StringBuilder response = new StringBuilder();
+            StringBuilder response = new();
             while (true)
             {
                 int b = _serialPort.ReadByte();
-                if (b == -1)
+                switch (b)
                 {
-                    throw new IOException("USBTin communication error.");
-                }
-                if (b == '\r')
-                {
-                    return response.ToString();
-                }
-                else if (b == 7)
-                {
-                    throw new IOException($"{_serialPort.PortName}, transmit, BELL signal");
-                }
-                else
-                {
-                    response.Append((char)b);
+                    case -1:
+                        throw new IOException("USBTin communication error.");
+                    case '\r':
+                        return response.ToString();
+                    case 7:
+                        throw new IOException($"{_serialPort.PortName}, transmit, BELL signal");
+                    default:
+                        response.Append((char)b);
+                        break;
                 }
             }
         }
@@ -487,10 +469,10 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             return ReadResponse();
         }
 
-        Task SendMessageAsync(CanFrame message, CancellationToken ct)
+        Task SendMessageAsync(CanFrame message)
         {
             var bytes = _encoding.GetBytes(CanFrameConverter.ToString(message) + "\r");
-            return _serialPort.WriteAsync(bytes, 0, bytes.Length, ct);
+            return _serialPort.BaseStream.WriteAsync(bytes, 0, bytes.Length);
         }
 
         /// <summary>
@@ -532,11 +514,8 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// </summary>
         /// <param name="register">Register address</param>
         /// <param name="value">Value to write</param>
-        public void WriteMCPRegister(int register, byte value)
-        {
-            var cmd = "W" + string.Format("{0:X2}", register) + string.Format("{0:X2}", value);
-            Transmit(cmd);
-        }
+        public void WriteMCPRegister(int register, byte value) =>
+            Transmit($"W{register:X2}{value:X2}");
 
         /// <summary>
         /// Write given mask registers to MCP2515.
@@ -551,18 +530,25 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             }
         }
 
+        static readonly int[] FilterRegisters = new int[] { 0x00, 0x04, 0x08, 0x10, 0x14, 0x18 };
+
         /// <summary>
         /// Write given filter registers to MCP2515.
         /// </summary>
-        /// <param name="filterid">Filter identifier (0 = RXF0, ... 5 = RXF5)</param>
+        /// <param name="filterId">Filter identifier (0 = RXF0, ... 5 = RXF5)</param>
         /// <param name="registers">Register values to write</param>
-        protected void WriteMCPFilterRegisters(int filterid, byte[] registers)
+        protected void WriteMCPFilterRegisters(int filterId, byte[] registers)
         {
-            var startregister = new int[] { 0x00, 0x04, 0x08, 0x10, 0x14, 0x18 };
+            if (filterId < 0 || filterId >= FilterRegisters.Length)
+                throw new ArgumentOutOfRangeException(nameof(filterId));
+            if (registers is null)
+                throw new ArgumentNullException(nameof(registers));
+            if (registers.Length < 4)
+                throw new ArgumentOutOfRangeException(nameof(registers));
 
             for (int i = 0; i < 4; i++)
             {
-                WriteMCPRegister(startregister[filterid] + i, registers[i]);
+                WriteMCPRegister(FilterRegisters[filterId] + i, registers[i]);
             }
         }
 
@@ -575,7 +561,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         /// <param name="fc">Filter chains (USBtin supports maximum 2 hardware filter chains)</param>
         public void SetFilter(FilterChain[] fc)
         {
-
             /*
              * The MCP2515 offers two filter chains. Each chain consists of one mask
              * and a set of filters:
@@ -591,7 +576,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             // If no filter chain given, accept all messages.
             if ((fc == null) || (fc.Length == 0))
             {
-
                 byte[] registers = { 0, 0, 0, 0 };
                 WriteMCPFilterMaskRegisters(0, registers);
                 WriteMCPFilterMaskRegisters(1, registers);
@@ -608,7 +592,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             // Swap channels if necessary and check filter chain length.
             if (fc.Length == 2)
             {
-
                 if (fc[0].Filters.Length > fc[1].Filters.Length)
                 {
                     FilterChain temp = fc[0];
@@ -618,16 +601,15 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
 
                 if ((fc[0].Filters.Length > 2) || (fc[1].Filters.Length > 4))
                 {
-                    throw new ArgumentException("Filter chain too long: " + fc[0].Filters.Length + "/" + fc[1].Filters.Length + " (maximum is 2/4)!");
+                    throw new ArgumentException($"Filter chain too long: {fc[0].Filters.Length}/{fc[1].Filters.Length} (maximum is 2/4)!");
                 }
 
             }
             else if (fc.Length == 1)
             {
-
-                if ((fc[0].Filters.Length > 4))
+                if (fc[0].Filters.Length > 4)
                 {
-                    throw new ArgumentException("Filter chain too long: " + fc[0].Filters.Length + " (maximum is 4)!");
+                    throw new ArgumentException($"Filter chain too long: {fc[0].Filters.Length} (maximum is 4)!");
                 }
             }
 
@@ -636,7 +618,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             int fcidx = 0;
             for (int channel = 0; channel < 2; channel++)
             {
-
                 // Set mask.
                 WriteMCPFilterMaskRegisters(channel, fc[fcidx].Mask.Registers);
 
@@ -644,7 +625,6 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
                 byte[] registers = { 0, 0, 0, 0 };
                 for (int i = 0; i < (channel == 0 ? 2 : 4); i++)
                 {
-
                     if (fc[fcidx].Filters.Length > i)
                     {
                         registers = fc[fcidx].Filters[i].Registers;
@@ -669,7 +649,7 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             {
                 if (disposing)
                 {
-                    Disconnect();
+                    Close();
 
                     if (_txSemaphore != null)
                     {

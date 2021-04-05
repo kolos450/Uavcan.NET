@@ -81,29 +81,30 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
             var id = frame.Id.Value & CanId.CanExtendedIdMask;
             var extended = id > 0x7ff;
 
-            string s;
-            if (extended)
+            var prefix = (extended, rtr) switch
             {
-                if (rtr) s = "R";
-                else s = "T";
-                s = s + string.Format("{0:X8}", id);
-            }
-            else
-            {
-                if (rtr) s = "r";
-                else s = "t";
-                s = s + string.Format("{0:X3}", id);
-            }
-            s = s + string.Format("{0:X1}", frame.DataLength);
+                (true, true) => "R",
+                (true, false) => "T",
+                (false, true) => "r",
+                (false, false) => "t"
+            };
+
+            var idString = id.ToString(extended ? "X8" : "X3");
+
+            var result = $"{prefix}{idString}{frame.DataLength:X1}";
 
             if (!rtr)
             {
+                var sb = new StringBuilder(result, result.Length + frame.DataLength * 2);
                 for (int i = 0; i < frame.DataLength; i++)
                 {
-                    s = s + string.Format("{0:X2}", frame.Data[frame.DataOffset + i]);
+                    sb.Append(frame.Data[frame.DataOffset + i].ToString("X2"));
                 }
+
+                result = sb.ToString();
             }
-            return s;
+
+            return result;
         }
     }
 }

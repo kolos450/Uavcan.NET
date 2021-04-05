@@ -38,8 +38,8 @@ namespace Uavcan.NET.IO.Can.Drivers.Slcan
         public async Task<ICanInterface> OpenAsync(int bitrate, CancellationToken cancellationToken)
         {
             var usbTin = new UsbTin();
-            await usbTin.ConnectAsync(DisplayName, cancellationToken).ConfigureAwait(false);
-            await usbTin.OpenCanChannelAsync(bitrate, UsbTinOpenMode.Active, cancellationToken).ConfigureAwait(false);
+            await usbTin.ConnectAsync(DisplayName, bitrate, UsbTinOpenMode.Active, cancellationToken)
+                .ConfigureAwait(false);
             return usbTin;
         }
     }

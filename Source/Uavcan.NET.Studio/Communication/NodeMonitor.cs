@@ -119,7 +119,7 @@ namespace Uavcan.NET.Studio.Communication
 
             if (_requestBag is not null)
             {
-                _requestBag.Dispose();
+                _requestBag.DisposeAsync().GetAwaiter().GetResult();
                 _requestBag = null;
             }
 

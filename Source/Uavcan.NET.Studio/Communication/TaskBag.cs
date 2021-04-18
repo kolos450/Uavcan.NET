@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Uavcan.NET.Studio.Communication
 {
-    public sealed class TaskBag : IDisposable
+    public sealed class TaskBag : IAsyncDisposable
     {
         private CancellationTokenSource _cts = new();
         private LinkedList<Task> _tasks = new();
@@ -15,7 +15,7 @@ namespace Uavcan.NET.Studio.Communication
 
         public CancellationToken CancellationToken => _cts.Token;
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (_cts is not null)
             {
@@ -28,7 +28,7 @@ namespace Uavcan.NET.Studio.Communication
             {
                 try
                 {
-                    Task.WhenAll(_tasks.ToArray()).GetAwaiter().GetResult();
+                    await Task.WhenAll(_tasks.ToArray()).ConfigureAwait(false);
                 }
                 catch (TaskCanceledException) { }
 
